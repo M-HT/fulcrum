@@ -5,7 +5,8 @@
 
 #include<stdlib.h>
 #include<stdio.h>
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<m2partic.h>
 
 //#include<m2image.h>
@@ -87,7 +88,7 @@ void CMV2PBernoulli::Init(tstream &s, int m_iXmax, int m_iYmax)
 	for (iI = 0; iI < m_iSinTabRange; iI++)
 	{
 		float fCurAngle = 2.0*3.14159*(float(iI))/(float(m_iSinTabRange));
-		m_pfSinTab[iI] = sin(fCurAngle);
+		m_pfSinTab[iI] = sinf(fCurAngle);
 	}
 
 	SetRandomPos();
@@ -110,7 +111,10 @@ void CMV2PBernoulli::Init(tstream &s, int m_iXmax, int m_iYmax)
 
 
 
-
+static int wrand(void)
+{
+    return (int)( rand() * (32767.0/((double)RAND_MAX)) );
+}
 
 
 
@@ -122,11 +126,11 @@ void CMV2PBernoulli::SetRandomPos()
 	int iI;
 	for (iI = 0; iI < m_iNumParticles; iI++)
 	{
-		m_pParticles[iI].m_NextPos = CVector3D(rand()/500000.0, rand()/500000.0,
-		rand()/500000.0);
+		m_pParticles[iI].m_NextPos = CVector3D(wrand()/500000.0, wrand()/500000.0,
+		wrand()/500000.0);
 
 		m_pParticles[iI].m_StartPos = m_pParticles[iI].m_NextPos;
-		m_pParticles[iI].m_iDuration = rand()/2000;
+		m_pParticles[iI].m_iDuration = wrand()/2000;
 	}
 }
 

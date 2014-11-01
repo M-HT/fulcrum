@@ -1,5 +1,6 @@
 #include"demo.h"
-#include"copro.h"
+//#include"copro.h"
+#include <math.h>
 #include"stdlib.h"
 #include"2dlink.h"
 
@@ -64,7 +65,7 @@ void C2DLinkEffect::CalcPolarTab()
 			float fDX = fX - m_iXmax/2;
 			float fDY = fY - m_iYmax/2;
 
-			float fAbs = sqrt(fDX*fDX + fDY*fDY);
+			float fAbs = sqrtf(fDX*fDX + fDY*fDY);
 			float fAngle;
 
 			if (fAbs > 0)
@@ -88,7 +89,8 @@ void C2DLinkEffect::CalcPolarTab()
 				}
 				else
 				{
-					fAngle = arctan(1.0,fSin/fCos);//atan(fSin/fCos);
+					//fAngle = arctan(1.0,fSin/fCos);//atan(fSin/fCos);
+					fAngle = atan2f(fSin/fCos,1.0f);//atan(fSin/fCos);
 
 					if (fCos < 0)
 						fAngle += 3.1415926;
@@ -121,8 +123,8 @@ void C2DLinkEffect::InitSinTab()
 	{
 		float fI = (float)iI;
 		float fAngle = 2.0*3.1415926*fI/m_fSinTabRange;
-		m_pfSinTab[iI] = sin(fAngle);
-		m_pfCosTab[iI] = cos(fAngle);
+		m_pfSinTab[iI] = sinf(fAngle);
+		m_pfCosTab[iI] = cosf(fAngle);
 	}
 }
 
@@ -141,7 +143,7 @@ void C2DLinkEffect::CalcDistanceFunc()
 	for (iI = iCurPos; iI < iCurPos + m_iPeriode/2; iI++)
 	{
 		float fI = (float)iI;
-		float fCos = cos((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
+		float fCos = cosf((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
 		fCos *= fCos;
 		float fValue = 1.0 - fAmp + fAmp*fCos;
 		m_pfDistFunc[m_iDistanceFuncRange - iI] = fValue;
@@ -153,7 +155,7 @@ void C2DLinkEffect::CalcDistanceFunc()
 	for (iI = iCurPos; iI < iCurPos + m_iPeriode/2; iI++)
 	{
 		float fI = (float)iI;
-		float fCos = cos((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
+		float fCos = cosf((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
 		fCos *= fCos;
 		float fValue = 1.0 - fAmp + fAmp*fCos;
 		m_pfDistFunc[m_iDistanceFuncRange - iI] = fValue;
@@ -165,7 +167,7 @@ void C2DLinkEffect::CalcDistanceFunc()
 	for (iI = iCurPos; iI < iCurPos + m_iPeriode/2; iI++)
 	{
 		float fI = (float)iI;
-		float fCos = cos((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
+		float fCos = cosf((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
 		fCos *= fCos;
 		float fValue = 1.0 - fAmp + fAmp*fCos;
 		m_pfDistFunc[m_iDistanceFuncRange - iI] = fValue;
@@ -177,7 +179,7 @@ void C2DLinkEffect::CalcDistanceFunc()
 	for (iI = iCurPos; iI < iCurPos + m_iPeriode/2; iI++)
 	{
 		float fI = (float)iI;
-		float fCos = cos((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
+		float fCos = cosf((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
 		fCos *= fCos;
 		float fValue = 1.0 - fAmp + fAmp*fCos;
 		m_pfDistFunc[m_iDistanceFuncRange - iI] = fValue;
@@ -188,7 +190,7 @@ void C2DLinkEffect::CalcDistanceFunc()
 	for (iI = iCurPos; iI < iCurPos + m_iPeriode/2; iI++)
 	{
 		float fI = (float)iI;
-		float fCos = cos((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
+		float fCos = cosf((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
 		fCos *= fCos;
 		float fValue = 1.0 - fAmp + fAmp*fCos;
 		m_pfDistFunc[m_iDistanceFuncRange - iI] = fValue;
@@ -201,7 +203,7 @@ void C2DLinkEffect::CalcDistanceFunc()
 	for (iI = iCurPos; iI < iCurPos + m_iPeriode/2; iI++)
 	{
 		float fI = (float)iI;
-		float fCos = cos((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
+		float fCos = cosf((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
 		fCos *= fCos;
 		float fValue = 1.0 - fAmp + fAmp*fCos;
 		m_pfDistFunc[m_iDistanceFuncRange - iI] = fValue;
@@ -213,7 +215,7 @@ void C2DLinkEffect::CalcDistanceFunc()
 	for (iI = iCurPos; iI < iCurPos + m_iPeriode/2; iI++)
 	{
 		float fI = (float)iI;
-		float fCos = cos((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
+		float fCos = cosf((fI - (float)iCurPos)/m_fPeriode*2.0*3.14159);
 		fCos *= fCos;
 		float fValue = 1.0 - fAmp + fAmp*fCos;
 		m_pfDistFunc[m_iDistanceFuncRange - iI] = fValue;

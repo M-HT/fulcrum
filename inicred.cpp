@@ -3,7 +3,7 @@
 #include "demo.h"
 
 
-const fvalues = 32;
+const int fvalues = 32;
 
 
 struct tcredit {
@@ -103,11 +103,11 @@ creditdef:
 */
 
 extern "C" tcreddata creddata;
-#pragma aux creddata "*"
+//#pragma aux creddata "*"
 
 extern "C" {
 void initcdata(tvesa &);
-#pragma aux initcdata "*" parm [esi] modify [eax ebx ecx edx esi edi]
+//#pragma aux initcdata "*" parm [esi] modify [eax ebx ecx edx esi edi]
 }
 
 

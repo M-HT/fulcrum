@@ -135,7 +135,7 @@ UWORD CLWObject::GetUShortInt(unsigned char *pcMem)
 
 
 
-char *CLWObject::GetHunkPtr(char *pcHunk, char *pcStart, char *pcEnd)
+char *CLWObject::GetHunkPtr(const char *pcHunk, char *pcStart, char *pcEnd)
 
 {
 	char  *pcCur = pcStart;
@@ -497,7 +497,7 @@ void CLWObject::LoadLWOB(char *pcFileName)
 
 		pcScanPtr = pcDotsPtr + 8;
 
-		int iI;
+		unsigned int iI;
 
 		for (iI = 0; iI < m_lNumLWDots; iI++)
 		{
@@ -658,7 +658,7 @@ void CLWObject::LoadLWOBPoints(char *pcFileName)
 
 		char *pcScanPtr = pcDotsPtr + 8;
 
-		int iI;
+		unsigned int iI;
 		for (iI = 0; iI < m_lNumLWDots; iI++)
 		{
 			m_pLWDots[iI].m_Pos.m_fX = 0.3*GetFloat((unsigned char *)pcScanPtr);

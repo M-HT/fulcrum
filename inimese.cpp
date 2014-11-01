@@ -1,39 +1,42 @@
 #include <stdio.h>
 #include "demo.h"
-#include "copro.h"
+//#include "copro.h"
+#if !defined(NO_FPU_CONTROL)
+#include <fpu_control.h>
+#endif
 
 
-const lvalues     = 64;
-const xtralvalues = 256-lvalues;//lvalues*2;
-const fvalues     = 128;
-const xtrafvalues = 128;
+const int lvalues     = 64;
+const int xtralvalues = 256-lvalues;//lvalues*2;
+const int fvalues     = 128;
+const int xtrafvalues = 128;
 
-const zxres       = 64;
+const int zxres       = 64;
 
-const fogmapsteps = 32;
-const fogmapsize  = 16;
+const int fogmapsteps = 32;
+const int fogmapsize  = 16;
 
-const tempsize    = 80000;//65536;
+const int tempsize    = 80000;//65536;
 
 
-const sfTeilung   = 1;
-const sf4punkt    = 4;
-const sfBitmap    = 8;
-const sfSidecube  = 16;
+const int sfTeilung   = 1;
+const int sf4punkt    = 4;
+const int sfBitmap    = 8;
+const int sfSidecube  = 16;
 
-const ofMatrix    = 1;
-const ofMesh      = 2;
-const ofAbsolute  = 4;
-//const ofCamera    = 65536;
-const mfMorph     = 8;
+const int ofMatrix    = 1;
+const int ofMesh      = 2;
+const int ofAbsolute  = 4;
+//const int ofCamera    = 65536;
+const int mfMorph     = 8;
 
-const lfWater     = 1024;
+const int lfWater     = 1024;
 
-const idMesh      = 0;
-const idCamera    = 1;
-const idSpotlight = 2;
-const idTarget    = 3;
-const idBound     = 4;
+const int idMesh      = 0;
+const int idCamera    = 1;
+const int idSpotlight = 2;
+const int idTarget    = 3;
+const int idBound     = 4;
 
 
 
@@ -337,10 +340,10 @@ struct tvmt {
   void (*readdata)(tstream &, tobject *, int);
   char *firstobj;
   char *nextobj;
-  void *dotracks; //(*dotracks)(void);
+  void (*dotracks)(void); //(*dotracks)(void);
 };
 
-const numclasses = 5;
+const int numclasses = 5;
 
 void m_readdata(tstream &s, tobject *obj, int);
 void c_readdata(tstream &s, tobject *obj, int);
@@ -349,24 +352,24 @@ void t_readdata(tstream &s, tobject *obj, int);
 void b_readdata(tstream &s, tobject *obj, int);
 
 extern "C" tscene scene;
-#pragma aux scene "*"
+//#pragma aux scene "*"
 
 extern "C" {
 void initmdata(tvesa &, int);
-#pragma aux initmdata "*" parm [esi] [eax] modify [eax ebx ecx edx esi edi]
+//#pragma aux initmdata "*" parm [esi] [eax] modify [eax ebx ecx edx esi edi]
 void startmese(int);
-#pragma aux startmese "*" parm [eax] modify [eax ebx ecx edx esi edi]
+//#pragma aux startmese "*" parm [eax] modify [eax ebx ecx edx esi edi]
 
 void m_dotracks(void);
-#pragma aux m_dotracks "*"
+//#pragma aux m_dotracks "*"
 void c_dotracks(void);
-#pragma aux c_dotracks "*"
+//#pragma aux c_dotracks "*"
 void l_dotracks(void);
-#pragma aux l_dotracks "*"
+//#pragma aux l_dotracks "*"
 void t_dotracks(void);
-#pragma aux t_dotracks "*"
+//#pragma aux t_dotracks "*"
 void b_dotracks(void);
-#pragma aux b_dotracks "*"
+//#pragma aux b_dotracks "*"
 };
 
 
@@ -438,7 +441,7 @@ void m_readdata(tstream &s, tobject *obj, int htracknum) {
 
   //faces/material
   mesh->facelist = (tface *) getmem(s.getint()*sizeof(tface));// new tface[s.getint()];
-  while (count = s.getint()) {
+  while ((count = s.getint())) {
     tmaterial *mat;
 
     mat = &scene.materials[s.getint()]; //material
@@ -696,8 +699,31 @@ void initmese(tstream &s, tvesa &vesa, int camera, int tracks, int ambient, int 
 
   s.openfile("scene.bin");
 
-  finit(0x1A7F); //I=affine, rc=up, pc=double
+#if !defined(NO_FPU_CONTROL)
+  //finit(0x1A7F); //I=affine, rc=up, pc=double
 // todo: p-error im copro
+  {
+    fpu_control_t cw;
+    _FPU_GETCW(cw);
+#if defined(__i386__)
+    cw &= ~((0x1000) | (_FPU_RC_NEAREST | _FPU_RC_DOWN | _FPU_RC_UP | _FPU_RC_ZERO) | (_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE));
+    cw |= ((0x1000) | _FPU_RC_UP | _FPU_DOUBLE);
+#elif defined(__arm__)
+    cw &= ~(0x00C00000);
+    cw |= (0x00400000);
+    /*
+      0b00 - Round to Nearest (RN) mode
+      0b01 - Round towards Plus Infinity (RP) mode
+      0b10 - Round towards Minus Infinity (RM) mode
+      0b11 - Round towards Zero (RZ) mode.
+     */
+#else
+    todo
+#endif
+    _FPU_SETCW(cw);
+  }
+#endif
+
 
   for(z = 0; z < numclasses; z++) {
     vmtlist[z].firstobj = (char *) getclearmem(s.getint()*vmtlist[z].size);

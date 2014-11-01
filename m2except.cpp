@@ -6,20 +6,21 @@
 
 #include<stdio.h>
 #include<string.h>
-#include<process.h>
+//#include<process.h>
+#include <stdlib.h>
 
-#include<gmvesa.h>
+//#include<gmvesa.h>
 #include<m2except.h>
-#include<gfxstrio.h>
+//#include<gfxstrio.h>
 
 
-extern CGfxModeVesa    	   *pVesa;
-extern CGfxStrIO 		   *pGfxStrIO;
+//extern CGfxModeVesa    	   *pVesa;
+//extern CGfxStrIO 		   *pGfxStrIO;
 
 
 
-CMV2NormException::CMV2NormException(char *cError,
-									 char *cFile,
+CMV2NormException::CMV2NormException(const char *cError,
+									 const char *cFile,
 									 long lLineNumber)
 {
 	m_cError = strdup(cError);
@@ -40,14 +41,14 @@ CMV2NormException::~CMV2NormException()
 
 void CMV2NormException::PrintError()
 {
-	if (pVesa != NULL)
-	{
-		char pcText[80];
-		sprintf(pcText, "%s, in File %s in Line %d.\n", m_cError, m_cFile, m_lLineNumber);
-		pGfxStrIO->WriteStr(pcText, (char *)pVesa->m_pMappedLfb);
-	}
-	else
-		printf("%s, in File %s in Line %d.\n", m_cError, m_cFile, m_lLineNumber);
+	//if (pVesa != NULL)
+	//{
+	//	char pcText[80];
+	//	sprintf(pcText, "%s, in File %s in Line %d.\n", m_cError, m_cFile, m_lLineNumber);
+	//	pGfxStrIO->WriteStr(pcText, (char *)pVesa->m_pMappedLfb);
+	//}
+	//else
+		printf("%s, in File %s in Line %d.\n", m_cError, m_cFile, (int)m_lLineNumber);
 }
 
 

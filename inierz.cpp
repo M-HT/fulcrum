@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "copro.h"
+//#include "copro.h"
+#if !defined(NO_FPU_CONTROL)
+#include <fpu_control.h>
+#endif
 #include "demo.h"
 
 #define ringpoints   8
@@ -36,7 +39,7 @@ struct terzdata {
  float *divtab;
  char *buffer;
 
- char *pal;
+ unsigned char *pal;
  char *picdata;
  float xres1;
  float yres1;
@@ -63,19 +66,17 @@ struct tchar {
  char *data;
 };
 
-tchar *chars;
+static tchar *chars;
 
 extern "C" terzdata erzdata;
-#pragma aux erzdata "*"
 
 extern "C" {
 void initedata(tvesa &);
-#pragma aux initedata "*" parm [esi] modify [eax ebx ecx edx esi edi]
 
 }
 
 
-void initchains2(tstream &s) {
+static void initchains2(tstream &s) {
   int chains;
   int count;
   tchain *chain;
@@ -117,7 +118,7 @@ void initchains2(tstream &s) {
   }
 }
 
-void drawchar(char *cdat, int cx, int cy, char *dest, int xpos, int ypos) {
+static void drawchar(char *cdat, int cx, int cy, char *dest, int xpos, int ypos) {
   int x, y;
 
   for(y = 0; y < cy; y++) {
@@ -127,13 +128,13 @@ void drawchar(char *cdat, int cx, int cy, char *dest, int xpos, int ypos) {
   }
 }
 
-const xstart = 0;//20;
-const ystart = 0;//20;
-const xgap = 2;
-const ygap = 2;
-const lines = 240*100;
+const static int xstart = 0;//20;
+const static int ystart = 0;//20;
+const static int xgap = 2;
+const static int ygap = 2;
+const static int lines = 240*100;
 
-initupscroll(tstream &s, tvesa &vesa) {
+static void initupscroll(tstream &s, tvesa &vesa) {
   int height;
   int count, z;
   int size;
@@ -181,7 +182,29 @@ initupscroll(tstream &s, tvesa &vesa) {
 void initerz(tstream &s, tvesa &vesa) {
   int z;
 
-  finit(0x1A7F); //I=affine, rc=up, pc=double
+#if !defined(NO_FPU_CONTROL)
+  //finit(0x1A7F); //I=affine, rc=up, pc=double
+  {
+    fpu_control_t cw;
+    _FPU_GETCW(cw);
+#if defined(__i386__)
+    cw &= ~((0x1000) | (_FPU_RC_NEAREST | _FPU_RC_DOWN | _FPU_RC_UP | _FPU_RC_ZERO) | (_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE));
+    cw |= ((0x1000) | _FPU_RC_UP | _FPU_DOUBLE);
+#elif defined(__arm__)
+    cw &= ~(0x00C00000);
+    cw |= (0x00400000);
+    /*
+      0b00 - Round to Nearest (RN) mode
+      0b01 - Round towards Plus Infinity (RP) mode
+      0b10 - Round towards Minus Infinity (RM) mode
+      0b11 - Round towards Zero (RZ) mode.
+     */
+#else
+    todo
+#endif
+    _FPU_SETCW(cw);
+  }
+#endif
 
   erzdata.ring = (float *) getmem(ringpoints*2*sizeof(float));//new float[ringpoints*2];
   erzdata.sphere = (float *) getmem((hsphererings*2+1)*ringpoints*3*sizeof(float));//new float[(hsphererings*2+1)*ringpoints*3];
@@ -203,7 +226,7 @@ void initerz(tstream &s, tvesa &vesa) {
   //	    map1: offset, xres, yres
   //	    map2: offset, xres, yres
   //	    camera track, target track
-  erzdata.pal = (char *) getmem(768);
+  erzdata.pal = (unsigned char *) getmem(768);
   s.read(erzdata.pal,768);
   z = s.getint();
   erzdata.picdata = (char *) getmem(z);

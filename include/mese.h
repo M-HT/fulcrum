@@ -6,7 +6,7 @@ void initmese(tstream &, tvesa &, int camera, int tracks, int ambient, int debug
 
 extern "C" {
 void startmese(int frame);
-#pragma aux startmese "*" parm [eax] modify [eax ebx ecx edx esi edi]
+//#pragma aux startmese "*" parm [eax] modify [eax ebx ecx edx esi edi]
 }
 
 void tempfree();

@@ -3,11 +3,11 @@
 
 #define arjbuflen      26624
 
-void make_crctable();
+void make_crctable(void);
 long find_header(FILE *fd);
 int read_header(FILE *fd);
 void get_filename(char *, int);
 int decode(FILE *, unsigned char *);
 
 
-#endif 
+#endif

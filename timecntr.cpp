@@ -5,13 +5,13 @@
 
 #include<stdlib.h>
 #include<time.h>
-#include<TimeCntr.h>
+#include<timecntr.h>
 
 
-extern "C"
-{
-	int GetTimeStampCounterPosASM();
-}
+//extern "C"
+//{
+//	int GetTimeStampCounterPosASM();
+//}
 
 
 
@@ -39,7 +39,7 @@ float CTimeCounter::GetFPS()
 int CTimeCounter::GetTSC()
 {
 //	return m_iStopRDTSC - m_iStartRDTSC;
-	return 1.0;
+	return 1;
 }
 
 

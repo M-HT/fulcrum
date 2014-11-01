@@ -1,14 +1,21 @@
 #include <string.h>
+#include <malloc.h>
+#include <ctype.h>
 #include "demo.h"
 
 //#define MEM_CHECK
 
-//memory
-char *membase;
-char *memptr;
-char *memtop;
+#ifdef __GNUC__
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
+#endif
 
-char *mem_err = "Out of memory";
+//memory
+static char *membase;
+static char *memptr;
+static char *memtop;
+
+static const char *mem_err = "Out of memory";
 
 #ifdef MEM_CHECK
 struct tmemcheck {
@@ -19,10 +26,10 @@ struct tmemcheck {
   int i4;
 }
 
-tmemcheck *head;
-tmemcheck *current;
+static tmemcheck *head;
+static tmemcheck *current;
 
-tmemcheck *getcheck() {
+static tmemcheck *getcheck() {
   tmemcheck *check;
 
   check = (tmemcheck *) memptr;
@@ -149,9 +156,9 @@ tstream::~tstream() {
   if (file) fclose(file);
 }
 
-void tstream::openfile(char *name) {
+void tstream::openfile(const char *name) {
   if (file) fclose(file);
-  file = fopen(name,"rb");
+  file = fileopen(name,"rb");
   if (!file) exit("File not found");
 }
 
@@ -163,8 +170,8 @@ void tstream::skip(int len) {
   fseek(file,len,SEEK_CUR);
 }
 
-char tstream::getch() {
-  char c;
+unsigned char tstream::getch() {
+  unsigned char c;
 
   read(&c,1);
   return c;
@@ -184,14 +191,33 @@ float tstream::getfloat() {
   return f;
 }
 
+FILE *tstream::fileopen(const char *filename, const char *mode) {
+  FILE *f;
+  f = fopen(filename, mode);
+  if (f == NULL)
+  {
+    char *fname2 = strdup(filename);
+    if (fname2 != NULL)
+    {
+      for (char *s = fname2; *s != 0; s++)
+      {
+        *s = toupper(*s);
+      }
+      f = fopen(fname2, mode);
+      free(fname2);
+    }
+  }
+  return f;
+}
+
 
 //arj data file reader
-tarjstream::tarjstream(char *name) {
+tarjstream::tarjstream(const char *name) {
   int compsize;
   int pos;
   tfiledef *filedef;
 
-  file = fopen(name,"rb");
+  file = fileopen(name,"rb");
   if (!file) exit("Error reading datafile");
   mem = new char[arjbuflen];
   if (!mem) exit(mem_err);
@@ -201,7 +227,7 @@ tarjstream::tarjstream(char *name) {
 
   pos = ftell(file);
   head = NULL;
-  while (compsize = read_header(file)) {
+  while ((compsize = read_header(file))) {
 
     filedef = new tfiledef;
     if (!filedef) exit(mem_err);
@@ -217,11 +243,14 @@ tarjstream::tarjstream(char *name) {
 }
 
 tarjstream::~tarjstream() {
-  fclose(file);
-  //delete mem;
+  if (file) {
+    fclose(file);
+    file = NULL;
+  }
+  if (mem) delete mem;
 }
 
-void tarjstream::openfile(char *name) {
+void tarjstream::openfile(const char *name) {
   tfiledef *current;
 //  char msg[40];
 

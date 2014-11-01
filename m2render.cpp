@@ -5,7 +5,8 @@
 
 #include<stdlib.h>
 #include<stdio.h>
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<m2render.h>
 #include<demo.h>
 
@@ -53,7 +54,7 @@ float fClippingFps;
 
 
 
-#include<mem.h>
+//#include<mem.h>
 
 
 
@@ -177,7 +178,7 @@ void CMV2Render::CalcNorm(CMV2Dot3DPos *pDots, int iNumDots,
 		float fNy = pDots[iI].m_Norm.m_fY;
 		float fNz = pDots[iI].m_Norm.m_fZ;
 
-		float fAbs = sqrt(fNx*fNx + fNy*fNy + fNz*fNz);
+		float fAbs = sqrtf(fNx*fNx + fNy*fNy + fNz*fNz);
 
 		if (fAbs > 0)
 		{
@@ -288,7 +289,7 @@ void CMV2Render::CalcRGB(CMV2Dot3DPos *pDots, int iNumDots)
 			float fAx = fX - pDots[iJ].m_TransfPos.m_fX;
 			float fAy = fY - pDots[iJ].m_TransfPos.m_fY;
 			float fAz = fZ - pDots[iJ].m_TransfPos.m_fZ;
-			float fAbs = sqrt(fAx*fAx + fAy*fAy + fAz*fAz);
+			float fAbs = sqrtf(fAx*fAx + fAy*fAy + fAz*fAz);
 
 			if (fAbs <= fEnd)
 			{

@@ -10,7 +10,7 @@
 
 #include<m2camera.h>
 #include<m2partic.h>
-#include<TimeCntr.h>
+#include<timecntr.h>
 #include<gfxstrio.h>
 
 

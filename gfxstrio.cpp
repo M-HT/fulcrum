@@ -4,7 +4,7 @@
 //
 
 #include<stdlib.h>
-#include<gfxstrIO.h>
+#include<gfxstrio.h>
 #include<string.h>
 
 
@@ -104,7 +104,7 @@ void CGfxStrIO::Init(int iXmax, int iYmax)
 {
 	m_iBackBufferXmax = iXmax;
 	m_iBackBufferYmax = iYmax;
-	
+
 	m_iPosX = 0;
 	m_iPosY = 0;
 

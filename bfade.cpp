@@ -1,7 +1,8 @@
 
 #include<demo.h>
 #include<stdlib.h>
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<2dlink.h>
 
 
@@ -58,7 +59,7 @@ void C2DBeamFade::CalcSinTab(float fFreqX, float fFreqY,
 	for (iI = 0; iI < m_iXmax; iI++)
 	{
 		float fI = float(iI);
-		float fValueX = fAmpX*sin(fI*(fFreqX)/fXmax*2.0*3.14159 - fDeltaX);
+		float fValueX = fAmpX*sinf(fI*(fFreqX)/fXmax*2.0*3.14159 - fDeltaX);
 
 		int iValueX = int(fValueX) + iI;
 		if (iValueX < 0) iValueX = 0;
@@ -70,7 +71,7 @@ void C2DBeamFade::CalcSinTab(float fFreqX, float fFreqY,
 	for (iI = 0; iI < m_iYmax; iI++)
 	{
 		float fI = float(iI);
-		float fValueY = fAmpY*sin(fI*(fFreqY)/fYmax*2.0*3.14159 - fDeltaY);
+		float fValueY = fAmpY*sinf(fI*(fFreqY)/fYmax*2.0*3.14159 - fDeltaY);
 
 		int iValueY = int(fValueY) + iI;
 		if (iValueY < 0) iValueY = 0;

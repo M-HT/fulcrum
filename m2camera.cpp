@@ -5,7 +5,8 @@
 
 
 #include<stdlib.h>
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<m2camera.h>
 #include<demo.h>
 
@@ -205,12 +206,12 @@ void CMV2Camera::SetViewDirection(float fAngleF, float fAngleR, float fAngleD)
 
 void CMV2Camera::UpdateViewDirection()
 {
-	float fSinF = sin(m_fAngleF);
-	float fCosF = cos(m_fAngleF);
-	float fSinR = sin(m_fAngleR);
-	float fCosR = cos(m_fAngleR);
-	float fSinD = sin(m_fAngleD);
-	float fCosD = cos(m_fAngleD);
+	float fSinF = sinf(m_fAngleF);
+	float fCosF = cosf(m_fAngleF);
+	float fSinR = sinf(m_fAngleR);
+	float fCosR = cosf(m_fAngleR);
+	float fSinD = sinf(m_fAngleD);
+	float fCosD = cosf(m_fAngleD);
 
 	m_Pos = m_Pos1;
 	m_Front = m_Front1;
@@ -246,8 +247,8 @@ void CMV2Camera::RotateObjectZ(float fDAngle)
 {
 	float fTemp;
 
-	float fCos = cos(fDAngle);
-	float fSin = sin(fDAngle);
+	float fCos = cosf(fDAngle);
+	float fSin = sinf(fDAngle);
 
 	fTemp = m_Pos.m_fX;
 	m_Pos.m_fX = fCos*m_Pos.m_fX - fSin*m_Pos.m_fY;
@@ -272,8 +273,8 @@ void CMV2Camera::RotateObjectY(float fDAngle)
 {
 	float fTemp;
 
-	float fCos = cos(fDAngle);
-	float fSin = sin(fDAngle);
+	float fCos = cosf(fDAngle);
+	float fSin = sinf(fDAngle);
 
 	fTemp = m_Pos.m_fX;
 	m_Pos.m_fX = fCos*m_Pos.m_fX - fSin*m_Pos.m_fZ;
@@ -297,8 +298,8 @@ void CMV2Camera::RotateObjectX(float fDAngle)
 {
 	float fTemp;
 
-	float fCos = cos(fDAngle);
-	float fSin = sin(fDAngle);
+	float fCos = cosf(fDAngle);
+	float fSin = sinf(fDAngle);
 
 	fTemp = m_Pos.m_fY;
 	m_Pos.m_fY = fCos*m_Pos.m_fY + fSin*m_Pos.m_fZ;

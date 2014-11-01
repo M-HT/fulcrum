@@ -17,26 +17,26 @@
 #define xmFade  3
 
 typedef struct tdinfo {
-  int  base;
+  /*int  base;
   char irq;
   char dma1;
-  char dma2;
+  char dma2;*/
   int  rate;
   int  flags;
-  char ver;
+  /*char ver;
   char vol;
   char mastervol;
   int  mem;
   int  dmabuf;
-  void *vmt;
+  void *vmt;*/
 } tdinfo;
 
-typedef struct txmstat {
+/*typedef struct txmstat {
   int pos;
   int row;
   int samples;
   int clipsamples;
-} txmstat;
+} txmstat;*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,10 +45,11 @@ extern "C" {
 //unsigned int _psp;
 
 void i8_init(void);
-  #pragma aux i8_init "*" modify [eax ebx ecx edx esi edi]
+//  #pragma aux i8_init "*" modify [eax ebx ecx edx esi edi]
 
 void i8_done(void);
-  #pragma aux i8_done "*" modify [eax ebx ecx edx esi edi]
+//  #pragma aux i8_done "*" modify [eax ebx ecx edx esi edi]
+/*
 //--
 int getdmabuf(int);
   #pragma aux getdmabuf "*" parm [eax] value [eax] modify [eax ebx edx]
@@ -74,9 +75,10 @@ void gameinit(int);
 void playsound(int, int);
   #pragma aux playsound "*" parm [eax] [edx] modify [eax ebx edx edi]
 //--
+*/
 void rxminit(void);
-  #pragma aux rxminit "*" modify [eax ecx edi]
-
+//  #pragma aux rxminit "*" modify [eax ecx edi]
+/*
 int n_test(tdinfo *);
   #pragma aux n_test "*" parm [edi] modify [eax ebx ecx edx esi edi]
 
@@ -91,23 +93,23 @@ int a_test(tdinfo *);
 
 int w_test(tdinfo *);
   #pragma aux w_test "*" parm [edi] modify [eax ebx ecx edx esi edi]
-
+*/
 
 int rxmdevinit(tdinfo *, void *);
-  #pragma aux rxmdevinit "*" parm [esi] [edi] modify [eax ebx ecx edx esi edi]
+//  #pragma aux rxmdevinit "*" parm [esi] [edi] modify [eax ebx ecx edx esi edi]
 
 void rxmdevdone(void);
-  #pragma aux rxmdevdone "*" modify [eax ebx ecx edx esi edi]
+//  #pragma aux rxmdevdone "*" modify [eax ebx ecx edx esi edi]
 
 void rxmsetvol(int);
-  #pragma aux rxmsetvol "*" parm [eax] modify [eax ebx ecx edx esi edi]
+//  #pragma aux rxmsetvol "*" parm [eax] modify [eax ebx ecx edx esi edi]
 
-void rxmplay(void *rxmmem, int pos);
-  #pragma aux rxmplay "*" parm [esi] [eax] modify [eax ebx ecx edx esi edi]
+void rxmplay(void *rxmmem, int len, int pos);
+//  #pragma aux rxmplay "*" parm [esi] [eax] modify [eax ebx ecx edx esi edi]
 
 void rxmstop(int);
-  #pragma aux rxmstop "*" parm [eax] modify [eax edi]
-
+//  #pragma aux rxmstop "*" parm [eax] modify [eax edi]
+/*
 void rxmcontinue(void);
   #pragma aux rxmcontinue "*" modify [edi]
 
@@ -119,7 +121,7 @@ void rxmskip(int);
 
 //int waveend(void);
 //  #pragma aux waveend "*" modify [eax edi]
-
+*/
 #ifdef __cplusplus
 };
 #endif

@@ -1,6 +1,7 @@
 #include<demo.h>
 #include<stdlib.h>
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<2dlink.h>
 
 
@@ -47,7 +48,7 @@ void CFire::CalcAmpTab()
 		for (iX = 0; iX < m_iXmax; iX++)
 		{
 			float fX = (float)iX - m_iXmax/2;
-			float fValue = 16.0 + 16.0*sin(fX*fFreq/fXmax*2.0*3.14159*fFreq);
+			float fValue = 16.0 + 16.0*sinf(fX*fFreq/fXmax*2.0*3.14159*fFreq);
 
 			fValue += fAmp;
 
@@ -77,7 +78,7 @@ void CFire::CalcYAmpTab(float fTime)
 	for (iX = 0; iX < m_iXmax; iX++)
 	{
 		float fX = (float)iX;
-		float fValue = 16.0 + 16.0*sin((fX*fFreq/fXmax + fDelta)*2.0*3.14159);
+		float fValue = 16.0 + 16.0*sinf((fX*fFreq/fXmax + fDelta)*2.0*3.14159);
 
 		if (fValue > 32.0) fValue = 32.0;
 

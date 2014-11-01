@@ -5,7 +5,8 @@
 
 #include<stdlib.h>
 #include<stdio.h>
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<m2except.h>
 #include<m2raw.h>
 #include<demo.h>
@@ -254,7 +255,7 @@ void CMV2PolygonObject::UpdateNorms()
 		float fNy = m_pDot3DPos[iI].m_Norm.m_fY;
 		float fNz = m_pDot3DPos[iI].m_Norm.m_fZ;
 
-		float fAbs = sqrt(fNx*fNx + fNy*fNy + fNz*fNz);
+		float fAbs = sqrtf(fNx*fNx + fNy*fNy + fNz*fNz);
 
 		if (fAbs > 0)
 		{

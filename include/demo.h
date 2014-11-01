@@ -25,14 +25,16 @@ class tstream {
   public:
     tstream();
     virtual ~tstream();
-    virtual void openfile(char *);
+    virtual void openfile(const char *);
     virtual int read(void * buf, int len);
     virtual void skip(int len);
 
-    char getch();
+
+    unsigned char getch();
     int getint();
     float getfloat();
   protected:
+    FILE *fileopen(const char *filename, const char *mode);
     FILE *file;
 };
 
@@ -46,9 +48,9 @@ struct tfiledef {
 
 class tarjstream : public tstream {
   public:
-    tarjstream(char *);
+    tarjstream(const char *);
     virtual ~tarjstream();
-    virtual void openfile(char *);
+    virtual void openfile(const char *);
     virtual int read(void * buf, int len);
     virtual void skip(int len);
 

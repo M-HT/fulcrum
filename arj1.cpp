@@ -103,8 +103,8 @@ static char             *hdr_filename;
 
 //static unsigned char  *text = NULL;
 
-static short  getlen;
-static short  getbuf;
+//static short  getlen;
+//static short  getbuf;
 
 static unsigned short left[2 * NC - 1];
 static unsigned short right[2 * NC - 1];
@@ -123,9 +123,9 @@ int    bitcount;
 
 
 
-static jump;
+static int jump;
 
-void exit(char *);
+void exit(const char *);
 //void exit(char *s) {
 //  printf("%s!\n",s);
 //  exit(1);
@@ -495,7 +495,7 @@ j2:
 
 /****************************************************************************/
 
-static short decode_ptr(FILE *FileHandle)
+/*static short decode_ptr(FILE *FileHandle)
 {
     short c;
     short width;
@@ -516,11 +516,11 @@ static short decode_ptr(FILE *FileHandle)
         GETBITS(c, width);
     c += plus;
     return c;
-}
+}*/
 
 /****************************************************************************/
 
-static short decode_len(FILE *FileHandle)
+/*static short decode_len(FILE *FileHandle)
 {
     short c;
     short width;
@@ -541,7 +541,7 @@ static short decode_len(FILE *FileHandle)
         GETBITS(c, width);
     c += plus;
     return c;
-}
+}*/
 
 
 /****************************************************************************/
@@ -695,7 +695,7 @@ void get_filename(char *filename, int len) {
 
 /****************************************************************************/
 
-void make_crctable()
+void make_crctable(void)
 {
     unsigned int i, j;
     UCRC r;

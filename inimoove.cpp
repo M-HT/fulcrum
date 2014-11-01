@@ -5,23 +5,26 @@
 
 #include<stdio.h>
 #include<stdlib.h>
-#include<conio.h>
+//#include<conio.h>
 
 #include<2dlink.h>
 
-#include<timecntr.h>
+//#include<timecntr.h>
 
-#include<gmvesa.h>
+//#include<gmvesa.h>
 #include<m2camera.h>
 #include<m2world.h>
 
 #include<m2raw.h>
 #include<m2render.h>
 
-#include<copro.h>
+//#include<copro.h>
+#if !defined(NO_FPU_CONTROL)
+#include <fpu_control.h>
+#endif
 #include<demo.h>
 
-#include<2dlink.h>
+//#include<2dlink.h>
 
 extern "C"
 {
@@ -51,12 +54,12 @@ void Draw2DFadeASM(char *pBackBuffer1, char *pBackBuffer2,
 void Init2DFadeJumpTableASM();
 
 void CopyBufferASM(char *pSrcScreenBuffer, tvesa *pVesa, void *);
-#pragma aux CopyBufferASM "*" parm [esi] [ebx] [edx] modify [eax ebx ecx edx esi edi]
+//#pragma aux CopyBufferASM "*" parm [esi] [ebx] [edx] modify [eax ebx ecx edx esi edi]
 
 void makecoltab16(tvesa &, void *);
-#pragma aux makecoltab16 "*" parm [esi] [edi] modify [eax ebx edx esi edi]
+//#pragma aux makecoltab16 "*" parm [esi] [edi] modify [eax ebx edx esi edi]
 void makecoltab32(tvesa &, void *);
-#pragma aux makecoltab32 "*" parm [esi] [edi] modify [eax ebx edx esi edi]
+//#pragma aux makecoltab32 "*" parm [esi] [edi] modify [eax ebx edx esi edi]
 
 extern void ShutDownMV2();
 }
@@ -64,13 +67,13 @@ extern void ShutDownMV2();
 
 
 extern void InitPlayer(tstream &);
-extern void WaitVR();
+//extern void WaitVR();
 
 
 
 // extern avaiable {
 
-CGfxModeVesa	 *pVesa;
+//CGfxModeVesa	 *pVesa;
 CGfxStrIO	 *pGfxStrIO;
 CMV2World	 *pWorld;
 
@@ -176,11 +179,11 @@ CMV2Camera Camera2;
 
 
 
-void WaitVR()
-{
-  while (inp(0x3da) & 8) ;
-  while (!(inp(0x3da) & 8)) ;
-}
+//void WaitVR()
+//{
+//  while (inp(0x3da) & 8) ;
+//  while (!(inp(0x3da) & 8)) ;
+//}
 
 
 
@@ -334,7 +337,29 @@ void loadmask(tstream &s, tvesa &vesa, char *buf) {
 
 void initmoove(tstream &s, tvesa &vesa) {
 
-  finit(0x127F); //I=affine, rc=nearest, pc=double
+#if !defined(NO_FPU_CONTROL)
+  //finit(0x127F); //I=affine, rc=nearest, pc=double
+  {
+    fpu_control_t cw;
+    _FPU_GETCW(cw);
+#if defined(__i386__)
+    cw &= ~((0x1000) | (_FPU_RC_NEAREST | _FPU_RC_DOWN | _FPU_RC_UP | _FPU_RC_ZERO) | (_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE));
+    cw |= ((0x1000) | _FPU_RC_NEAREST | _FPU_DOUBLE);
+#elif defined(__arm__)
+    cw &= ~(0x00C00000);
+    cw |= (0x00000000);
+    /*
+      0b00 - Round to Nearest (RN) mode
+      0b01 - Round towards Plus Infinity (RP) mode
+      0b10 - Round towards Minus Infinity (RM) mode
+      0b11 - Round towards Zero (RZ) mode.
+     */
+#else
+    todo
+#endif
+    _FPU_SETCW(cw);
+  }
+#endif
 
   int iNumPixels = vesa.xres*vesa.yres;
 

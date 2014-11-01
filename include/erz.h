@@ -5,8 +5,7 @@
 void initerz(tstream &, tvesa &);
 
 extern "C" {
-void starterz();
-#pragma aux starterz "*" modify [eax ebx ecx edx esi edi]
+void starterz(void);
 }
 
 #endif //_ERZ_H

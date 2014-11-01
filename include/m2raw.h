@@ -191,7 +191,7 @@ public:
 	float GetFloat(unsigned char *pcMem);
 	ULONG GetUlong(unsigned char *pcMem);
 	UWORD GetUShortInt(unsigned char *pcMem);
-	char *GetHunkPtr(char *pcHunk, char *pcStart, char *pcEnd);
+	char *GetHunkPtr(const char *pcHunk, char *pcStart, char *pcEnd);
 
 	char *SetTIMG(char *pcCurScanPTR);
 	char *SetTFLG(char *pcCurScanPTR);

@@ -14,7 +14,7 @@ public:
 	char *m_cFile;
 	long  m_lLineNumber;
 
-	CMV2NormException(char *cError, char *, long);
+	CMV2NormException(const char *cError, const char *, long);
 	~CMV2NormException();
 
 	void PrintError();

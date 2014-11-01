@@ -5,13 +5,13 @@ extern "C"
 {
 	void Scale32ASM(char *pcSrc, char *pcDest, int iSrcXmax, int iSrcYmax,
 		int iDestXmax, int iDestYmax);
+
+void CopyBufferASM(char *pSrcScreenBuffer, tvesa *pVesa, void *);
 };
 
 
 extern void *coltab;
 extern void initcoltab(tvesa &vesa);
-extern "C" void CopyBufferASM(char *pSrcScreenBuffer, tvesa *pVesa, void *);
-#pragma aux CopyBufferASM "*" parm [esi] [ebx] [edx] modify [eax ebx ecx edx esi edi]
 
 
 
@@ -33,7 +33,7 @@ void ShowPic(tstream &s, tvesa &vesa)
 	unsigned int iB;
 
 	unsigned short int siRGB16;
-	unsigned int iRGB32;
+	//unsigned int iRGB32;
 
 	int iI;
 	for (iI = 0; iI < 640*480; iI++)
@@ -57,7 +57,7 @@ void ShowPic(tstream &s, tvesa &vesa)
 		iG = iG<<5;
 		iB = iB<<3;
 
-		iRGB32 = iR + iG + iB;
+		//iRGB32 = iR + iG + iB;
 
 		piMem[iI] = iR + iG + iB;
 	}
@@ -67,7 +67,6 @@ void ShowPic(tstream &s, tvesa &vesa)
 		(int)vesa.xres, (int)vesa.yres);
 
 	CopyBufferASM((char *)piPic, &vesa, coltab);
-
 }
 
 

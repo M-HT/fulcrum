@@ -1,12 +1,12 @@
 #include<stdlib.h>
-#include<conio.h>
+//#include<conio.h>
 #include<stdio.h>
 #include<demo.h>
 #include<m2raw.h>
 #include<m2camera.h>
 #include<timecntr.h>
 #include<m2world.h>
-#include<m2image.h>
+//#include<m2image.h>
 #include<m2render.h>
 #include<m2partic.h>
 #include<2dlink.h>
@@ -16,20 +16,20 @@
 #define xfade2 1558
 #define mbeamf 3069
 
-const ofMatrix	  = 1;
-const ofMesh	  = 2;
-const ofAbsolute  = 4;
-const mfMorph	  = 8;
-const mfRGBPreCalc  = 16;		// G
-const mfBumpPreCalc = 32;		// B
-const mfDistance    = 64;		// Z
+const int ofMatrix	  = 1;
+const int ofMesh	  = 2;
+const int ofAbsolute  = 4;
+const int mfMorph	  = 8;
+const int mfRGBPreCalc  = 16;		// G
+const int mfBumpPreCalc = 32;		// B
+const int mfDistance    = 64;		// Z
 
-const numclasses  = 5;
-const idMesh	  = 0;
-const idCamera	  = 1;
-const idTarget	  = 2;
-const idOmni	  = 3;
-const idDummy	  = 4;
+const int numclasses  = 5;
+const int idMesh	  = 0;
+const int idCamera	  = 1;
+const int idTarget	  = 2;
+const int idOmni	  = 3;
+const int idDummy	  = 4;
 
 
 
@@ -183,22 +183,22 @@ void d_readM2(tstream &s, tobject *obj);
 //from m2tracks
 extern "C" {
 void initframecount();
-#pragma aux initframecount "*" modify [eax]
+//#pragma aux initframecount "*" modify [eax]
 
 void calcframecount(int);
-#pragma aux calcframecount "*" parm [eax] modify [eax]
+//#pragma aux calcframecount "*" parm [eax] modify [eax]
 
 void dotracks(tobject *);
-#pragma aux dotracks "*" parm [esi] modify [eax ebx ecx edx esi edi]
+//#pragma aux dotracks "*" parm [esi] modify [eax ebx ecx edx esi edi]
 
 void calcbumpomni(tbumpomni *);
-#pragma aux calcbumpomni "*" parm [esi] modify [eax ebx ecx edx esi edi]
+//#pragma aux calcbumpomni "*" parm [esi] modify [eax ebx ecx edx esi edi]
 
 void doviewer(tcamera *, CMV2Camera *);
-#pragma aux doviewer "*" parm [esi] [edi] modify [eax ebx ecx edx esi edi]
+//#pragma aux doviewer "*" parm [esi] [edi] modify [eax ebx ecx edx esi edi]
 
 void matrixmul(tobject *, CMV2Camera *, CMV2Camera *);
-#pragma aux matrixmul "*" parm [esi] [edx] [edi] modify [eax ebx ecx edx esi edi]
+//#pragma aux matrixmul "*" parm [esi] [edx] [edi] modify [eax ebx ecx edx esi edi]
 
 
 void m_dotracksM2(void);
@@ -248,7 +248,7 @@ extern char *pcMask; // 8bit
 
 
 extern "C" void CopyBufferASM(char *pSrcScreenBuffer, tvesa *pVesa, void *);
-#pragma aux CopyBufferASM "*" parm [esi] [ebx] [edx] modify [eax ebx ecx edx esi edi]
+//#pragma aux CopyBufferASM "*" parm [esi] [ebx] [edx] modify [eax ebx ecx edx esi edi]
 
 extern void WaitVR();
 
@@ -410,7 +410,7 @@ void m_readM2(tstream &s, tobject *obj) {
   CMV2Dot3D *pDot3D = mesh->PolygonObject.m_pDot3D;
   CMV2Dot3DPos *pDot3DPos = mesh->PolygonObject.m_pDot3DPos;
 
-  while (count = s.getint()) { //number of material assigns
+  while ((count = s.getint())) { //number of material assigns
 	tmaterial *mat;
 
 	mat = &matlist[s.getint()]; //material
@@ -562,7 +562,7 @@ void readmaterials(tstream &s) {
     s.read(tempdata,65536);
 
     for(i = 0; i < 65536; i++) {
-      p = tempdata[i]*3;
+      p = ((uint8_t *)tempdata)[i]*3;
       map[i*4+2] = pal[p];
       map[i*4+1] = pal[p+1];
       map[i*4+0] = pal[p+2];

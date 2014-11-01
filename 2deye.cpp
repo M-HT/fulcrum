@@ -1,4 +1,5 @@
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<stdlib.h>
 
 #include<2dlink.h>
@@ -41,10 +42,10 @@ void C2DEye::CalcMoveListTab()
 			float fDX = (float)(iX - m_iXmax/2);
 			float fDY = (float)(iY - m_iYmax/2);
 
-			fDX *= (1.0 - fAmp - fAmp*cos(fDX/(320.0*m_fResFactor)*2.0*3.1415926))*
-			       (1.0 - fAmp - fAmp*cos(fDY/(320.0*m_fResFactor)*2.0*3.1415926));
+			fDX *= (1.0 - fAmp - fAmp*cosf(fDX/(320.0*m_fResFactor)*2.0*3.1415926))*
+			       (1.0 - fAmp - fAmp*cosf(fDY/(320.0*m_fResFactor)*2.0*3.1415926));
 
-			fDY *= (1.0 - fAmp - fAmp*cos(fDY/(320.0*m_fResFactor)*2.0*3.1415926));
+			fDY *= (1.0 - fAmp - fAmp*cosf(fDY/(320.0*m_fResFactor)*2.0*3.1415926));
 
 			int iSrcX = (int)fDX;
 			int iSrcY = (int)fDY;

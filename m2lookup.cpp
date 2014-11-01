@@ -3,7 +3,8 @@
 // Developed by Oliver Belaifa in 1997
 //
 
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<demo.h>
 
 extern "C"
@@ -87,7 +88,7 @@ void CalcAngleJoinTab()
 			float fAngleU = (float)iAngleU;
 			float fAngleV = (float)iAngleV;
 
-			float fAbs = 300.0 - 2.5*sqrt(fAngleU*fAngleU + fAngleV*fAngleV);
+			float fAbs = 300.0 - 2.5*sqrtf(fAngleU*fAngleU + fAngleV*fAngleV);
 			if (fAbs > 255.0)
 				fAbs = 255.0;
 			if (fAbs < 0)

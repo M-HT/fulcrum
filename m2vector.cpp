@@ -2,7 +2,8 @@
 //
 // Developed by Oliver Belaifa in 1997
 
-#include<copro.h>
+//#include<copro.h>
+#include <math.h>
 #include<stdio.h>
 #include<m2vector.h>
 #include<m2except.h>
@@ -178,7 +179,7 @@ CVector3D operator /(const float &fR,
 
 void CVector3D::Norm()
 {
-        float fAbsolute = sqrt(m_fX*m_fX + m_fY*m_fY + m_fZ*m_fZ);
+        float fAbsolute = sqrtf(m_fX*m_fX + m_fY*m_fY + m_fZ*m_fZ);
 /*
 		try
 		{

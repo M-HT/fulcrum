@@ -3,6 +3,7 @@
 // Developed by Oliver Belaifa in 1997
 //
 
+#include<stdlib.h>
 #include<m2vector.h>
 
 #ifndef _M2CAMERA_H_INCLUDED

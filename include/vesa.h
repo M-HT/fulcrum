@@ -1,9 +1,11 @@
 #ifndef _VESA_H
 #define _VESA_H
 
+#include <SDL/SDL.h>
+
 //exit procs
-void exit();
-void exit(char *s);
+void exit(void);
+void exit(const char *s);
 
 
 //vesa procs
@@ -26,21 +28,19 @@ struct tvesa {
   char greenpos;
   char bluebits;
   char bluepos;
+  char reserved1;
+  SDL_Surface *screen;
 };
 
 extern "C" {
 
 int setmode(tvesa &);
-#pragma aux setmode "*" parm [esi] modify [eax ebx ecx esi edi]
 
 int clearlinbuf(void);
-#pragma aux clearlinbuf "*" modify [eax ecx edi]
 
 void textmode(void);
-#pragma aux textmode "*" modify [eax]
 
 int keypressed(void);
-#pragma aux keypressed "*" value [eax] modify [eax]
 
 };
 
