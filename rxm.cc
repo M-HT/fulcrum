@@ -1,14 +1,34 @@
 #include <SDL/SDL.h>
 #include <malloc.h>
-#include "bass/include/bass.h"
+#if defined(MUSIC_BASS)
+    #include "bass/include/bass.h"
+#elif defined(MUSIC_DUMB)
+    #include <dumb.h>
+#endif
 #include "rxm.h"
 
+#if defined(MUSIC_BASS)
 static HMUSIC current_song;
+#elif defined(MUSIC_DUMB)
+SDL_mutex *xm_mutex;
+void *xm;
+DUH *xm_duh;
+DUH_SIGRENDERER *xm_renderer;
+
+int mix_frequency, mix_channels;
+Uint16 mix_format;
+
+int render_bits, render_unsign;
+float render_volume, render_delta;
+
+Uint32 fade_start, fade_time;
+int fade_on;
+#endif
 
 #pragma pack(1)
 
 typedef struct __attribute__ ((__packed__)) {
- uint32_t hdSonglen;                //Song length (in patten order table)
+ uint32_t hdSonglen;                //Song length (in pattern order table)
  uint32_t hdRestart;                //Restart position
  uint32_t hdChannels;               //Number of channels (2,4,6,8,10,...,32)
  uint32_t hdPatterns;               //Number of patterns (max 256)
@@ -26,7 +46,7 @@ typedef struct __attribute__ ((__packed__)) {
  char     Tracker_name[20];
  uint16_t Version_number;
  uint32_t Header_size;
- uint16_t Song_length;              //Song length (in patten order table)
+ uint16_t Song_length;              //Song length (in pattern order table)
  uint16_t Restart_position;         //Restart position
  uint16_t Number_of_channels;       //Number of channels (2,4,6,8,10,...,32)
  uint16_t Number_of_patterns;       //Number of patterns (max 256)
@@ -89,6 +109,79 @@ typedef struct __attribute__ ((__packed__)) {
 
 #pragma pack()
 
+#if (!defined(MUSIC_BASS) && defined(MUSIC_DUMB))
+static void xmplayer(void *udata, Uint8 *stream, int len)
+{
+    if (0 == SDL_LockMutex(xm_mutex))
+    {
+        if (xm_duh != NULL)
+        {
+            int sample_size = 1;
+            int render_len = len;
+
+            if (render_bits == 16)
+            {
+                sample_size *= 2;
+                render_len /= 2;
+            }
+            if (mix_channels == 2)
+            {
+                sample_size *= 2;
+                render_len /= 2;
+            }
+
+            float volume;
+
+            if (fade_on)
+            {
+                Uint32 ticks = SDL_GetTicks();
+                if ((ticks - fade_start) < fade_time)
+                {
+                    ticks = (fade_time - (ticks - fade_start));
+                    volume = (float)ticks / (float)fade_time;
+                }
+                else
+                {
+                    volume = 0.0f;
+                }
+            }
+            else
+            {
+                volume = render_volume;
+            }
+
+            long readlen = duh_render(xm_renderer, render_bits, render_unsign, volume, render_delta, render_len, stream);
+
+            len -= readlen * sample_size;
+            stream += readlen * sample_size;
+        }
+
+        SDL_UnlockMutex(xm_mutex);
+
+        if (len == 0) return;
+    }
+
+    if (render_unsign == 0)
+    {
+        memset(stream, 0, len);
+    }
+    else
+    {
+        if (render_bits == 8)
+        {
+            memset(stream, 0x80, len);
+        }
+        else
+        {
+            for (int counter = len / 2; counter != 0; counter --)
+            {
+                *((Uint16 *)stream) = 0x8000;
+                stream += 2;
+            }
+        }
+    }
+}
+#endif
 
 static void convert_pattern(uint8_t *pattern, int number_of_notes, int packed_size, uint8_t *out, int *out_size)
 {
@@ -699,30 +792,87 @@ static void *rxm2xm(void *rxm, int len, uint32_t *xmsize)
 
 extern "C" void rxminit(void)
 {
+#if defined(MUSIC_BASS)
     current_song = 0;
+#elif defined(MUSIC_DUMB)
+    xm_mutex = NULL;
+    xm = NULL;
+    xm_duh = NULL;
+    xm_renderer = NULL;
+#endif
 }
 
 extern "C" int rxmdevinit(tdinfo *dinfo, void *)
 {
+#if defined(MUSIC_BASS)
     DWORD flags = 0;
     if (!(dinfo->flags & df16bit )) flags |= BASS_DEVICE_8BITS;
     if (!(dinfo->flags & dfStereo)) flags |= BASS_DEVICE_MONO;
     if (  dinfo->rate != 0        ) flags |= BASS_DEVICE_FREQ;
 
-    if ( BASS_Init(-1, dinfo->rate, flags, 0, NULL) )
-    {
-        return 0;
-    }
-    else
+    if ( !BASS_Init(-1, dinfo->rate, flags, 0, NULL) )
     {
         return 3;
     }
+#elif defined(MUSIC_DUMB)
+    xm_mutex = SDL_CreateMutex();
+    if (xm_mutex == NULL)
+    {
+        return 4;
+    }
+
+    SDL_AudioSpec wanted, obtained;
+
+    if ( SDL_InitSubSystem(SDL_INIT_AUDIO) != 0 )
+    {
+        SDL_DestroyMutex(xm_mutex);
+        xm_mutex = NULL;
+        return 5;
+    }
+
+    wanted.freq = (dinfo->rate)?dinfo->rate:44100;
+    wanted.format = (dinfo->flags & df16bit)?AUDIO_S16SYS:AUDIO_S8;
+    wanted.channels = (dinfo->flags & dfStereo)?2:1;
+    wanted.samples = 1024;
+    wanted.callback = &xmplayer;
+    wanted.userdata = NULL;
+
+    if ( SDL_OpenAudio(&wanted, &obtained) != 0)
+    {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        SDL_DestroyMutex(xm_mutex);
+        xm_mutex = NULL;
+        return 6;
+    }
+
+    mix_frequency = obtained.freq;
+    mix_format = obtained.format;
+    mix_channels = obtained.channels;
+
+    render_bits = ((mix_format == AUDIO_S8) || (mix_format == AUDIO_U8))?8:16;
+    render_unsign = ((mix_format == AUDIO_S8) || (mix_format == AUDIO_S16LSB) || (mix_format == AUDIO_S16MSB))?0:1;
+    render_volume = 1.0f;
+    render_delta = 65536.0f / mix_frequency;
+
+#endif
+
+    return 0;
 }
 
 extern "C" void rxmdevdone(void)
 {
+#if defined(MUSIC_BASS)
     if (current_song) rxmstop(xmStop);
     BASS_Free();
+#elif defined(MUSIC_DUMB)
+    if (xm_renderer != NULL) rxmstop(xmStop);
+    SDL_PauseAudio(1);
+    SDL_CloseAudio();
+    dumb_exit();
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    SDL_DestroyMutex(xm_mutex);
+    xm_mutex = NULL;
+#endif
 }
 
 extern "C" void rxmsetvol(int vol)
@@ -732,6 +882,7 @@ extern "C" void rxmsetvol(int vol)
 
 extern "C" void rxmplay(void *rxmmem, int len, int pos)
 {
+#if defined(MUSIC_BASS)
     if (current_song) rxmstop(xmStop);
 
     uint32_t xmsize;
@@ -760,27 +911,97 @@ extern "C" void rxmplay(void *rxmmem, int len, int pos)
     {
         BASS_ChannelPlay(current_song, TRUE);
     }
+#elif defined(MUSIC_DUMB)
+    if (xm_renderer != NULL) rxmstop(xmStop);
+
+    if (0 == SDL_LockMutex(xm_mutex))
+    {
+        uint32_t xmsize;
+        xm = rxm2xm(rxmmem, len, &xmsize);
+        if (xm == NULL)
+        {
+            SDL_UnlockMutex(xm_mutex);
+            return;
+        }
+
+        DUMBFILE *xm_file = dumbfile_open_memory((const char *)xm, xmsize);
+        if (xm_file == NULL)
+        {
+            free(xm);
+            xm = NULL;
+            SDL_UnlockMutex(xm_mutex);
+            return;
+        }
+
+        xm_duh = dumb_read_xm_quick(xm_file);
+        dumbfile_close(xm_file);
+        if (xm_duh == NULL)
+        {
+            free(xm);
+            xm = NULL;
+            SDL_UnlockMutex(xm_mutex);
+            return;
+        }
+
+        xm_renderer = dumb_it_start_at_order(xm_duh, mix_channels, pos);
+        if (xm_renderer == NULL)
+        {
+            unload_duh(xm_duh);
+            xm_duh = NULL;
+            free(xm);
+            xm = NULL;
+            SDL_UnlockMutex(xm_mutex);
+            return;
+        }
+
+        SDL_UnlockMutex(xm_mutex);
+
+        SDL_PauseAudio(0);
+    }
+#endif
 }
 
 extern "C" void rxmstop(int method)
 {
+#if defined(MUSIC_BASS)
     if (current_song)
     {
         if (method == xmFade)
         {
             BASS_ChannelSlideAttribute(current_song, BASS_ATTRIB_VOL, 0.0f, 1000);
             SDL_Delay(1100);
-
-            BASS_ChannelStop(current_song);
-            BASS_MusicFree(current_song);
-            current_song = 0;
         }
-        else
+
+        BASS_ChannelStop(current_song);
+        BASS_MusicFree(current_song);
+        current_song = 0;
+    }
+#elif defined(MUSIC_DUMB)
+    if (xm_renderer != NULL)
+    {
+        if (method == xmFade)
         {
-            BASS_ChannelStop(current_song);
-            BASS_MusicFree(current_song);
-            current_song = 0;
+            fade_time = 1000;
+            fade_start = SDL_GetTicks();
+            fade_on = 1;
+            SDL_Delay(1100);
+        }
+
+        SDL_PauseAudio(1);
+        fade_on = 0;
+
+        if (0 == SDL_LockMutex(xm_mutex))
+        {
+            duh_end_sigrenderer(xm_renderer);
+            xm_renderer = NULL;
+            unload_duh(xm_duh);
+            xm_duh = NULL;
+            free(xm);
+            xm = NULL;
+
+            SDL_UnlockMutex(xm_mutex);
         }
     }
+#endif
 }
 

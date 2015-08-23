@@ -4666,11 +4666,11 @@ xformhierarchy_abs0:
 	ebx = 0; //ebx = m
 xformhierarchy_l2:
 	edx = ( ebx + ebx * 2 );
-	fpu_reg15 = ( ((tviewer *)edi)->v_l.A_m1[edx] ); //* m-th row of Av
+	fpu_reg15 = ( ((tviewer *)edi)->v_l.A_mn[0 + edx] ); //* m-th row of Av
 	fpu_reg15 = fpu_reg15 * fpu_reg12;
-	fpu_reg16 = ( ((tviewer *)edi)->v_l.A_m2[edx] );
+	fpu_reg16 = ( ((tviewer *)edi)->v_l.A_mn[1 + edx] );
 	fpu_reg16 = fpu_reg16 * fpu_reg13;
-	fpu_reg17 = ( ((tviewer *)edi)->v_l.A_m3[edx] );
+	fpu_reg17 = ( ((tviewer *)edi)->v_l.A_mn[2 + edx] );
 	fpu_reg17 = fpu_reg17 * fpu_reg14;
 	fpu_reg16 = fpu_reg16 + fpu_reg17;
 	fpu_reg15 = fpu_reg15 + fpu_reg16;

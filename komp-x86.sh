@@ -52,6 +52,6 @@ g++ $CXFLAGS m2ptg.cc
 g++ $CXFLAGS m2ptb.cc
 g++ $CXFLAGS m2ptf.cc
 g++ $CXFLAGS m2ptftr.cc
-g++ $CXFLAGS -Wno-unused-parameter rxm.cc
+g++ $CXFLAGS -Wno-unused-parameter -DMUSIC_BASS rxm.cc
 
 g++ -m32 -o fulcrum *.o -lSDL -lbass -L./bass/lib/x86

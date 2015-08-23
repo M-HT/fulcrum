@@ -36,6 +36,10 @@ static void readconfig(void) {
     vesa[m].xres = 640;
     vesa[m].yres = 480;
     vesa[m].bpplist[0] = 16;
+#elif defined(GCW0)
+    vesa[m].xres = 320;
+    vesa[m].yres = 240;
+    vesa[m].bpplist[0] = 16;
 #else
     vesa[m].xres = 1280;
     vesa[m].yres = 960;
