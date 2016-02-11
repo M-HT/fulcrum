@@ -1,5 +1,4 @@
-#include <cstdint>
-#include <cmath>
+/* encoding = IBM852 */
 #include <SDL/SDL.h>
 #include "cc.h"
 //.486					;pmode/w
@@ -260,7 +259,7 @@ static uint32_t mainstart;
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 
 static void doltrackM2(uint32_t _track, uint32_t typesize, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
 	uint32_t stack_var00;
 
@@ -290,17 +289,15 @@ doltrackM2_next: //get next key
 	eax = (int32_t)( *((int8_t *)(esi)) ); //get scale value
 	esi = esi + 1;
 	temp = eax;
-	fpu_reg10 = ( (int32_t)temp );
 
 	edx = ( ((tltrack *)ebx)->lt_endstate );
 	ecx = 0;
 doltrackM2_l:
 
 	eax = (int32_t)( *((int8_t *)(esi + ecx)) ); //get differences
-	temp = eax;
-	fpu_reg11 = ( (int32_t)temp );
+	fpu_reg11 = ( (int32_t)eax );
 
-	fpu_reg11 = fpu_reg11 * exp2(trunc(fpu_reg10));
+	fpu_reg11 = ldexp(fpu_reg11, (int32_t)temp);
 
 	eax = ( ((tltrack *)ebx)->lt_startstate );
 
@@ -374,7 +371,7 @@ doltrackM2_l2:
 
 
 static void dolRGBtrackM2(uint32_t _track, uint32_t typesize, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
 	uint32_t stack_var00;
 
@@ -404,17 +401,15 @@ dolRGBtrackM2_next: //get next key
 	eax = (int32_t)( *((int8_t *)(esi)) ); //get scale value
 	esi = esi + 1;
 	temp = eax;
-	fpu_reg10 = ( (int32_t)temp );
 
 	edx = ( ((tltrack *)ebx)->lt_endstate );
 	ecx = 0;
 dolRGBtrackM2_l:
 
 	eax = (int32_t)( *((int8_t *)(esi + ecx)) ); //get differences
-	temp = eax;
-	fpu_reg11 = ( (int32_t)temp );
+	fpu_reg11 = ( (int32_t)eax );
 
-	fpu_reg11 = fpu_reg11 * exp2(trunc(fpu_reg10));
+	fpu_reg11 = ldexp(fpu_reg11, (int32_t)temp);
 
 	eax = ( ((tltrack *)ebx)->lt_startstate );
 
@@ -622,7 +617,7 @@ extern "C" void d_dotracksM2(uint32_t _esi) {
 
 
 extern "C" void doviewer(uint32_t _esi, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
 	uint32_t ecx, edi = _edi, ebx, esi = _esi;
 //-> esi -> tcamera
 //-> edi -> CMV2Camera
@@ -706,7 +701,7 @@ extern "C" void doviewer(uint32_t _esi, uint32_t _edi) {
 	((CMV2Camera *)edi)->CMV2Camera__m_Down__m_fY = fpu_reg14; //-a1*b3
 
 	fpu_reg12 = fpu_reg12 * fpu_reg13;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg10 = fpu_reg10 * fpu_reg12;
 	fpu_reg10 = fpu_reg11 - fpu_reg10;
 	((CMV2Camera *)edi)->CMV2Camera__m_Down__m_fZ = fpu_reg10; //a1*b2-a2*b1
@@ -759,7 +754,7 @@ doviewer_l:
 
 
 extern "C" void matrixmul(uint32_t _esi, uint32_t _edx, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t eax, edx = _edx, ecx, edi = _edi, ebx, esi = _esi;
 //-> esi -> tobject
 //-> edx -> CMV2Camera
@@ -845,7 +840,7 @@ matrixmul_l2:
 
 
 extern "C" void dotracks(uint32_t _esi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t eax, edx, edi, ebx, esi = _esi;
 	uint32_t stack_var00;
 //-> esi = *this

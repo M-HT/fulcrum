@@ -1,5 +1,4 @@
-#include <cstdint>
-#include <cmath>
+/* encoding = IBM852 */
 #include <SDL/SDL.h>
 #include "cc.h"
 //.486                                    //pmode/w
@@ -843,7 +842,7 @@ const static float flare_4y = 0.0249999375f;
 
 
 static void traceobject(uint32_t _esi) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t eax, edx, ecx, edi, ebx, esi = _esi;
 //-> esi -> tobject
 
@@ -919,7 +918,7 @@ traceobject_weg:
 
 //------ recursive procedure to calculate the tracks
 static void dotracks(uint32_t _esi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t eax, edx, edi, ebx, esi = _esi;
 	uint32_t stack_var00;
 //-> esi = *this
@@ -1241,7 +1240,7 @@ b_dotracks_a0:
 
 
 static void doviewer(uint32_t _esi, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t eax, ecx, edi = _edi, ebx, esi = _esi;
 //-> esi -> toviewer
 //-> edi -> tviewer
@@ -1324,7 +1323,7 @@ static void doviewer(uint32_t _esi, uint32_t _edi) {
 	((tviewer *)edi)->v_l2.x2 = fpu_reg14; //-a1*b3
 
 	fpu_reg12 = fpu_reg12 * fpu_reg13;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg10 = fpu_reg10 * fpu_reg12;
 	fpu_reg10 = fpu_reg11 - fpu_reg10;
 	((tviewer *)edi)->v_l2.x3 = fpu_reg10; //a1*b2-a2*b1
@@ -1375,7 +1374,7 @@ doviewer_l:
 
 
 static void adjustcamera(uint32_t _esi, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t ecx, edi = _edi, esi = _esi;
 //-> esi -> tcamera
 //-> edi -> tviewer
@@ -1410,7 +1409,7 @@ adjustcamera_l:
 
 
 static void adjustlight(uint32_t _esi, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, ecx, edi = _edi, esi = _esi;
 //-> esi -> tlight
 //-> edi -> tlviewer
@@ -1426,7 +1425,7 @@ static void adjustlight(uint32_t _esi, uint32_t _edi) {
 	((tviewer *)edi)->v_1_tan_fov = fpu_reg10;
 	fpu_reg11 = fpu_reg10;
 	fpu_reg11 = fpu_reg11 * c_0_91; //vol. light smaller than spot area
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
 	fpu_reg12 = 1.0;
 	fpu_reg11 = fpu_reg12 / fpu_reg11; //st(0) = 1/tan(FOV)
 //st(1) = tan(FOV)
@@ -1459,7 +1458,7 @@ adjustlight_l:
 
 
 static void cubetree(uint32_t numcubes, uint32_t _esi, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi = _esi;
 	uint32_t stack_var00;
 
@@ -1868,7 +1867,7 @@ cubetree_weg:
 
 
 static uint32_t xclip(uint32_t spsize, uint32_t vars, uint32_t &_ebx, uint32_t &_edi) { //x-clipping
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi;
 //data variables -1
 //-> ebx = *sp
@@ -1976,7 +1975,7 @@ xclip_weg:
 
 
 static uint32_t subxclip(uint32_t spsize, uint32_t vars_1, uint32_t &_ebx, uint32_t &_edi) { //x-clipping fr scanline subdiv.
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi;
 //data variables -1
 //-> ebx = *sp
@@ -2102,7 +2101,7 @@ subxclip_weg:
 
 
 static void polygon(uint32_t _sp, uint32_t sp_end, uint32_t mat, uint32_t ifl0) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00, stack_var01, stack_var02;
 // byte layout : ifl0
@@ -2724,7 +2723,7 @@ polygon_weg:
 #endif
 
 static void subpolygon(uint32_t _sp, uint32_t sp_end, uint32_t mat, uint32_t ifl0) { //texture mapping mit scanline subdivision
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00, stack_var01, stack_var02, stack_var03;
 // byte layout : ifl0
@@ -3562,7 +3561,7 @@ subpolygon_weg:
 #endif
 
 static void wpolygon(uint32_t _sp, uint32_t sp_end) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00;
 
@@ -3862,7 +3861,7 @@ wpolygon_weg:
 
 
 static uint32_t cubezclip(uint32_t _eax, uint32_t &_ebx, uint32_t _esi, uint32_t &_edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax = _eax, edx, ecx, edi = _edi, ebx = _ebx, esi = _esi;
 	uint32_t stack_var00;
 //arg     spsize, vars
@@ -4087,8 +4086,8 @@ drawcube_weg:
 }
 
 
-static void insert(uint32_t _edx, double _fpu_reg9) {
-	double fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11;
+static void insert(uint32_t _edx, realnum _fpu_reg9) {
+	realnum fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11;
 	uint32_t edx = _edx, edi, ebx;
 //-> edx = idx
 //-> st(0) = z-value
@@ -4114,7 +4113,7 @@ insert_m_l: //move entries
 
 	if (ebx >= ( ((tscene *)edi)->sc_idxlistend )) goto insert_1;
 	fpu_reg11 = ( ((tidxentry *)ebx)->i_zval );
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
 	((tidxentry *)ebx)->i_zval = fpu_reg11;
 	{ uint32_t value = edx; edx = ( ((tidxentry *)ebx)->i_idx ); ((tidxentry *)ebx)->i_idx = value; }
 
@@ -4132,7 +4131,7 @@ insert_1:
 
 //zclip and project face for rendering onto z-line
 static uint32_t zprojectline(uint32_t &_ebx, uint32_t &_edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, edi = _edi, ebx = _ebx, esi;
 //arg     spsize:dword, vars_1:dword ;data variables -1
 //-> ebx = *sp
@@ -4250,7 +4249,7 @@ zprojectline_weg:
 
 //project face for rendering onto z-line
 static void projectline(uint32_t spsize, uint32_t &_ebx, uint32_t &_edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t edx, edi = _edi, ebx = _ebx;
 
 //-> ebx -> sp
@@ -4316,7 +4315,7 @@ projectline_l:
 #endif
 
 static void renderline(uint32_t _sp, uint32_t sp_end) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, ecx, edi, ebx, esi;
 
 //_sp = *sp, zeiger auf screenpoints
@@ -4532,7 +4531,7 @@ renderline_c1:
 	fpu_reg11 = rz;
 	fpu_reg11 = fpu_reg11 - fpu_reg10;
 	fpu_reg11 = fpu_reg11 * ( ((float *)(esi))[ecx] );
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
 
 renderline_l:
 
@@ -4595,7 +4594,7 @@ getnextmesh_weg:
 
 
 static uint32_t xformhierarchy(uint32_t _esi, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi = _esi;
 //-> esi -> top level mesh
 //-> edi -> tviewer (camera or light)
@@ -4876,7 +4875,7 @@ xformhierarchy_Nsort: //edi -> tviewer
 
 
 static uint32_t projection(uint32_t spsize, uint32_t vars_1, uint32_t &_ebx, uint32_t &_edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi;
 //data variables -1
 //-> ebx = *sp
@@ -5011,7 +5010,7 @@ projection_weg:
 
 
 static void drawface(uint32_t _eax, uint32_t _ebx, uint32_t _edx, uint32_t _esi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax = _eax, edx = _edx, ecx, edi, ebx = _ebx, esi = _esi;
 	uint32_t stack_var00;
 //-> eax = idx
@@ -5087,7 +5086,7 @@ drawface_0:
 
 
 static void subdrawface(uint32_t _eax, uint32_t _ebx, uint32_t _edx, uint32_t _esi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax = _eax, edx = _edx, ecx, edi, ebx = _ebx, esi = _esi;
 	uint32_t stack_var00;
 //-> eax = idx
@@ -5164,7 +5163,7 @@ subdrawface_0:
 
 
 static uint32_t drawhierarchy(uint32_t idx, uint32_t _esi) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t eax, edx, ecx, ebx, esi = _esi;
 	uint32_t stack_var00, stack_var01;
 
@@ -5239,7 +5238,7 @@ drawhierarchy_sort: //draw sorted
 	fpu_reg11 = viewer.v_zmin;
 	fpu_reg11 = fpu_reg11 - fpu_reg10;
 	fpu_reg11 = fpu_reg11 * c_0_03125; //1/32
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
 	fpu_reg11 = fpu_reg11 + fpu_reg10;
 
 	ecx = ( 15 );
@@ -5293,7 +5292,7 @@ drawhierarchy_weg:
 
 
 static void drawwater(uint32_t _esi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edx, ecx, edi, ebx, esi = _esi;
 	uint32_t stack_var00, stack_var01, stack_var02;
 //-> esi -> top level mesh
@@ -5438,7 +5437,7 @@ texturedraw_w: //  mov     eax,c_idx
 
 //comment #
 static uint32_t fclip(uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t ecx, edi = _edi;
 	ecx = 0;
 
@@ -5565,7 +5564,7 @@ fclip_w:
 
 
 static void fdraw(uint32_t intensity, uint32_t _edi) {
-	double fpu_reg10;
+	realnum fpu_reg10;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi, ebp;
 	uint32_t stack_var00, stack_var01;
 
@@ -5669,7 +5668,7 @@ fdraw_weg:
 
 
 static void flare(void) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edx, ecx, edi, ebx, esi;
 	float p[3];
 	uint32_t isx, isy;
@@ -6005,8 +6004,8 @@ flare_weg:
 
 //#
 
-static uint32_t lightclip(uint32_t spsize, uint32_t _eax, uint32_t &_ebx, uint32_t _edx, uint32_t &_edi, double _fpu_reg9) {
-	double fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
+static uint32_t lightclip(uint32_t spsize, uint32_t _eax, uint32_t &_ebx, uint32_t _edx, uint32_t &_edi, realnum _fpu_reg9) {
+	realnum fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
 	uint32_t eax = _eax, edx = _edx, ecx, edi = _edi, ebx = _ebx, esi;
 //, vars:dword ;data variables -1
 //-> st(0) = abstand
@@ -6090,7 +6089,7 @@ lightclip_l:
 
 	edi = edi + spsize; //d++
 lightclip_2:
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
 
 
 //wz > z?
@@ -6121,7 +6120,7 @@ lightclip_weg:
 
 
 static void lscalexy(uint32_t spsize, uint32_t _ebx, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t edi = _edi, ebx = _ebx;
 	uint32_t stack_var00;
 
@@ -6148,7 +6147,7 @@ lscalexy_l:
 
 
 static uint32_t lconvert(uint32_t _ebx, uint32_t _edi) { //light points -> flat points (projiziert die licht-koordinaten)
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	float eax;
 	uint32_t edx, edi = _edi, ebx = _ebx, esi;
 //-> ebx -> sp
@@ -6178,7 +6177,7 @@ lconvert_l:
 
 
 static uint32_t glconvert(uint32_t _ebx, uint32_t _edi) { //light points -> flat points (projiziert die licht-koordinaten)
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t /*eax,*/ edx, edi = _edi, ebx = _ebx, esi;
 //-> ebx -> sp
 //-> edi -> sp_end
@@ -6207,7 +6206,7 @@ glconvert_l:
 
 
 static void lpolygon(uint32_t _sp, uint32_t sp_end, uint32_t idx) { //licht-polygon
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00;
 //mapptr, zval : dword
@@ -6516,7 +6515,7 @@ lpolygon_weg:
 
 
 static void glpolygon(uint32_t _sp, uint32_t sp_end, uint32_t idx) { //licht-polygon
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00;
 //mapptr, idx : dword
@@ -6874,7 +6873,7 @@ glpolygon_weg:
 
 
 static void sublpolygon(uint32_t _sp, uint32_t sp_end, uint32_t zval) { //licht-polygon
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00, stack_var01, stack_var02;
 //mapptr, zval : dword
@@ -7336,7 +7335,7 @@ sublpolygon_weg:
 
 
 static uint32_t scubezclip(uint32_t _eax, uint32_t &_ebx, uint32_t _esi, uint32_t &_edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax = _eax, edx, ecx, edi = _edi, ebx = _ebx, esi = _esi;
 	uint32_t stack_var00;
 //-> ebx -> sp     (source points of type tcpoint)
@@ -7458,7 +7457,7 @@ scubezclip_weg:
 
 
 static uint32_t sprojection(uint32_t &_ebx, uint32_t &_edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, edi = _edi, ebx = _ebx, esi;
 //-> ebx = *sp
 //-> edi = *sp_end
@@ -7674,7 +7673,7 @@ sprojection_weg:
 #endif
 
 static void spolygon(uint32_t _sp, uint32_t sp_end) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, ecx, edi, ebx, esi;
 
 //_sp = *sp, zeiger auf screenpoints
@@ -7896,8 +7895,8 @@ spolygon_weg:
 }
 
 
-static void cproject(uint32_t _esi, double &_fpu_reg7, double &_fpu_reg8, double &_fpu_reg9) {
-	double fpu_reg7 = _fpu_reg7, fpu_reg8 = _fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11, fpu_reg12;
+static void cproject(uint32_t _esi, realnum &_fpu_reg7, realnum &_fpu_reg8, realnum &_fpu_reg9) {
+	realnum fpu_reg7 = _fpu_reg7, fpu_reg8 = _fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t esi = _esi;
 //esi -> camera
 
@@ -7913,7 +7912,7 @@ static void cproject(uint32_t _esi, double &_fpu_reg7, double &_fpu_reg8, double
 	fpu_reg11 = ( ((tviewer *)esi)->v_l3.x3 );
 	fpu_reg11 = fpu_reg11 * fpu_reg9;
 	fpu_reg10 = fpu_reg10 + fpu_reg11; //st(0) = z
-	{ double tmp = fpu_reg9; fpu_reg9 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg9; fpu_reg9 = fpu_reg10; fpu_reg10 = tmp; }
 //st(3) = x1, st(2) = x2, st(0) = x3
 	fpu_reg11 = ( ((tviewer *)esi)->v_l1.x1 ); //calc x1 (x)
 	fpu_reg11 = fpu_reg11 * fpu_reg7;
@@ -7925,7 +7924,7 @@ static void cproject(uint32_t _esi, double &_fpu_reg7, double &_fpu_reg8, double
 	fpu_reg11 = fpu_reg11 + fpu_reg12; //st(0) = x
 	fpu_reg11 = fpu_reg11 + fpu_reg9;
 	fpu_reg11 = fpu_reg11 * xmid; //(z+x)*xmid, (1+x/z) = (z+x)/z
-	{ double tmp = fpu_reg7; fpu_reg7 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg7; fpu_reg7 = fpu_reg11; fpu_reg11 = tmp; }
 //st(3) = x2, st(1) = x3, st(0) = x1
 	fpu_reg11 = fpu_reg11 * ( ((tviewer *)esi)->v_l2.x1 ); //calc x2 (y)
 	fpu_reg12 = ( ((tviewer *)esi)->v_l2.x2 );
@@ -7944,8 +7943,8 @@ static void cproject(uint32_t _esi, double &_fpu_reg7, double &_fpu_reg8, double
 }
 
 
-static uint32_t rtrace(uint32_t b, uint32_t u, uint32_t oldcube, uint32_t _ebx, double &_fpu_reg10) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+static uint32_t rtrace(uint32_t b, uint32_t u, uint32_t oldcube, uint32_t _ebx, realnum &_fpu_reg10) {
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, ebx = _ebx, esi;
 
 //-> ebx -> tcube
@@ -7998,7 +7997,7 @@ rtrace_l:
 
 
 	if (fpu_reg11 > fpu_reg10) goto rtrace_w;
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; }
 	edx = ( ((tplane *)ebx)->pl_sidecube );
 rtrace_w:
 
@@ -8015,7 +8014,7 @@ rtrace_weg:
 
 
 static uint32_t yclip(uint32_t spsize, uint32_t vars, uint32_t &_ebx, uint32_t &_edi) { //y-clipping
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi;
 //data variables -1
 //-> ebx = *sp
@@ -8124,7 +8123,7 @@ yclip_weg:
 
 
 static void vvolpolygon(uint32_t _sp, uint32_t sp_end, uint32_t cubelistpos, uint32_t cubelistend, uint32_t cubeliststep, uint32_t idxlistpos, uint32_t idxlistend, uint32_t idxliststep, uint32_t ca, uint32_t cu, uint32_t ipmap, uint32_t mapptr) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00;
 
@@ -8520,7 +8519,7 @@ vvolpolygon_weg:
 
 
 static void hvolpolygon(uint32_t _sp, uint32_t sp_end, uint32_t cubelistpos, uint32_t cubelistend, uint32_t cubeliststep, uint32_t idxlistpos, uint32_t idxlistend, uint32_t idxliststep, uint32_t ca, uint32_t cu, uint32_t ipmap, uint32_t mapptr) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00;
 
@@ -8917,7 +8916,7 @@ hvolpolygon_weg:
 
 
 static void vollight(uint32_t vstamp, uint32_t datapos, uint32_t lightflags) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t eax, edx, ecx, edi, ebx, esi;
 	uint32_t stack_var00, stack_var01;
 
@@ -9317,7 +9316,7 @@ vollight_v1:
 
 	if (fpu_reg12 < yb) goto vollight_v4;
 //b higher on screen
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; } //st(0) = z distance of higher point
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; } //st(0) = z distance of higher point
 	{ uint32_t value = edi; edi = edx; edx = value; } //exchange cubelists and cubeliste
 	ecx = - ( (int32_t)ecx );
 vollight_v4:
@@ -9501,7 +9500,7 @@ vollight_h1:
 
 	if (fpu_reg12 < xb) goto vollight_h4;
 //b more left on screen
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; } //st(0) = z distance of higher point
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg11; fpu_reg11 = tmp; } //st(0) = z distance of higher point
 	{ uint32_t value = edi; edi = edx; edx = value; } //exchange cubelists and cubeliste
 	ecx = - ( (int32_t)ecx );
 vollight_h4:
@@ -9671,7 +9670,7 @@ vollight_w1:
 
 
 static void ldraw(uint32_t idx, uint32_t recursion, uint32_t _ebx, uint32_t _edi) {
-	double fpu_reg10;
+	realnum fpu_reg10;
 	uint32_t eax, edx, edi = _edi, ebx = _ebx;
 	uint32_t stack_var00, stack_var01;
 //mapptr, idx, recursion
@@ -9758,7 +9757,7 @@ ldraw_weg:
 
 
 static void gldraw(uint32_t idx, uint32_t _ebx, uint32_t _edi) {
-	double fpu_reg10;
+	realnum fpu_reg10;
 	uint32_t eax, edx, edi = _edi, ebx = _ebx;
 	uint32_t stack_var00, stack_var01;
 //mapptr:dword, idx:dword
@@ -9874,7 +9873,7 @@ makelgouraud_5:
 
 
 static void ldrawface(uint32_t vstamp, uint32_t _ebx, uint32_t _esi, uint32_t &_edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
 	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi = _esi;
 	uint32_t stack_var00;
 
@@ -10229,7 +10228,7 @@ sdrawfaces_weg:
 
 
 static void dolights(void) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t eax, edx, ecx, edi, ebx, esi;
 	uint32_t stack_var00, stack_var01, stack_var02;
 	uint32_t vstamp, datapos, lightptr;
@@ -10964,7 +10963,7 @@ initpaltab_w:
 
 
 static void init1(void) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t eax, edx, ecx, edi;
 
 //xmid & ymid
@@ -11009,8 +11008,8 @@ init1_l:
 
 
 
-static void makespot(uint32_t _edi, double _fpu_reg9) {
-	double fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11;
+static void makespot(uint32_t _edi, realnum _fpu_reg9) {
+	realnum fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11;
 	uint32_t eax, edi = _edi, ebx;
 //-> edi -> lmap
 //st(0) = sin-scale
@@ -11067,7 +11066,7 @@ makespot_x_l:
 
 
 static void makewater(uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
 	uint32_t x, y, p, h;
 
@@ -11221,7 +11220,7 @@ makewater_clip:
 
 
 static void makefogmap(void) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t eax, edi, ebx;
 	uint32_t x, h, val;
 
@@ -11273,7 +11272,7 @@ makefogmap_h_l:
 
 
 static void makefogwater(void) { //animation table for fogmaps
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edi;
 	uint32_t p, x, val;
 
@@ -11321,7 +11320,7 @@ makefogwater_x_l:
 
 
 static void makeflares(void) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t eax, edx, ecx, edi, ebx;
 	uint32_t x, y, c, z;
 
@@ -11526,7 +11525,7 @@ makeflaretab_v_l:
 #endif
 
 extern "C" void initmdata(uint32_t _esi, uint32_t _eax) {
-	double fpu_reg10;
+	realnum fpu_reg10;
 	uint32_t eax = _eax, edi, esi = _esi/*, ebp*/;
 	//uint32_t stack_var00;
 //-> esi -> tvesa
@@ -11571,7 +11570,7 @@ extern "C" void initmdata(uint32_t _esi, uint32_t _eax) {
 
 
 extern "C" void startmese(uint32_t _eax) {
-	double fpu_reg10;
+	realnum fpu_reg10;
 	uint32_t eax = _eax, edx, edi, esi/*, ebp*/;
 	//uint32_t stack_var00;
 //-> eax = startframe

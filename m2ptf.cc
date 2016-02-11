@@ -1,5 +1,3 @@
-#include <cstdint>
-#include <cmath>
 #include <malloc.h>
 #include "cc.h"
 //;/*

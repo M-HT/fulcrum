@@ -1,5 +1,3 @@
-#include <cstdint>
-#include <cmath>
 #if !defined(NO_FPU_CONTROL)
 #include <fpu_control.h>
 #endif

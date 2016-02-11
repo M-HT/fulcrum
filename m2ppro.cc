@@ -1,5 +1,3 @@
-#include <cstdint>
-#include <cmath>
 #if !defined(NO_FPU_CONTROL)
 #include <fpu_control.h>
 #endif
@@ -552,7 +550,7 @@ MV2ParticleProjectionASM_DontDrawParticle:
 
 
 extern "C" void MV2ParticleDoBernoulliASM(uint32_t pParticles, uint32_t _dwNumParticles, uint32_t pSinTab, uint32_t dwCurTime, float fAX, float fAY1, float fAY2, float fAZ, float fFX, float fFY1, float fFY2, float fFZ, float fSDX, float fSDY1, float fSDY2, float fSDZ, float fDY1, float fDY2) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
 	float feax, febx, fedx;
 	uint32_t eax, /*edx,*/ ecx, edi, ebx, esi;
 
@@ -590,7 +588,7 @@ MV2ParticleDoBernoulliASM_DurationOk:
 
 	fpu_reg13 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
 	fpu_reg13 = fpu_reg13 * fFZ;
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg13; fpu_reg13 = tmp; }
 //st0=ParticleY*fFreqX, st1=ParticleX*fFreqY2
 //st2=ParticleZ*fFreqY1, st3=ParticleX*fFreqZ
 
@@ -601,7 +599,7 @@ MV2ParticleDoBernoulliASM_DurationOk:
 	fpu_reg16 = fpu_reg16 * fSDY1;
 	fpu_reg17 = fpu_reg14;
 	fpu_reg17 = fpu_reg17 * fSDY2;
-	{ double tmp = fpu_reg14; fpu_reg14 = fpu_reg17; fpu_reg17 = tmp; }
+	{ realnum tmp = fpu_reg14; fpu_reg14 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg17 = fpu_reg17 * fSDZ;
 //st0=CurTime*fSinZ, st1=CurTime*fSinY2
 //st2=CurTime*fSinY1, st3=CurTime*fSinX
@@ -657,12 +655,12 @@ MV2ParticleDoBernoulliASM_DurationOk:
 	fpu_reg11 = ( ((float *)(edi))[ebx] );
 	fpu_reg11 = fpu_reg11 + fDY2;
 	fpu_reg11 = fpu_reg11 * fAY2;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 
 	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX = fpu_reg11;
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg10;
 
@@ -677,12 +675,12 @@ MV2ParticleDoBernoulliASM_DurationOk:
 	fpu_reg10 = fpu_reg10 * fAY1;
 	fpu_reg11 = ( ((float *)(edi))[ebx] );
 	fpu_reg11 = fpu_reg11 * fAZ;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 
 	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg11;
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ = fpu_reg10;
 
@@ -705,7 +703,7 @@ MV2ParticleDoBernoulliASM_DurationOk:
 
 
 extern "C" void MV2ParticleDoBernoulliMorphToObjectASM(uint32_t pParticles, uint32_t _dwNumParticles, uint32_t pSinTab, uint32_t dwCurTime, float fAX, float fAY1, float fAY2, float fAZ, float fFX, float fFY1, float fFY2, float fFZ, float fSDX, float fSDY1, float fSDY2, float fSDZ, float fDY1, float fDY2, float fMFactor) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
 	uint32_t eax, /*edx,*/ ecx, edi, ebx, esi;
 
 
@@ -741,7 +739,7 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 
 	fpu_reg13 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
 	fpu_reg13 = fpu_reg13 * fFZ;
-	{ double tmp = fpu_reg10; fpu_reg10 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg13; fpu_reg13 = tmp; }
 //st0=ParticleY*fFreqX, st1=ParticleX*fFreqY2
 //st2=ParticleZ*fFreqY1, st3=ParticleX*fFreqZ
 
@@ -752,7 +750,7 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 	fpu_reg16 = fpu_reg16 * fSDY1;
 	fpu_reg17 = fpu_reg14;
 	fpu_reg17 = fpu_reg17 * fSDY2;
-	{ double tmp = fpu_reg14; fpu_reg14 = fpu_reg17; fpu_reg17 = tmp; }
+	{ realnum tmp = fpu_reg14; fpu_reg14 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg17 = fpu_reg17 * fSDZ;
 //st0=CurTime*fSinZ, st1=CurTime*fSinY2
 //st2=CurTime*fSinY1, st3=CurTime*fSinX
@@ -804,12 +802,12 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 	fpu_reg11 = ( ((float *)(edi))[ebx] );
 	fpu_reg11 = fpu_reg11 + fDY2;
 	fpu_reg11 = fpu_reg11 * fAY2;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 
 	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX = fpu_reg11;
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg10;
 
@@ -824,12 +822,12 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 	fpu_reg10 = fpu_reg10 * fAY1;
 	fpu_reg11 = ( ((float *)(edi))[ebx] );
 	fpu_reg11 = fpu_reg11 * fAZ;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 
 	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg11;
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ = fpu_reg10;
 
@@ -844,22 +842,22 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 //st3 = MFactor
 
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	{ double tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	{ double tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 //st0 = (EndZ - Z)*MFactor, st1 = (EndY - Y)*MFactor
 //st2 = (EndX - X)*MFactor, st3 = MFactor
 
 	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
-	{ double tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
-	{ double tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ = fpu_reg13;
 	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg12;
@@ -887,7 +885,7 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 
 
 extern "C" void MV2ParticleInterpolateASM(uint32_t _pParticles, uint32_t _dwNumParticles, float _fMorphFactor) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t ecx, esi;
 
 
@@ -909,20 +907,20 @@ MV2ParticleInterpolateASM_ParticleLoop:
 //st2 = NPosX - LPosX, st3 = MorphFactor
 
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	{ double tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	{ double tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 
 	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fZ );
-	{ double tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fY );
-	{ double tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fX );
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 
 	((CMV2Particle *)esi)->CMV2Particle__m_InterpPos__m_fZ = fpu_reg13;
 	((CMV2Particle *)esi)->CMV2Particle__m_InterpPos__m_fY = fpu_reg12;

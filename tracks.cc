@@ -1,5 +1,5 @@
-#include <cstdint>
-#include <cmath>
+/* encoding = IBM852 */
+#include "cc.h"
 //.386					//pmode/w
 //.model flat,prolog
 
@@ -102,7 +102,7 @@ uint32_t		frame;			//global frame counter
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 
 extern "C" void dotrack(uint32_t _track, uint32_t typesize, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
 	uint32_t stack_var00;
 
@@ -276,8 +276,8 @@ dotrack_weg:
 
 
 
-static void slerp(uint32_t _edx, uint32_t _esi, uint32_t _edi, double _fpu_reg9) {
-	double fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
+static void slerp(uint32_t _edx, uint32_t _esi, uint32_t _edi, realnum _fpu_reg9) {
+	realnum fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
 	uint32_t edx = _edx, ecx, edi = _edi, esi = _esi;
 //esi -> input quaternions (lie one after another)
 //edi -> resulting quaternions
@@ -313,7 +313,7 @@ slerp_skalar:
 	fpu_reg11 = sqrt(fpu_reg11); //st(0) = sin(th), st(1) = cos(th)
 
 	fpu_reg8 = fpu_reg11;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 	fpu_reg10 = atan2(fpu_reg10, fpu_reg11); //st(0) = th, st(1) = r, st(2) = sin(th)
 
 
@@ -371,7 +371,7 @@ slerp_l:
 
 
 extern "C" void dorottrack(uint32_t _track, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
 	uint32_t stack_var00, stack_var01;
 
@@ -580,7 +580,7 @@ dorottrack_notrack: //frame out of track range
 
 
 extern "C" void doltrack(uint32_t _track, uint32_t typesize, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
 	uint32_t stack_var00;
 
@@ -610,17 +610,15 @@ doltrack_next: //get next key
 	eax = (int32_t)( *((int8_t *)(esi)) ); //get scale value
 	esi = esi + 1;
 	temp = eax;
-	fpu_reg10 = ( (int32_t)temp );
 
 	edx = ( ((tltrack *)ebx)->lt_endstate );
 	ecx = 0;
 doltrack_l:
 
 	eax = (int32_t)( *((int8_t *)(esi + ecx)) ); //get differences
-	temp = eax;
-	fpu_reg11 = ( (int32_t)temp );
+	fpu_reg11 = ( (int32_t)eax );
 
-	fpu_reg11 = fpu_reg11 * exp2(trunc(fpu_reg10));
+	fpu_reg11 = ldexp(fpu_reg11, (int32_t)temp);
 
 	eax = ( ((tltrack *)ebx)->lt_startstate );
 

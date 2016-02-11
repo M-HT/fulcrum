@@ -1,5 +1,4 @@
-#include <cstdint>
-#include <cmath>
+/* encoding = IBM852 */
 #include <SDL/SDL.h>
 #include "cc.h"
 //.386                                    //pmode/w
@@ -218,7 +217,7 @@ const static tscreenpoint backpoints[4] = {
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 
 static void doviewer(void) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
 	uint32_t edi, ebx;
 
 	ebx = ( (uint32_t)&(target) );
@@ -294,7 +293,7 @@ static void doviewer(void) {
 	((tviewer *)edi)->v_l2.x2 = fpu_reg14; //-a1*b3
 
 	fpu_reg12 = fpu_reg12 * fpu_reg13;
-	{ double tmp = fpu_reg12; fpu_reg12 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg12; fpu_reg12 = fpu_reg11; fpu_reg11 = tmp; }
 	fpu_reg10 = fpu_reg10 * fpu_reg12;
 	fpu_reg10 = fpu_reg11 - fpu_reg10;
 //      fmul c_1_33
@@ -307,8 +306,8 @@ static void doviewer(void) {
 
 
 
-static void fun1(double _fpu_reg9, double &_fpu_reg10) { //f(t) = sqrt(1 - t^2)
-	double fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11;
+static void fun1(realnum _fpu_reg9, realnum &_fpu_reg10) { //f(t) = sqrt(1 - t^2)
+	realnum fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11;
 //-> st(0) = t
 //<- st(0) = f(t), st(1) = t
 	fpu_reg10 = c_fun1fake;
@@ -323,8 +322,8 @@ static void fun1(double _fpu_reg9, double &_fpu_reg10) { //f(t) = sqrt(1 - t^2)
 
 
 
-static void fun2(double _fpu_reg8, double &_fpu_reg9) { //f(t) = a/2*(cos(2*pi*t) - 1) + 1
-	double fpu_reg8 = _fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11;
+static void fun2(realnum _fpu_reg8, realnum &_fpu_reg9) { //f(t) = a/2*(cos(2*pi*t) - 1) + 1
+	realnum fpu_reg8 = _fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11;
 //-> st(0) = a/2, st(1) = t
 //<- st(0) = f(t), st(1) = t
 
@@ -342,8 +341,8 @@ static void fun2(double _fpu_reg8, double &_fpu_reg9) { //f(t) = a/2*(cos(2*pi*t
 }
 
 
-static void fun3(double _fpu_reg8, double &_fpu_reg9) { //f(t) = a/2*sin(2*pi*t)
-	double fpu_reg8 = _fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10;
+static void fun3(realnum _fpu_reg8, realnum &_fpu_reg9) { //f(t) = a/2*sin(2*pi*t)
+	realnum fpu_reg8 = _fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10;
 //-> st(0) = a/2, st(1) = t
 //<- st(0) = f(t), st(1) = t
 
@@ -358,7 +357,7 @@ static void fun3(double _fpu_reg8, double &_fpu_reg9) { //f(t) = a/2*sin(2*pi*t)
 
 
 static void makering(void) { //pascal
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t ecx, edi;
 //local   rp
 
@@ -392,7 +391,7 @@ makering_l:
 
 
 static void placering(uint32_t _esi, uint32_t &_edi) {
-	double fpu_reg10;
+	realnum fpu_reg10;
 	uint32_t ecx, edi = _edi, ebx, esi = _esi;
 	uint32_t stack_var00, stack_var01;
 //-> esi -> ringparams
@@ -438,7 +437,7 @@ placering_l: //x = x*cos(a)*radius + xpos
 
 
 static void placering_inc(uint32_t _esi, uint32_t &_edi) {
-	double fpu_reg10;
+	realnum fpu_reg10;
 	uint32_t edi = _edi, esi = _esi;
 
 	placering(esi, edi);
@@ -455,7 +454,7 @@ static void placering_inc(uint32_t _esi, uint32_t &_edi) {
 
 
 static void calcsphere(void) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t ecx, edi, esi;
 	uint32_t stack_var00;
 	tringparams ringparams;
@@ -500,7 +499,7 @@ calcsphere_l:
 
 
 static void calcdrop(void) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edx, ecx, edi, esi;
 	uint32_t stack_var00, stack_var01;
 	tringparams ringparams;
@@ -626,7 +625,7 @@ calcdrop_l3:
 
 
 static void initchains(void) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edx, ecx, edi, ebx, esi;
 	uint32_t stack_var00;
 
@@ -776,7 +775,7 @@ initchains_l3:
 
 
 static void updatepoints(void) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, ebx, esi;
 	uint32_t z;
 	fpu_reg10 = E_y;
@@ -905,7 +904,7 @@ updatepoints_1:
 
 
 static void updatechains(void) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
 	uint32_t eax, edx, ecx, edi, ebx, esi;
 	uint32_t stack_var00, stack_var01;
 	tringparams ringparams;
@@ -1339,8 +1338,8 @@ updatechains_w:
 }
 
 
-static void checkdir(uint32_t _ebx, double &_fpu_reg10, double &_fpu_reg11) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+static void checkdir(uint32_t _ebx, realnum &_fpu_reg10, realnum &_fpu_reg11) {
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t ebx = _ebx;
 //-> ebx = *sp
 
@@ -1361,7 +1360,7 @@ static void checkdir(uint32_t _ebx, double &_fpu_reg10, double &_fpu_reg11) {
 
 
 static uint32_t subxclip(uint32_t &_ebx, uint32_t &_edi) { //x-clipping fr scanline subdiv.
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi;
 //-> ebx = *sp
 //-> edi = *sp_end
@@ -1486,7 +1485,7 @@ subxclip_weg:
 
 
 static void subpolygon(uint32_t _sp, uint32_t sp_end) { //texture mapping mit scanline subdivision
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00, stack_var01;
 
@@ -1904,7 +1903,7 @@ subpolygon_weg:
 
 
 static void drawback(void) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
 	uint32_t eax, ecx, edi, ebx, esi;
 
 
@@ -1988,7 +1987,7 @@ drawback_weg:
 
 
 static uint32_t xclip(uint32_t &_ebx, uint32_t &_edi) { //x-clipping
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi;
 //-> ebx = *sp
 //-> edi = *sp_end
@@ -2092,7 +2091,7 @@ xclip_weg:
 
 
 static void polygon(uint32_t _sp, uint32_t sp_end) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00;
 
@@ -2393,7 +2392,7 @@ polygon_weg:
 
 
 static void xformchain(uint32_t rings, uint32_t _ebx, uint32_t _edx, uint32_t _edi) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
 	uint32_t eax, edx = _edx, ecx, edi = _edi, ebx = _ebx, esi;
 	uint32_t stack_var00, stack_var01, stack_var02;
 
@@ -2625,7 +2624,7 @@ xformchain_w1:
 
 
 static void drawchains(void) {
-	double fpu_reg10, fpu_reg11, fpu_reg12;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12;
 	uint32_t eax, edx, ecx, edi, ebx, esi;
 	uint32_t stack_var00, stack_var01, stack_var02;
 	uint32_t z;
@@ -3001,7 +3000,7 @@ copybuffer32_x_l:
 #endif
 
 static void init1(void) {
-	double fpu_reg10, fpu_reg11;
+	realnum fpu_reg10, fpu_reg11;
 	uint32_t ecx, edi;
 
 //divtab
@@ -3266,7 +3265,7 @@ upscroll_weg:
 
 
 extern "C" void starterz(void) {
-	double fpu_reg10;
+	realnum fpu_reg10;
 	uint32_t eax, edi/*, ebp*/;
 	uint32_t /*stack_var00,*/ stack_var01;
 	//stack_var00 = ( 0 /*ebp*/ );

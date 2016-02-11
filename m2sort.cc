@@ -1,4 +1,3 @@
-#include <cstdint>
 #include "cc.h"
 //;/*
 //.486
@@ -28,7 +27,7 @@ const static float fNum_0 = 0;
 
 
 extern "C" uint32_t MV2AddPolygonsASM(uint32_t _pPolygonDistanceBuffer, uint32_t _ppPolygon3Edge, uint32_t _iNumAddPolygons) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00, stack_var01;
 

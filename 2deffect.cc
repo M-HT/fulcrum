@@ -1,5 +1,3 @@
-#include <cstdint>
-#include <cmath>
 #include <memory.h>
 #include "cc.h"
 //;/*
@@ -153,7 +151,7 @@ extern "C" void Init2DBeamFadeJumpTableASM(void) {
 
 
 extern "C" void Draw2DDreamASM(uint32_t _pBackB1, uint32_t _pBackB2, uint32_t _pPolarTab, uint32_t _pDistFunc, uint32_t _pSinTab, uint32_t _pCosTab, uint32_t _pDestBBack, uint32_t _dwCFadeFactor, uint32_t _dwXmax, uint32_t _dwYmax) {
-	double fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
+	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 
 
@@ -229,11 +227,11 @@ Draw2DDreamASM_XLoop:
 	fpu_reg13 = ( ((float *)(ebx))[ecx] );
 //st0 = Cos, st1 = Distance, st2 = Sin, st3 = 1/DSCale
 	fpu_reg13 = fpu_reg13 * fpu_reg12;
-	{ double tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
+	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 //st0 = Sin, st1 = Distance, st2 = X, st3 = 1/DScale
 
 	fpu_reg12 = fpu_reg12 * fpu_reg13;
-	{ double tmp = fpu_reg12; fpu_reg12 = fpu_reg11; fpu_reg11 = tmp; }
+	{ realnum tmp = fpu_reg12; fpu_reg12 = fpu_reg11; fpu_reg11 = tmp; }
 //st0 = X, st1 = Y, st2 = 1/DScale
 
 	dwX = (int32_t)round(fpu_reg12);

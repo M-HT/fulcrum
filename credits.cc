@@ -1,4 +1,4 @@
-#include <cstdint>
+/* encoding = IBM852 */
 #include <SDL/SDL.h>
 #include "cc.h"
 //.486                                    //pmode/w
