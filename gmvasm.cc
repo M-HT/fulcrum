@@ -103,6 +103,8 @@ static void copybuffer32(uint32_t *src, uint32_t *dest, tvesa *pVesa, uint32_t *
             src++;
             dest++;
         }
+
+        dest += pVesa->xbytes - 4*pVesa->xres;
     }
 }
 
@@ -146,6 +148,8 @@ static void copybuffer16(uint32_t *src, uint16_t *dest, tvesa *pVesa, uint16_t *
             src+=2;
             dest+=2;
         }
+
+        dest += pVesa->xbytes - 2*pVesa->xres;
     }
 }
 

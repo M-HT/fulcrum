@@ -109,10 +109,11 @@ static uint32_t dwTempB;
 #include "m2struct.inc.h"
 
 
-extern "C" void MV2ParticleProjectionASM(uint32_t _pMV2Camera, uint32_t _pMV2Particles, uint32_t _dwNumParticles, uint32_t _pBackBuffer) {
+extern "C" void MV2ParticleProjectionASM(uint32_t _pMV2Camera, uint32_t _pMV2Particles, uint32_t _dwNumParticles, uint32_t _pBackBuffer, int iParticleWidth, int iParticleHeight) {
 	float fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17, fpu_reg18;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
 	uint32_t stack_var00, stack_var01, stack_var02;
+	int iParticleX, iParticleY;
 
 
 
@@ -467,54 +468,59 @@ MV2ParticleProjectionASM_NotAboveYmax:
 	fpu_reg12 = fpu_reg12 - fpu_reg13;
 //st0 = 1/ZNew, st1 = 1 - 1/ZNew
 
-	eax = ( ((uint32_t *)(edi))[ebx] );
-	ecx = eax;
-	edx = eax;
-	eax = eax & ( 0x0ff0000 );
-	ecx = ecx & ( 0x000ff00 );
-	edx = edx & ( 0x00000ff );
-	eax = eax >> ( 16 );
-	ecx = ecx >> ( 8 );
-	dwRDest = eax;
-	dwGDest = ecx;
-	dwBDest = edx;
+	for (iParticleY = 0; iParticleY < iParticleHeight; iParticleY++)
+	{
+		for (iParticleX = 0; iParticleX < iParticleWidth; iParticleX++)
+		{
+			eax = ( ((uint32_t *)(edi))[ebx + iParticleY * dwXmax + iParticleX] );
+			ecx = eax;
+			edx = eax;
+			eax = eax & ( 0x0ff0000 );
+			ecx = ecx & ( 0x000ff00 );
+			edx = edx & ( 0x00000ff );
+			eax = eax >> ( 16 );
+			ecx = ecx >> ( 8 );
+			dwRDest = eax;
+			dwGDest = ecx;
+			dwBDest = edx;
 
-	fpu_reg14 = ( (int32_t)dwRDest );
-	fpu_reg14 = fpu_reg14 * fpu_reg12;
-	fpu_reg15 = fRCol;
-	fpu_reg15 = fpu_reg15 * fpu_reg13;
-	fpu_reg14 = fpu_reg14 + fpu_reg15;
-	dwRDest = (int32_t)roundf(fpu_reg14);
+			fpu_reg14 = ( (int32_t)dwRDest );
+			fpu_reg14 = fpu_reg14 * fpu_reg12;
+			fpu_reg15 = fRCol;
+			fpu_reg15 = fpu_reg15 * fpu_reg13;
+			fpu_reg14 = fpu_reg14 + fpu_reg15;
+			dwRDest = (int32_t)roundf(fpu_reg14);
 
-	fpu_reg14 = ( (int32_t)dwGDest );
-	fpu_reg14 = fpu_reg14 * fpu_reg12;
-	fpu_reg15 = fGCol;
-	fpu_reg15 = fpu_reg15 * fpu_reg13;
-	fpu_reg14 = fpu_reg14 + fpu_reg15;
-	dwGDest = (int32_t)roundf(fpu_reg14);
+			fpu_reg14 = ( (int32_t)dwGDest );
+			fpu_reg14 = fpu_reg14 * fpu_reg12;
+			fpu_reg15 = fGCol;
+			fpu_reg15 = fpu_reg15 * fpu_reg13;
+			fpu_reg14 = fpu_reg14 + fpu_reg15;
+			dwGDest = (int32_t)roundf(fpu_reg14);
 
-	fpu_reg14 = ( (int32_t)dwBDest );
-	fpu_reg14 = fpu_reg14 * fpu_reg12;
-	fpu_reg15 = fBCol;
-	fpu_reg15 = fpu_reg15 * fpu_reg13;
-	fpu_reg14 = fpu_reg14 + fpu_reg15;
-	dwBDest = (int32_t)roundf(fpu_reg14);
+			fpu_reg14 = ( (int32_t)dwBDest );
+			fpu_reg14 = fpu_reg14 * fpu_reg12;
+			fpu_reg15 = fBCol;
+			fpu_reg15 = fpu_reg15 * fpu_reg13;
+			fpu_reg14 = fpu_reg14 + fpu_reg15;
+			dwBDest = (int32_t)roundf(fpu_reg14);
 
 //ffree 	st(1)
 //ffree	st(0)
 
 
 
-	eax = dwRDest;
-	ecx = dwGDest;
-	edx = dwBDest;
-	eax = eax << ( 16 );
-	ecx = ecx << ( 8 );
-	eax = eax | edx;
-	eax = eax | ecx;
+			eax = dwRDest;
+			ecx = dwGDest;
+			edx = dwBDest;
+			eax = eax << ( 16 );
+			ecx = ecx << ( 8 );
+			eax = eax | edx;
+			eax = eax | ecx;
 
-	((uint32_t *)(edi))[ebx] = eax;
-
+			((uint32_t *)(edi))[ebx + iParticleY * dwXmax + iParticleX] = eax;
+		}
+	}
 
 MV2ParticleProjectionASM_DontDrawParticle:
 

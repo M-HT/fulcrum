@@ -205,7 +205,7 @@ char *CLWObject::SetTIMG(char *pcCurScanPTR)
 		pcTempSTR++;            // behind the backslash: filename
 
 	strcpy(pcFileName, pcTempSTR);
-	strncat(pcFileName, ".pcx", 4);
+	strcat(pcFileName, ".pcx");
 
 	delete [] pcPathFileName;
 

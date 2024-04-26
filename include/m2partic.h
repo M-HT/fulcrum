@@ -47,6 +47,9 @@ public:
 	int			m_iFrame;
 	CMV2Camera 	m_Camera;
 
+	int			m_iParticleWidth;
+	int			m_iParticleHeight;
+
 	void Init(tstream &s, int m_iXmax, int m_iYmax);
 	void Draw(char *pcBackBuffer);
 	void Calc(int iCounter);

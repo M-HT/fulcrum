@@ -18,7 +18,7 @@ extern "C"
 
 	void MV2ParticleProjectionASM(CMV2Camera *pMV2Camera,
 		CMV2Particle *pMV2Particles, int iNumParticles,
-		char *pcBackBuffer);
+		char *pcBackBuffer, int iParticleWidth, int iParticleHeight);
 
 	void MV2ParticleDoBernoulliASM(CMV2Particle *pParticles,
 		int iNumParticles, float *pfSinTab, int iCurTime,
@@ -98,6 +98,12 @@ void CMV2PBernoulli::Init(tstream &s, int m_iXmax, int m_iYmax)
 
 	m_iToBeRendered = 0;
 	m_iFrame = 0;
+
+	m_iParticleWidth = m_iXmax / 320;
+	m_iParticleHeight = m_iYmax / 240;
+
+	if (m_iParticleWidth < 1) m_iParticleWidth = 1;
+	if (m_iParticleHeight < 1) m_iParticleHeight = 1;
 }
 
 
@@ -228,7 +234,7 @@ void CMV2PBernoulli::Draw(char *pcBackBuffer)
 	fMorphFactor /= 100;
 	MV2ParticleInterpolateASM(m_pParticles, m_iNumParticles, fMorphFactor);
 	MV2ParticleProjectionASM(&m_Camera, m_pParticles, m_iNumParticles,
-		pcBackBuffer);
+		pcBackBuffer, m_iParticleWidth, m_iParticleHeight);
 }
 
 
