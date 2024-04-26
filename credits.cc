@@ -1,5 +1,5 @@
 /* encoding = IBM852 */
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include "cc.h"
 //.486                                    //pmode/w
 //.model flat,prolog
@@ -104,7 +104,8 @@ static uint32_t xres;
 static uint32_t yres;
 static uint32_t linbuf;
 static uint32_t bufend;
-static SDL_Surface *screen;
+static SDL_Renderer *renderer;
+static SDL_Texture *texture;
 
 
 static uint32_t xstep;
@@ -611,6 +612,8 @@ extern "C" uint32_t docredits(uint32_t mpic, uint32_t _eax) {
 	uint32_t mainstart, time;
 	uint32_t ypos, fbuf, xpos;
 	uint8_t last;
+	void *pixels;
+	int pitch;
 
 	esi = ( (uint32_t)&(creddata) );
 	eax = ( (int32_t)eax ) - ( (int32_t)(((tcreddata *)esi)->cd_starttime) ); //eax = relative time
@@ -661,8 +664,10 @@ docredits_0:
 	ebx = ebx - edx;
 	xpos = ebx;
 
-	SDL_LockSurface(screen);
-	linbuf = (uint32_t)screen->pixels;
+	SDL_RenderClear(renderer);
+	SDL_LockTexture(texture, NULL, &pixels, &pitch);
+	linbuf = (uint32_t)pixels;
+	xbytes = pitch;
 	bufend = linbuf + xbytes * yres;
 
 
@@ -722,8 +727,9 @@ docredits_w0:
 	edi = fbuf;
 	eax = copypic(xpos, eax, edx, esi, edi);
 
-	SDL_UnlockSurface(screen);
-	SDL_Flip(screen);
+	SDL_UnlockTexture(texture);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
 
 //        mov     ah,1
 //        int     16h
@@ -859,7 +865,8 @@ extern "C" void initcdata(uint32_t _esi) {
 	yres = ebx;
 	eax = ( ((tvesa *)esi)->vesa_linbuf );
 	linbuf = eax;
-	screen = (SDL_Surface *) ( ((tvesa *)esi)->vesa_screen );
+	texture = (SDL_Texture *) ( ((tvesa *)esi)->vesa_texture );
+	renderer = (SDL_Renderer *) ( ((tvesa *)esi)->vesa_renderer );
 
 	edx = ( (int32_t)edx ) * ( (int32_t)ebx ); //bufend
 	eax = eax + edx;

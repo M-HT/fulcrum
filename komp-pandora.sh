@@ -54,4 +54,4 @@ $PNDSDK/bin/pandora-g++ $CXFLAGS m2ptf.cc
 $PNDSDK/bin/pandora-g++ $CXFLAGS m2ptftr.cc
 $PNDSDK/bin/pandora-g++ $CXFLAGS -Wno-unused-parameter -DMUSIC_BASS rxm.cc
 
-$PNDSDK/bin/pandora-g++ -s -o fulcrum *.o -lSDL -lts -lbass -L$PNDSDK/usr/lib -L./bass/lib/arm
+$PNDSDK/bin/pandora-g++ -s -o fulcrum *.o -lSDL2 -lbass -L$PNDSDK/usr/lib -L./bass/lib/arm

@@ -35,16 +35,17 @@ static void readconfig(void) {
 #ifdef PANDORA
     vesa[m].xres = 640;
     vesa[m].yres = 480;
-    vesa[m].bpplist[0] = 16;
-#elif defined(GCW0)
-    vesa[m].xres = 320;
-    vesa[m].yres = 240;
-    vesa[m].bpplist[0] = 16;
+#elif defined(PYRA)
+    vesa[m].xres = 960;
+    vesa[m].yres = 720;
 #else
     vesa[m].xres = 1280;
     vesa[m].yres = 960;
-    vesa[m].bpplist[0] = 32;
 #endif
+    vesa[m].bpplist[0] = 32;
+    vesa[m].bpplist[1] = 24;
+    vesa[m].bpplist[2] = 16;
+    vesa[m].bpplist[3] = 15;
     vesa[m].area = 100;
   }
 

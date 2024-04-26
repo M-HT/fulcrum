@@ -156,17 +156,24 @@ static void copybuffer16(uint32_t *src, uint16_t *dest, tvesa *pVesa, uint16_t *
 
 void CopyBufferASM(char *pSrcScreenBuffer, tvesa *pVesa, void *coltab)
 {
-    SDL_LockSurface(pVesa->screen);
+    void *pixels;
+    int pitch;
+
+    SDL_RenderClear(pVesa->renderer);
+    SDL_LockTexture(pVesa->texture, NULL, &pixels, &pitch);
+    pVesa->linbuf = pixels;
+    pVesa->xbytes = pitch;
+    pVesa->memsize = pVesa->xbytes * pVesa->yres;
 
     if (coltab == NULL)
     {
         if (pVesa->pbytes > 3)
         {
-            copydirect32((uint32_t *)pSrcScreenBuffer, (uint32_t *)pVesa->screen->pixels, pVesa);
+            copydirect32((uint32_t *)pSrcScreenBuffer, (uint32_t *)pixels, pVesa);
         }
         else
         {
-            copydirect24((uint32_t *)pSrcScreenBuffer, (uint8_t *)pVesa->screen->pixels, pVesa);
+            copydirect24((uint32_t *)pSrcScreenBuffer, (uint8_t *)pixels, pVesa);
         }
     }
     else
@@ -174,20 +181,20 @@ void CopyBufferASM(char *pSrcScreenBuffer, tvesa *pVesa, void *coltab)
         switch (pVesa->pbytes)
         {
             case 4:
-                copybuffer32((uint32_t *)pSrcScreenBuffer, (uint32_t *)pVesa->screen->pixels, pVesa, (uint32_t *)coltab);
+                copybuffer32((uint32_t *)pSrcScreenBuffer, (uint32_t *)pixels, pVesa, (uint32_t *)coltab);
                 break;
             case 3:
-                copybuffer24((uint32_t *)pSrcScreenBuffer, (uint8_t *)pVesa->screen->pixels, pVesa, (uint32_t *)coltab);
+                copybuffer24((uint32_t *)pSrcScreenBuffer, (uint8_t *)pixels, pVesa, (uint32_t *)coltab);
                 break;
             default:
-                copybuffer16((uint32_t *)pSrcScreenBuffer, (uint16_t *)pVesa->screen->pixels, pVesa, (uint16_t *)coltab);
+                copybuffer16((uint32_t *)pSrcScreenBuffer, (uint16_t *)pixels, pVesa, (uint16_t *)coltab);
                 break;
         }
     }
 
-    SDL_UnlockSurface(pVesa->screen);
-
-    SDL_Flip(pVesa->screen);
+    SDL_UnlockTexture(pVesa->texture);
+    SDL_RenderCopy(pVesa->renderer, pVesa->texture, NULL, NULL);
+    SDL_RenderPresent(pVesa->renderer);
 }
 
 

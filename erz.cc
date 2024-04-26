@@ -1,5 +1,5 @@
 /* encoding = IBM852 */
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include "cc.h"
 //.386                                    //pmode/w
 //.model flat,prolog
@@ -165,7 +165,8 @@ static uint32_t xbytes;
 static uint32_t xres;
 static uint32_t yres;
 static uint32_t pbytes;
-static SDL_Surface *screen;
+static SDL_Renderer *renderer;
+static SDL_Texture *texture;
 
 static float xmid; //float
 static float ymid; //float
@@ -3106,7 +3107,8 @@ extern "C" void initedata(uint32_t _esi) {
 	pbytes = eax; //2: 16 bit, 3: 24 bit, 4: 32 bit
 	eax = ( ((tvesa *)esi)->vesa_linbuf );
 	linbuf = eax;
-	screen = (SDL_Surface *) ( ((tvesa *)esi)->vesa_screen );
+	texture = (SDL_Texture *) ( ((tvesa *)esi)->vesa_texture );
+	renderer = (SDL_Renderer *) ( ((tvesa *)esi)->vesa_renderer );
 
 	initpaltab(esi);
 
@@ -3127,6 +3129,8 @@ static void upscroll(void) {
 	uint32_t dolines;
 	//int32_t texty;
 	uint32_t xstep, ystep, ypos;
+	void *pixels;
+	int pitch;
 
 	oldlines = ( 0 );
 
@@ -3222,8 +3226,10 @@ upscroll_x_l:
 
 	stack_var00 = ( 0 /*ebp*/ );
 
-	SDL_LockSurface(screen);
-	linbuf = (uint32_t)screen->pixels;
+	SDL_RenderClear(renderer);
+	SDL_LockTexture(texture, NULL, &pixels, &pitch);
+	linbuf = (uint32_t)pixels;
+	xbytes = pitch;
 
 	if (pbytes > ( 3 )) goto upscroll_32;
 	if (pbytes == ( 3 )) goto upscroll_24;
@@ -3240,8 +3246,9 @@ upscroll_24:
 upscroll_32:
 	copybuffer32();
 upscroll_1:
-	SDL_UnlockSurface(screen);
-	SDL_Flip(screen);
+	SDL_UnlockTexture(texture);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
 
 	ebp = stack_var00;
 upscroll_lw:
@@ -3269,6 +3276,8 @@ extern "C" void starterz(void) {
 	uint32_t eax, edi/*, ebp*/;
 	uint32_t /*stack_var00,*/ stack_var01;
 	//stack_var00 = ( 0 /*ebp*/ );
+	void *pixels;
+	int pitch;
 
 #if 0
 //if gfx gt 0
@@ -3328,8 +3337,10 @@ starterz_0:
 //        call    test_chain
 
 
-	SDL_LockSurface(screen);
-	linbuf = (uint32_t)screen->pixels;
+	SDL_RenderClear(renderer);
+	SDL_LockTexture(texture, NULL, &pixels, &pitch);
+	linbuf = (uint32_t)pixels;
+	xbytes = pitch;
 
 	if (pbytes > ( 3 )) goto starterz_32;
 	if (pbytes == ( 3 )) goto starterz_24;
@@ -3346,8 +3357,9 @@ starterz_24:
 starterz_32:
 	copybuffer32();
 starterz_1:
-	SDL_UnlockSurface(screen);
-	SDL_Flip(screen);
+	SDL_UnlockTexture(texture);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
 
 #if 0
 //if gfx gt 0

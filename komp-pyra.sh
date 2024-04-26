@@ -1,5 +1,5 @@
 #!/bin/sh
-CXFLAGS=-c\ -m32\ -mfpmath=387\ -std=c++11\ -O3\ -DNO_FPU_CONTROL\ -ffast-math\ -fsingle-precision-constant\ -I./\ -I./include
+CXFLAGS=-c\ -march=armv7ve+simd\ -mcpu=cortex-a15\ -mtune=cortex-a15\ -mfpu=neon-vfpv4\ -mfloat-abi=hard\ -mthumb\ -std=c++11\ -O3\ -DPYRA\ -DNO_FPU_CONTROL\ -ffast-math\ -fsingle-precision-constant\ -I./\ -I./include
 
 rm *.o
 g++ $CXFLAGS fulcrum.cpp
@@ -29,7 +29,7 @@ g++ $CXFLAGS m2render.cpp
 g++ $CXFLAGS m2vector.cpp
 g++ $CXFLAGS m2world.cpp
 
-CXFLAGS=-c\ -m32\ -mfpmath=387\ -std=c++11\ -O3\ -DNO_FPU_CONTROL\ -ffast-math\ -Wall\ -Wextra\ -I./\ -I./include
+CXFLAGS=-c\ -march=armv7ve+simd\ -mcpu=cortex-a15\ -mtune=cortex-a15\ -mfpu=neon-vfpv4\ -mfloat-abi=hard\ -mthumb\ -std=c++11\ -O3\ -DPYRA\ -DNO_FPU_CONTROL\ -ffast-math\ -Wall\ -Wextra\ -I./\ -I./include
 
 g++ $CXFLAGS vesa.cc
 g++ $CXFLAGS int.cc
@@ -54,4 +54,4 @@ g++ $CXFLAGS m2ptf.cc
 g++ $CXFLAGS m2ptftr.cc
 g++ $CXFLAGS -Wno-unused-parameter -DMUSIC_BASS rxm.cc
 
-g++ -m32 -o fulcrum *.o -lSDL2 -lbass -L./bass/lib/x86
+g++ -s -o fulcrum *.o -lSDL2 -lbass -L./bass/lib/armhf

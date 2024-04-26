@@ -1,5 +1,5 @@
 /* encoding = IBM852 */
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include "cc.h"
 //.486                                    //pmode/w
 //.model flat,prolog
@@ -706,7 +706,8 @@ static uint32_t xbytes;
 static uint32_t xres;
 static uint32_t yres;
 static uint32_t linbuf;
-static SDL_Surface *screen;
+static SDL_Renderer *renderer;
+static SDL_Texture *texture;
 static void (*copybuffer)(void);
 
 static float xmid; //float
@@ -11542,7 +11543,8 @@ extern "C" void initmdata(uint32_t _esi, uint32_t _eax) {
 	yres = eax;
 	eax = ( ((tvesa *)esi)->vesa_linbuf );
 	linbuf = eax;
-	screen = (SDL_Surface *) ( ((tvesa *)esi)->vesa_screen );
+	texture = (SDL_Texture *) ( ((tvesa *)esi)->vesa_texture );
+	renderer = (SDL_Renderer *) ( ((tvesa *)esi)->vesa_renderer );
 	initpaltab(esi); //esi -> tvesa
 
 	init1();
@@ -11572,6 +11574,8 @@ extern "C" void initmdata(uint32_t _esi, uint32_t _eax) {
 extern "C" void startmese(uint32_t _eax) {
 	realnum fpu_reg10;
 	uint32_t eax = _eax, edx, edi, esi/*, ebp*/;
+	void *pixels;
+	int pitch;
 	//uint32_t stack_var00;
 //-> eax = startframe
 	//stack_var00 = ( 0 /*ebp*/ );
@@ -11668,13 +11672,16 @@ startmese_ex:
 	if (( (int32_t)frame ) > ( 76500 )) goto startmese_w;
 startmese_ex0:
 
-	SDL_LockSurface(screen);
-	linbuf = (uint32_t)screen->pixels;
+	SDL_RenderClear(renderer);
+	SDL_LockTexture(texture, NULL, &pixels, &pitch);
+	linbuf = (uint32_t)pixels;
+	xbytes = pitch;
 
 	copybuffer();
 
-	SDL_UnlockSurface(screen);
-	SDL_Flip(screen);
+	SDL_UnlockTexture(texture);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
 
 
 //debug = 1

@@ -1,4 +1,4 @@
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <malloc.h>
 #if defined(MUSIC_BASS)
     #include "bass/include/bass.h"
@@ -15,6 +15,7 @@ void *xm;
 DUH *xm_duh;
 DUH_SIGRENDERER *xm_renderer;
 
+SDL_AudioDeviceID device_id;
 int mix_frequency, mix_channels;
 Uint16 mix_format;
 
@@ -837,12 +838,27 @@ extern "C" int rxmdevinit(tdinfo *dinfo, void *)
     wanted.callback = &xmplayer;
     wanted.userdata = NULL;
 
-    if ( SDL_OpenAudio(&wanted, &obtained) != 0)
+    device_id = SDL_OpenAudioDevice(NULL, 0, &wanted, &obtained, SDL_AUDIO_ALLOW_ANY_CHANGE);
+    if ( device_id <= 0 )
     {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
         SDL_DestroyMutex(xm_mutex);
         xm_mutex = NULL;
         return 6;
+    }
+
+    if ( (obtained.channels != 1 && obtained.channels != 2) ||
+         (obtained.format != AUDIO_S8 && obtained.format != AUDIO_U8 && obtained.format != AUDIO_S16SYS && obtained.format != AUDIO_U16SYS) )
+    {
+        SDL_CloseAudioDevice(device_id);
+        device_id = SDL_OpenAudioDevice(NULL, 0, &wanted, &obtained, SDL_AUDIO_ALLOW_ANY_CHANGE & ~(SDL_AUDIO_ALLOW_FORMAT_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE));
+        if ( device_id <= 0 )
+        {
+            SDL_QuitSubSystem(SDL_INIT_AUDIO);
+            SDL_DestroyMutex(xm_mutex);
+            xm_mutex = NULL;
+            return 6;
+        }
     }
 
     mix_frequency = obtained.freq;
@@ -866,8 +882,8 @@ extern "C" void rxmdevdone(void)
     BASS_Free();
 #elif defined(MUSIC_DUMB)
     if (xm_renderer != NULL) rxmstop(xmStop);
-    SDL_PauseAudio(1);
-    SDL_CloseAudio();
+    SDL_PauseAudioDevice(device_id, 1);
+    SDL_CloseAudioDevice(device_id);
     dumb_exit();
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
     SDL_DestroyMutex(xm_mutex);
@@ -956,7 +972,7 @@ extern "C" void rxmplay(void *rxmmem, int len, int pos)
 
         SDL_UnlockMutex(xm_mutex);
 
-        SDL_PauseAudio(0);
+        SDL_PauseAudioDevice(device_id, 0);
     }
 #endif
 }
@@ -987,7 +1003,7 @@ extern "C" void rxmstop(int method)
             SDL_Delay(1100);
         }
 
-        SDL_PauseAudio(1);
+        SDL_PauseAudioDevice(device_id, 1);
         fade_on = 0;
 
         if (0 == SDL_LockMutex(xm_mutex))
