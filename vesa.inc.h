@@ -1,7 +1,7 @@
 
 typedef struct {
  uint32_t vesa_mode;
- uint32_t vesa_physbaseptr;
+ void *vesa_physbaseptr;
  uint32_t vesa_xbytes;
  uint32_t vesa_xres;
  uint32_t vesa_yres;
@@ -9,7 +9,7 @@ typedef struct {
  uint8_t vesa_bpplist[4];
  uint32_t vesa_area;
  uint32_t vesa_memsize;                  //xbytes*yres
- uint32_t vesa_linbuf;
+ void *vesa_linbuf;
  uint8_t vesa_flags;
  uint8_t vesa_redbits;
  uint8_t vesa_redpos;

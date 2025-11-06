@@ -58,40 +58,40 @@ typedef struct {
 
 typedef struct {
  uint32_t c_points;                         //int
- uint32_t c_pointlist;                      //pointer
- uint32_t c_ringlist;                       //pointer
- uint32_t c_normalslist;                    //pointer
+ tcpoint *c_pointlist;                      //pointer
+ float *c_ringlist;                       //pointer
+ float *c_normalslist;                    //pointer
  uint32_t c_lastpoint;                      //int
 } tchain;
 
 typedef struct {
- uint32_t e_ring;
- uint32_t e_sphere;                         //sphere
- uint32_t e_ringlist;                       //drop
- uint32_t e_normalslist;                    //drop normals
+ float *e_ring;
+ float *e_sphere;                         //sphere
+ float *e_ringlist;                       //drop
+ float *e_normalslist;                    //drop normals
  uint32_t e_chains;                         //int
- uint32_t e_chain;                          //pointer
+ tchain *e_chain;                          //pointer
 
- uint32_t e_divtab;
- uint32_t e_buffer;
+ float *e_divtab;
+ int8_t *e_buffer;
 
- uint32_t e_pal;
- uint32_t e_picdata;
+ uint8_t *e_pal;
+ int8_t *e_picdata;
  float e_xres1;
  float e_yres1;
- uint32_t e_pic1;
+ int8_t *e_pic1;
  float e_xres2;
  float e_yres2;
- uint32_t e_pic2;
- uint32_t e_paltab;
+ int8_t *e_pic2;
+ void *e_paltab;
 
- uint32_t e_camtrack;
- uint32_t e_targettrack;
+ void *e_camtrack;
+ void *e_targettrack;
 
- uint32_t e_tempdata;
+ int8_t *e_tempdata;
 
  uint32_t e_lines;
- uint32_t e_scroller;
+ int8_t *e_scroller;
 } terzdata;
 
 typedef struct {
@@ -160,7 +160,7 @@ const static float c_0_5    = 0.5f;
 const static float c_fun1fake = 1.001f;
 
 //vesa
-static uint32_t linbuf;
+static uint8_t *linbuf;
 static uint32_t xbytes;
 static uint32_t xres;
 static uint32_t yres;
@@ -219,10 +219,11 @@ const static tscreenpoint backpoints[4] = {
 
 static void doviewer(void) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15;
-	uint32_t edi, ebx;
+	tvec *ebx;
+	tviewer *edi;
 
-	ebx = ( (uint32_t)&(target) );
-	edi = ( (uint32_t)&(viewer) );
+	ebx = &(target);
+	edi = &(viewer);
 
 //direction vector u to target
 	fpu_reg10 = ( ((tvec *)ebx)->x1 );
@@ -359,10 +360,11 @@ static void fun3(realnum _fpu_reg8, realnum &_fpu_reg9) { //f(t) = a/2*sin(2*pi*
 
 static void makering(void) { //pascal
 	realnum fpu_reg10, fpu_reg11, fpu_reg12;
-	uint32_t ecx, edi;
+	uint32_t ecx;
+	tpoint *edi;
 //local   rp
 
-	edi = erzdata.e_ring; //edi -> 2D-template-ring
+	edi = (tpoint *)erzdata.e_ring; //edi -> 2D-template-ring
 
 //       fldpi
 //       mov     rp,ringpoints/2
@@ -375,11 +377,11 @@ makering_l:
 	fpu_reg11 = fpu_reg10;
 	fpu_reg12 = cos(fpu_reg11);
 	fpu_reg11 = sin(fpu_reg11);
-	((tpoint *)edi)->p_x = fpu_reg12;
-	((tpoint *)edi)->p_y = fpu_reg11;
+	edi->p_x = fpu_reg12;
+	edi->p_y = fpu_reg11;
 
 	fpu_reg10 = fpu_reg10 + c_rstep; //st,st(1)
-	edi = edi + ( sizeof(tpoint) );
+	edi = edi + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto makering_l;
 
@@ -391,16 +393,15 @@ makering_l:
 
 
 
-static void placering(uint32_t _esi, uint32_t &_edi) {
+static void placering(tringparams *esi, tvec *&_edi) {
 	realnum fpu_reg10;
-	uint32_t ecx, edi = _edi, ebx, esi = _esi;
-	uint32_t stack_var00, stack_var01;
+	uint32_t ecx;
+	tpoint *ebx;
+	tvec *edi = _edi;
 //-> esi -> ringparams
 //-> edi -> ring
 
-	stack_var00 = ( 0 /*ebx*/ );
-	stack_var01 = ( 0 /*ecx*/ );
-	ebx = erzdata.e_ring; //esi -> 2D-template-ring
+	ebx = (tpoint *)erzdata.e_ring; //ebx -> 2D-template-ring
 
 	ecx = ( ringpoints );
 
@@ -408,60 +409,56 @@ placering_l: //x = x*cos(a)*radius + xpos
 //y = y*radius
 //z = x*sin(a)*radius + zpos
 
-	fpu_reg10 = ( ((tvec *)ebx)->x1 );
-	fpu_reg10 = fpu_reg10 * ( ((tringparams *)esi)->r_sin );
+	fpu_reg10 = ebx->p_x;
+	fpu_reg10 = fpu_reg10 * ( esi->r_sin );
 	fpu_reg10 = -fpu_reg10;
-	fpu_reg10 = fpu_reg10 * ( ((tringparams *)esi)->r_radius );
-	fpu_reg10 = fpu_reg10 + ( ((tringparams *)esi)->r_xpos );
-	((tvec *)edi)->x1 = fpu_reg10;
+	fpu_reg10 = fpu_reg10 * ( esi->r_radius );
+	fpu_reg10 = fpu_reg10 + ( esi->r_xpos );
+	edi->x1 = fpu_reg10;
 
-	fpu_reg10 = ( ((tvec *)ebx)->x2 );
-	fpu_reg10 = fpu_reg10 * ( ((tringparams *)esi)->r_radius );
-	((tvec *)edi)->x2 = fpu_reg10;
+	fpu_reg10 = ebx->p_y;
+	fpu_reg10 = fpu_reg10 * ( esi->r_radius );
+	edi->x2 = fpu_reg10;
 
-	fpu_reg10 = ( ((tvec *)ebx)->x1 );
-	fpu_reg10 = fpu_reg10 * ( ((tringparams *)esi)->r_cos );
-	fpu_reg10 = fpu_reg10 * ( ((tringparams *)esi)->r_radius );
-	fpu_reg10 = fpu_reg10 + ( ((tringparams *)esi)->r_zpos );
-	((tvec *)edi)->x3 = fpu_reg10;
+	fpu_reg10 = ebx->p_x;
+	fpu_reg10 = fpu_reg10 * ( esi->r_cos );
+	fpu_reg10 = fpu_reg10 * ( esi->r_radius );
+	fpu_reg10 = fpu_reg10 + ( esi->r_zpos );
+	edi->x3 = fpu_reg10;
 
-	ebx = ebx + ( 8 );
-	edi = edi + ( sizeof(tvec) );
+	ebx = ebx + ( 1 );
+	edi = edi + ( 1 );
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto placering_l;
 
-	ecx = stack_var01;
-	ebx = stack_var00;
 	_edi = edi;
 }
 
 
-static void placering_inc(uint32_t _esi, uint32_t &_edi) {
+static void placering_inc(tringparams *esi, tvec *&edi) {
 	realnum fpu_reg10;
-	uint32_t edi = _edi, esi = _esi;
 
 	placering(esi, edi);
 
-	fpu_reg10 = ( ((tringparams *)esi)->r_xpos );
-	fpu_reg10 = fpu_reg10 + ( ((tringparams *)esi)->r_xstep );
-	((tringparams *)esi)->r_xpos = fpu_reg10;
-	fpu_reg10 = ( ((tringparams *)esi)->r_zpos );
-	fpu_reg10 = fpu_reg10 + ( ((tringparams *)esi)->r_zstep );
-	((tringparams *)esi)->r_zpos = fpu_reg10;
+	fpu_reg10 = ( esi->r_xpos );
+	fpu_reg10 = fpu_reg10 + ( esi->r_xstep );
+	esi->r_xpos = fpu_reg10;
+	fpu_reg10 = ( esi->r_zpos );
+	fpu_reg10 = fpu_reg10 + ( esi->r_zstep );
+	esi->r_zpos = fpu_reg10;
 //placering_inc_weg:
-	_edi = edi;
 }
 
 
 static void calcsphere(void) {
 	realnum fpu_reg10, fpu_reg11;
-	uint32_t ecx, edi, esi;
-	uint32_t stack_var00;
+	uint32_t ecx;
+	tvec *edi;
 	tringparams ringparams;
 	float x;
 
-	edi = erzdata.e_sphere;
+	edi = (tvec *)erzdata.e_sphere;
 
 //make bottom hemisphere
 	fpu_reg10 = 0.0;
@@ -486,10 +483,7 @@ calcsphere_l:
 	fpu_reg10 = fpu_reg10 + c_1_hsr;
 	x = fpu_reg10;
 
-	stack_var00 = ( 0 /*esi*/ );
-	esi = ( (uint32_t)&(ringparams) );
-	placering_inc(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering_inc(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto calcsphere_l;
@@ -501,13 +495,13 @@ calcsphere_l:
 
 static void calcdrop(void) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12;
-	uint32_t eax, edx, ecx, edi, esi;
-	uint32_t stack_var00, stack_var01;
+	uint32_t ecx;
+	tvec *eax, *edx, *edi, *stack_var00;
 	tringparams ringparams;
 	float x;
-	uint32_t rings, normals;
+	tvec *rings, *normals;
 
-	edi = erzdata.e_ringlist;
+	edi = (tvec *)erzdata.e_ringlist;
 
 //make melting segment
 	fpu_reg10 = 0.0;
@@ -536,10 +530,7 @@ calcdrop_l0:
 	fpu_reg10 = fpu_reg10 - c_1_mr;
 	x = fpu_reg10;
 
-	stack_var00 = ( 0 /*esi*/ );
-	esi = ( (uint32_t)&(ringparams) );
-	placering_inc(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering_inc(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto calcdrop_l0;
@@ -547,7 +538,7 @@ calcdrop_l0:
 
 //make normals of melting segment
 	stack_var00 = edi;
-	edi = erzdata.e_normalslist;
+	edi = (tvec *)erzdata.e_normalslist;
 
 	fpu_reg10 = c_tx;
 	x = fpu_reg10;
@@ -565,10 +556,7 @@ calcdrop_l1:
 	x = fpu_reg10;
 
 
-	stack_var01 = ( 0 /*esi*/ );
-	esi = ( (uint32_t)&(ringparams) );
-	placering(esi, edi); //esi->ringparams, edi->normals
-	esi = stack_var01;
+	placering(&(ringparams), edi); //esi->ringparams, edi->normals
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto calcdrop_l1;
@@ -595,10 +583,7 @@ calcdrop_l2:
 	fpu_reg10 = fpu_reg10 + c_1_hsr;
 	x = fpu_reg10;
 
-	stack_var00 = ( 0 /*esi*/ );
-	esi = ( (uint32_t)&(ringparams) );
-	placering_inc(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering_inc(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto calcdrop_l2;
@@ -607,15 +592,15 @@ calcdrop_l2:
 	eax = rings;
 	edx = normals;
 calcdrop_l3:
-	fpu_reg10 = ( ((tvec *)eax)->x1 );
-	((tvec *)edx)->x1 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x2 );
-	((tvec *)edx)->x2 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x3 );
-	((tvec *)edx)->x3 = fpu_reg10;
+	fpu_reg10 = ( eax->x1 );
+	edx->x1 = fpu_reg10;
+	fpu_reg10 = ( eax->x2 );
+	edx->x2 = fpu_reg10;
+	fpu_reg10 = ( eax->x3 );
+	edx->x3 = fpu_reg10;
 
-	eax = eax + ( sizeof(tvec) );
-	edx = edx + ( sizeof(tvec) );
+	eax = eax + ( 1 );
+	edx = edx + ( 1 );
 
 	if (eax < edi) goto calcdrop_l3;
 
@@ -627,37 +612,39 @@ calcdrop_l3:
 
 static void initchains(void) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12;
-	uint32_t eax, edx, ecx, edi, ebx, esi;
-	uint32_t stack_var00;
+	uint32_t ecx;
+	tvec *eax, *edx, *edi;
+	tcpoint *ebx;
+	tchain *esi;
 
 	tringparams ringparams;
 	uint32_t z;
 	float x;
-	uint32_t rings, normals;
+	tvec *rings, *normals;
 
 	esi = erzdata.e_chain;
 	ecx = erzdata.e_chains;
 	z = ecx;
 initchains_l: //make chain
 
-	ebx = ( ((tchain *)esi)->c_pointlist ); //esi -> tchain
-	edi = ( ((tchain *)esi)->c_ringlist );
+	ebx = ( esi->c_pointlist ); //esi -> tchain
+	edi = (tvec *)( esi->c_ringlist );
 
 //make top hemisphere
 
-	fpu_reg10 = ( ((tcpoint *)ebx)[1].cp_y );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)->cp_y );
-	fpu_reg11 = ( ((tcpoint *)ebx)[1].cp_x );
-	fpu_reg11 = fpu_reg11 - ( ((tcpoint *)ebx)->cp_x );
+	fpu_reg10 = ( ebx[1].cp_y );
+	fpu_reg10 = fpu_reg10 - ( ebx->cp_y );
+	fpu_reg11 = ( ebx[1].cp_x );
+	fpu_reg11 = fpu_reg11 - ( ebx->cp_x );
 
 	fpu_reg10 = atan2(fpu_reg10, fpu_reg11);
 	fpu_reg11 = cos(fpu_reg10);
 	fpu_reg10 = sin(fpu_reg10);
 
-	fpu_reg12 = ( ((tcpoint *)ebx)->cp_x );
+	fpu_reg12 = ( ebx->cp_x );
 	fpu_reg12 = fpu_reg12 - fpu_reg11;
 	ringparams.r_xpos = fpu_reg12;
-	fpu_reg12 = ( ((tcpoint *)ebx)->cp_y );
+	fpu_reg12 = ( ebx->cp_y );
 	fpu_reg12 = fpu_reg12 - fpu_reg10;
 	ringparams.r_zpos = fpu_reg12;
 
@@ -680,29 +667,26 @@ initchains_l0:
 	fpu_reg10 = fpu_reg10 - c_1_hsr;
 	x = fpu_reg10;
 
-	stack_var00 = esi;
-	esi = ( (uint32_t)&(ringparams) );
-	placering_inc(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering_inc(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto initchains_l0;
 
 //make normals of top hemisphere
-	eax = ( ((tchain *)esi)->c_ringlist ); //esi -> tchain
-	edx = ( ((tchain *)esi)->c_normalslist );
+	eax = (tvec *)( esi->c_ringlist ); //esi -> tchain
+	edx = (tvec *)( esi->c_normalslist );
 initchains_l1:
-	fpu_reg10 = ( ((tvec *)eax)->x1 );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)->cp_x );
-	((tvec *)edx)->x1 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x2 );
-	((tvec *)edx)->x2 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x3 );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)->cp_y );
-	((tvec *)edx)->x3 = fpu_reg10;
+	fpu_reg10 = ( eax->x1 );
+	fpu_reg10 = fpu_reg10 - ( ebx->cp_x );
+	edx->x1 = fpu_reg10;
+	fpu_reg10 = ( eax->x2 );
+	edx->x2 = fpu_reg10;
+	fpu_reg10 = ( eax->x3 );
+	fpu_reg10 = fpu_reg10 - ( ebx->cp_y );
+	edx->x3 = fpu_reg10;
 
-	eax = eax + ( sizeof(tvec) );
-	edx = edx + ( sizeof(tvec) );
+	eax = eax + ( 1 );
+	edx = edx + ( 1 );
 
 	if (eax < edi) goto initchains_l1;
 	rings = edi;
@@ -710,23 +694,23 @@ initchains_l1:
 
 
 //make middle points
-	ebx = ebx + ( sizeof(tcpoint) );
+	ebx = ebx + ( 1 );
 	fpu_reg10 = 1.0;
 	ringparams.r_radius = fpu_reg10;
-	ecx = ( ((tchain *)esi)->c_points ); //esi -> tchain
+	ecx = ( esi->c_points ); //esi -> tchain
 	ecx = ecx - ( 2 );
 
 initchains_l2: //make ring
 
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_x );
+	fpu_reg10 = ( ebx->cp_x );
 	ringparams.r_xpos = fpu_reg10;
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_y );
+	fpu_reg10 = ( ebx->cp_y );
 	ringparams.r_zpos = fpu_reg10;
 
-	fpu_reg10 = ( ((tcpoint *)ebx)[1].cp_y );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)[-1].cp_y );
-	fpu_reg11 = ( ((tcpoint *)ebx)[1].cp_x );
-	fpu_reg11 = fpu_reg11 - ( ((tcpoint *)ebx)[-1].cp_x );
+	fpu_reg10 = ( ebx[1].cp_y );
+	fpu_reg10 = fpu_reg10 - ( ebx[-1].cp_y );
+	fpu_reg11 = ( ebx[1].cp_x );
+	fpu_reg11 = fpu_reg11 - ( ebx[-1].cp_x );
 
 	fpu_reg10 = atan2(fpu_reg10, fpu_reg11);
 	fpu_reg11 = cos(fpu_reg10);
@@ -735,38 +719,35 @@ initchains_l2: //make ring
 	ringparams.r_cos = fpu_reg11;
 	ringparams.r_sin = fpu_reg10;
 
-	stack_var00 = esi;
-	esi = ( (uint32_t)&(ringparams) );
-	placering(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering(&(ringparams), edi); //esi->ringparams, edi->ring
 
 //make normals of ring
 	eax = rings;
 	edx = normals;
 initchains_l3:
-	fpu_reg10 = ( ((tvec *)eax)->x1 );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)->cp_x );
-	((tvec *)edx)->x1 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x2 );
-	((tvec *)edx)->x2 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x3 );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)->cp_y );
-	((tvec *)edx)->x3 = fpu_reg10;
+	fpu_reg10 = ( eax->x1 );
+	fpu_reg10 = fpu_reg10 - ( ebx->cp_x );
+	edx->x1 = fpu_reg10;
+	fpu_reg10 = ( eax->x2 );
+	edx->x2 = fpu_reg10;
+	fpu_reg10 = ( eax->x3 );
+	fpu_reg10 = fpu_reg10 - ( ebx->cp_y );
+	edx->x3 = fpu_reg10;
 
-	eax = eax + ( sizeof(tvec) );
-	edx = edx + ( sizeof(tvec) );
+	eax = eax + ( 1 );
+	edx = edx + ( 1 );
 
 	if (eax < edi) goto initchains_l3;
 	rings = edi;
 	normals = edx;
 
-	ebx = ebx + ( sizeof(tcpoint) );
+	ebx = ebx + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto initchains_l2;
 
 
 //outer loop
-	esi = esi + ( sizeof(tchain) );
+	esi = esi + ( 1 );
 	z = ( (int32_t)z ) - 1;
 	if (( (int32_t)z ) != 0) goto initchains_l;
 
@@ -777,7 +758,9 @@ initchains_l3:
 
 static void updatepoints(void) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
-	uint32_t eax, edx, ecx, ebx, esi;
+	uint32_t eax, edx, ecx;
+	tchain *esi;
+	tcpoint *ebx;
 	uint32_t z;
 	fpu_reg10 = E_y;
 	fpu_reg10 = fpu_reg10 + E_yadd;
@@ -786,23 +769,22 @@ static void updatepoints(void) {
 	ecx = erzdata.e_chains;
 	z = ecx;
 updatepoints_l:
-	ebx = ( ((tchain *)esi)->c_pointlist );
+	ebx = ( esi->c_pointlist );
 
-	edx = ( ((tchain *)esi)->c_lastpoint );
+	edx = ( esi->c_lastpoint );
 	eax = edx;
 	eax = ( (int32_t)eax ) - 1;
 	if (( (int32_t)eax ) < 0) goto updatepoints_f; //edx = c_lastpoint
 //melting point
-	eax = ( (int32_t)eax ) * ( sizeof(tcpoint) );
 	ebx = ebx + eax;
 
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_x ); //add last dx
-	fpu_reg10 = fpu_reg10 + ( ((tcpoint *)ebx)->cp_dx );
-	((tcpoint *)ebx)->cp_x = fpu_reg10; //fstp
+	fpu_reg10 = ( ebx->cp_x ); //add last dx
+	fpu_reg10 = fpu_reg10 + ( ebx->cp_dx );
+	ebx->cp_x = fpu_reg10; //fstp
 	fpu_reg10 = fpu_reg10 * E_slope;
-	fpu_reg11 = ( ((tcpoint *)ebx)->cp_y ); //add last dy
-	fpu_reg11 = fpu_reg11 + ( ((tcpoint *)ebx)->cp_dy );
-	((tcpoint *)ebx)->cp_y = fpu_reg11;
+	fpu_reg11 = ( ebx->cp_y ); //add last dy
+	fpu_reg11 = fpu_reg11 + ( ebx->cp_dy );
+	ebx->cp_y = fpu_reg11;
 
 	fpu_reg10 = fpu_reg10 + fpu_reg11;
 	fpu_reg11 = E_y; //melting started if y < E_y
@@ -811,10 +793,10 @@ updatepoints_l:
 
 	if (fpu_reg11 < fpu_reg10) goto updatepoints_mw; //edx = c_lastpoint
 
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_y ); //dy
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)[-1].cp_y );
-	fpu_reg11 = ( ((tcpoint *)ebx)->cp_x ); //dx
-	fpu_reg11 = fpu_reg11 - ( ((tcpoint *)ebx)[-1].cp_x );
+	fpu_reg10 = ( ebx->cp_y ); //dy
+	fpu_reg10 = fpu_reg10 - ( ebx[-1].cp_y );
+	fpu_reg11 = ( ebx->cp_x ); //dx
+	fpu_reg11 = fpu_reg11 - ( ebx[-1].cp_x );
 
 //energiezufuhr
 //        fld     [ebx].cp_x
@@ -825,7 +807,7 @@ updatepoints_l:
 	fpu_reg12 = 1.0;
 //        faddp   st(1),st
 
-	fpu_reg12 = fpu_reg12 + ( ((tcpoint *)ebx)->cp_v ); //update speed
+	fpu_reg12 = fpu_reg12 + ( ebx->cp_v ); //update speed
 
 
 
@@ -833,7 +815,7 @@ updatepoints_l:
 
 	fpu_reg12 = 0.0;
 updatepoints_gt0:
-	((tcpoint *)ebx)->cp_v = fpu_reg12;
+	ebx->cp_v = fpu_reg12;
 
 //rotate
 	fpu_reg12 = fpu_reg12 * fpu_reg11; //rotate speed = v*dx*rscale
@@ -843,59 +825,59 @@ updatepoints_gt0:
 	fpu_reg11 = fpu_reg11 * fpu_reg13;
 	fpu_reg10 = fpu_reg10 * fpu_reg12;
 
-	fpu_reg12 = ( ((tcpoint *)ebx)->cp_v ); //move down
+	fpu_reg12 = ( ebx->cp_v ); //move down
 	fpu_reg12 = fpu_reg12 * vscale;
 	fpu_reg11 = fpu_reg12 - fpu_reg11;
-	((tcpoint *)ebx)->cp_dy = fpu_reg11; //dy = v*vscale - dx*(rotate speed)
+	ebx->cp_dy = fpu_reg11; //dy = v*vscale - dx*(rotate speed)
 
-	((tcpoint *)ebx)->cp_dx = fpu_reg10; //dx = dy*(rotate speed)
+	ebx->cp_dx = fpu_reg10; //dx = dy*(rotate speed)
 
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_x ); //disconnect point from chain?
-	fpu_reg10 = fpu_reg10 + ( ((tcpoint *)ebx)->cp_dx );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)[-1].cp_x );
+	fpu_reg10 = ( ebx->cp_x ); //disconnect point from chain?
+	fpu_reg10 = fpu_reg10 + ( ebx->cp_dx );
+	fpu_reg10 = fpu_reg10 - ( ebx[-1].cp_x );
 	fpu_reg10 = fpu_reg10 * fpu_reg10;
-	fpu_reg11 = ( ((tcpoint *)ebx)->cp_y );
-	fpu_reg11 = fpu_reg11 + ( ((tcpoint *)ebx)->cp_dy );
-	fpu_reg11 = fpu_reg11 - ( ((tcpoint *)ebx)[-1].cp_y );
+	fpu_reg11 = ( ebx->cp_y );
+	fpu_reg11 = fpu_reg11 + ( ebx->cp_dy );
+	fpu_reg11 = fpu_reg11 - ( ebx[-1].cp_y );
 	fpu_reg11 = fpu_reg11 * fpu_reg11;
 	fpu_reg10 = fpu_reg10 + fpu_reg11;
 
 
 
 	if (fpu_reg10 < c_16) goto updatepoints_mw;
-	((tchain *)esi)->c_lastpoint = ( ((tchain *)esi)->c_lastpoint ) - 1;
+	esi->c_lastpoint = ( esi->c_lastpoint ) - 1;
 //edx = c_lastpoint
 	if (( (int32_t)edx ) > ( 2 )) goto updatepoints_mw;
-	((tchain *)esi)->c_lastpoint = ( 0 ); //last 2 points
+	esi->c_lastpoint = ( 0 ); //last 2 points
 updatepoints_mw:
-	ebx = ebx + ( sizeof(tcpoint) );
+	ebx = ebx + ( 1 );
 updatepoints_f: //falling points
 
-	ecx = ( ((tchain *)esi)->c_points );
+	ecx = ( esi->c_points );
 	ecx = ( (int32_t)ecx ) - ( (int32_t)edx ); //edx = c_lastpoint
 	if (( (int32_t)ecx ) == 0) goto updatepoints_1;
 updatepoints_f_l:
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_x ); //add last dx
-	fpu_reg10 = fpu_reg10 + ( ((tcpoint *)ebx)->cp_dx );
-	((tcpoint *)ebx)->cp_x = fpu_reg10;
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_y ); //add last dy
-	fpu_reg10 = fpu_reg10 + ( ((tcpoint *)ebx)->cp_dy );
-	((tcpoint *)ebx)->cp_y = fpu_reg10;
+	fpu_reg10 = ( ebx->cp_x ); //add last dx
+	fpu_reg10 = fpu_reg10 + ( ebx->cp_dx );
+	ebx->cp_x = fpu_reg10;
+	fpu_reg10 = ( ebx->cp_y ); //add last dy
+	fpu_reg10 = fpu_reg10 + ( ebx->cp_dy );
+	ebx->cp_y = fpu_reg10;
 
 
 	fpu_reg10 = 0.0; //dx = 0
-	((tcpoint *)ebx)->cp_dx = fpu_reg10;
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_v ); //v = v + gravity
+	ebx->cp_dx = fpu_reg10;
+	fpu_reg10 = ( ebx->cp_v ); //v = v + gravity
 	fpu_reg10 = fpu_reg10 + gravity;
-	((tcpoint *)ebx)->cp_v = fpu_reg10;
+	ebx->cp_v = fpu_reg10;
 	fpu_reg10 = fpu_reg10 * vscale; //dy = v*vscale
-	((tcpoint *)ebx)->cp_dy = fpu_reg10;
+	ebx->cp_dy = fpu_reg10;
 
-	ebx = ebx + ( sizeof(tcpoint) );
+	ebx = ebx + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto updatepoints_f_l;
 updatepoints_1:
-	esi = esi + ( sizeof(tchain) );
+	esi = esi + ( 1 );
 	z = ( (int32_t)z ) - 1;
 	if (( (int32_t)z ) != 0) goto updatepoints_l;
 
@@ -906,52 +888,51 @@ updatepoints_1:
 
 static void updatechains(void) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
-	uint32_t eax, edx, ecx, edi, ebx, esi;
-	uint32_t stack_var00, stack_var01;
+	uint32_t ea2, ecx, eb2;
+	tvec *eax, *edx, *edi, *stack_var00, *stack_var01;
+	tchain *esi;
+	tcpoint *ebx;
 	tringparams ringparams;
 	tringparams ringparams2;
 	uint32_t z;
 	float angle, dangle, a_2, x;
-	uint32_t rings, normals;
+	tvec *rings, *normals;
 
 	esi = erzdata.e_chain;
 	ecx = erzdata.e_chains;
 	z = ecx;
 updatechains_l:
 
-	eax = ( ((tchain *)esi)->c_lastpoint );
-	ebx = eax;
+	ea2 = ( esi->c_lastpoint );
+	eb2 = ea2;
 
 //make melting segment
 
-	ebx = ebx - 1;
-	ebx = ( (int32_t)ebx ) - 1;
-	if (( (int32_t)ebx ) < 0) goto updatechains_w; //edx = c_lastpoint
-	if (( (int32_t)ebx ) == 0) goto updatechains_last2;
-	ebx = ( (int32_t)ebx ) * ( sizeof(tcpoint) );
-	ebx = ebx + ( ((tchain *)esi)->c_pointlist );
+	eb2 = eb2 - 1;
+	eb2 = ( (int32_t)eb2 ) - 1;
+	if (( (int32_t)eb2 ) < 0) goto updatechains_w; //eb2 = c_lastpoint
+	if (( (int32_t)eb2 ) == 0) goto updatechains_last2;
+	ebx = eb2 + ( esi->c_pointlist );
 
-	eax = eax + ( hsphererings - 2 );
-	eax = ( (int32_t)eax ) * ( ringsize );
-	edi = eax;
-	edi = edi + ( ((tchain *)esi)->c_ringlist );
-	eax = eax + ( ((tchain *)esi)->c_normalslist );
-	normals = eax;
+	ea2 = ea2 + ( hsphererings - 2 );
+	ea2 = ( (int32_t)ea2 ) * ( ringsize );
+	edi = (tvec *)(ea2 + (uint8_t *)( esi->c_ringlist ));
+	normals = (tvec *)(ea2 + (uint8_t *)( esi->c_normalslist ));
 
 	fpu_reg10 = t;
-	fpu_reg11 = ( ((tcpoint *)ebx)[1].cp_dy ); //position of last point
+	fpu_reg11 = ( ebx[1].cp_dy ); //position of last point
 	fpu_reg11 = fpu_reg11 * fpu_reg10;
-	fpu_reg11 = fpu_reg11 + ( ((tcpoint *)ebx)[1].cp_y ); //(x = x + t*dx)
-	fpu_reg12 = ( ((tcpoint *)ebx)[1].cp_dx );
+	fpu_reg11 = fpu_reg11 + ( ebx[1].cp_y ); //(x = x + t*dx)
+	fpu_reg12 = ( ebx[1].cp_dx );
 	fpu_reg12 = fpu_reg12 * fpu_reg10;
-	fpu_reg12 = fpu_reg12 + ( ((tcpoint *)ebx)[1].cp_x ); //(y = y + t*dy)
+	fpu_reg12 = fpu_reg12 + ( ebx[1].cp_x ); //(y = y + t*dy)
 
-	fpu_reg13 = ( ((tcpoint *)ebx)->cp_y ); //angle of last point
+	fpu_reg13 = ( ebx->cp_y ); //angle of last point
 	ringparams.r_zpos = fpu_reg13;
 	fpu_reg13 = fpu_reg11 - fpu_reg13;
 	fpu_reg13 = fpu_reg13 * c_1_mr;
 	ringparams.r_zstep = fpu_reg13;
-	fpu_reg14 = ( ((tcpoint *)ebx)->cp_x );
+	fpu_reg14 = ( ebx->cp_x );
 	ringparams.r_xpos = fpu_reg14;
 	fpu_reg14 = fpu_reg12 - fpu_reg14;
 	fpu_reg14 = fpu_reg14 * c_1_mr;
@@ -975,9 +956,9 @@ updatechains_gt0:
 
 	fpu_reg13 = atan2(fpu_reg13, fpu_reg14);
 
-	fpu_reg14 = ( ((tcpoint *)ebx)[-1].cp_y ); //angle of second last point
+	fpu_reg14 = ( ebx[-1].cp_y ); //angle of second last point
 	fpu_reg14 = fpu_reg11 - fpu_reg14;
-	fpu_reg15 = ( ((tcpoint *)ebx)[-1].cp_x );
+	fpu_reg15 = ( ebx[-1].cp_x );
 	fpu_reg15 = fpu_reg12 - fpu_reg15;
 	fpu_reg14 = atan2(fpu_reg14, fpu_reg15);
 	angle = fpu_reg14;
@@ -1041,18 +1022,13 @@ updatechains_l0:
 	fpu_reg10 = fpu_reg10 + c_1_mr;
 	x = fpu_reg10;
 
-	stack_var00 = esi;
-	esi = ( (uint32_t)&(ringparams) );
-	placering_inc(esi, edi); //esi->ringparams, edi->ring
+	placering_inc(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	stack_var01 = edi;
 	edi = normals;
-	esi = ( (uint32_t)&(ringparams2) );
-	placering(esi, edi); //esi->ringparams2, edi->normals
+	placering(&(ringparams2), edi); //esi->ringparams2, edi->normals
 	normals = edi;
 	edi = stack_var01;
-
-	esi = stack_var00;
 
 	fpu_reg10 = angle;
 	fpu_reg10 = fpu_reg10 + dangle;
@@ -1088,10 +1064,7 @@ updatechains_l1:
 	fpu_reg10 = fpu_reg10 + c_1_hsr;
 	x = fpu_reg10;
 
-	stack_var00 = esi;
-	esi = ( (uint32_t)&(ringparams) );
-	placering_inc(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering_inc(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto updatechains_l1;
@@ -1100,41 +1073,41 @@ updatechains_l1:
 	eax = rings;
 	edx = normals;
 updatechains_l2:
-	fpu_reg10 = ( ((tvec *)eax)->x1 );
+	fpu_reg10 = ( eax->x1 );
 	fpu_reg10 = fpu_reg10 - ringparams2.r_xpos; //center point of sphere
-	((tvec *)edx)->x1 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x2 );
-	((tvec *)edx)->x2 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x3 );
+	edx->x1 = fpu_reg10;
+	fpu_reg10 = ( eax->x2 );
+	edx->x2 = fpu_reg10;
+	fpu_reg10 = ( eax->x3 );
 	fpu_reg10 = fpu_reg10 - ringparams2.r_zpos;
-	((tvec *)edx)->x3 = fpu_reg10;
+	edx->x3 = fpu_reg10;
 
-	eax = eax + ( sizeof(tvec) );
-	edx = edx + ( sizeof(tvec) );
+	eax = eax + ( 1 );
+	edx = edx + ( 1 );
 
 	if (eax < edi) goto updatechains_l2;
 
 	goto updatechains_w;
 updatechains_last2: //the last 2 points
 
-	ebx = ( ((tchain *)esi)->c_pointlist );
-	edi = ( ((tchain *)esi)->c_ringlist );
+	ebx = ( esi->c_pointlist );
+	edi = (tvec *)( esi->c_ringlist );
 
 //make top hemisphere
 
 	fpu_reg10 = t;
-	fpu_reg11 = ( ((tcpoint *)ebx)[1].cp_dy ); //position of last point
+	fpu_reg11 = ( ebx[1].cp_dy ); //position of last point
 	fpu_reg11 = fpu_reg11 * fpu_reg10;
-	fpu_reg11 = fpu_reg11 + ( ((tcpoint *)ebx)[1].cp_y ); //(x = x + t*dx)
-	fpu_reg12 = ( ((tcpoint *)ebx)[1].cp_dx );
+	fpu_reg11 = fpu_reg11 + ( ebx[1].cp_y ); //(x = x + t*dx)
+	fpu_reg12 = ( ebx[1].cp_dx );
 	fpu_reg12 = fpu_reg12 * fpu_reg10;
-	fpu_reg12 = fpu_reg12 + ( ((tcpoint *)ebx)[1].cp_x ); //(y = y + t*dy)
+	fpu_reg12 = fpu_reg12 + ( ebx[1].cp_x ); //(y = y + t*dy)
 
-	fpu_reg13 = ( ((tcpoint *)ebx)->cp_y ); //angle of last point
+	fpu_reg13 = ( ebx->cp_y ); //angle of last point
 	fpu_reg13 = fpu_reg11 - fpu_reg13;
 	fpu_reg13 = fpu_reg13 * c_1_mr;
 	ringparams2.r_zstep = fpu_reg13; //zstep for melting segment
-	fpu_reg14 = ( ((tcpoint *)ebx)->cp_x );
+	fpu_reg14 = ( ebx->cp_x );
 	fpu_reg14 = fpu_reg12 - fpu_reg14;
 	fpu_reg14 = fpu_reg14 * c_1_mr;
 	ringparams2.r_xstep = fpu_reg14; //xstep for melting segment
@@ -1159,10 +1132,10 @@ updatechains_z1:
 	fpu_reg14 = cos(fpu_reg13);
 	fpu_reg13 = sin(fpu_reg13);
 
-	fpu_reg15 = ( ((tcpoint *)ebx)->cp_x );
+	fpu_reg15 = ( ebx->cp_x );
 	fpu_reg15 = fpu_reg15 - fpu_reg14;
 	ringparams.r_xpos = fpu_reg15;
-	fpu_reg15 = ( ((tcpoint *)ebx)->cp_y );
+	fpu_reg15 = ( ebx->cp_y );
 	fpu_reg15 = fpu_reg15 - fpu_reg13;
 	ringparams.r_zpos = fpu_reg15;
 
@@ -1190,29 +1163,26 @@ updatechains_l3:
 	fpu_reg10 = fpu_reg10 - c_1_hsr;
 	x = fpu_reg10;
 
-	stack_var00 = esi;
-	esi = ( (uint32_t)&(ringparams) );
-	placering_inc(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering_inc(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto updatechains_l3;
 
 //make normals of top hemisphere
-	eax = ( ((tchain *)esi)->c_ringlist ); //esi -> tchain
-	edx = ( ((tchain *)esi)->c_normalslist );
+	eax = (tvec *)( esi->c_ringlist ); //esi -> tchain
+	edx = (tvec *)( esi->c_normalslist );
 updatechains_l4:
-	fpu_reg10 = ( ((tvec *)eax)->x1 );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)->cp_x );
-	((tvec *)edx)->x1 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x2 );
-	((tvec *)edx)->x2 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x3 );
-	fpu_reg10 = fpu_reg10 - ( ((tcpoint *)ebx)->cp_y );
-	((tvec *)edx)->x3 = fpu_reg10;
+	fpu_reg10 = ( eax->x1 );
+	fpu_reg10 = fpu_reg10 - ( ebx->cp_x );
+	edx->x1 = fpu_reg10;
+	fpu_reg10 = ( eax->x2 );
+	edx->x2 = fpu_reg10;
+	fpu_reg10 = ( eax->x3 );
+	fpu_reg10 = fpu_reg10 - ( ebx->cp_y );
+	edx->x3 = fpu_reg10;
 
-	eax = eax + ( sizeof(tvec) );
-	edx = edx + ( sizeof(tvec) );
+	eax = eax + ( 1 );
+	edx = edx + ( 1 );
 
 	if (eax < edi) goto updatechains_l4;
 //        mov     rings,edi
@@ -1234,10 +1204,7 @@ updatechains_l5:
 	fpu_reg10 = fpu_reg10 + c_1_mr;
 	x = fpu_reg10;
 
-	stack_var00 = esi;
-	esi = ( (uint32_t)&(ringparams) );
-	placering(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	fpu_reg10 = ringparams.r_xpos;
 	fpu_reg10 = fpu_reg10 + ringparams2.r_xstep;
@@ -1274,10 +1241,7 @@ updatechains_l6:
 	x = fpu_reg10;
 
 
-	stack_var01 = esi;
-	esi = ( (uint32_t)&(ringparams2) );
-	placering(esi, edi); //esi->ringparams2, edi->normals
-	esi = stack_var01;
+	placering(&(ringparams2), edi); //esi->ringparams2, edi->normals
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto updatechains_l6;
@@ -1303,10 +1267,7 @@ updatechains_l7:
 	fpu_reg10 = fpu_reg10 + c_1_hsr;
 	x = fpu_reg10;
 
-	stack_var00 = esi;
-	esi = ( (uint32_t)&(ringparams) );
-	placering_inc(esi, edi); //esi->ringparams, edi->ring
-	esi = stack_var00;
+	placering_inc(&(ringparams), edi); //esi->ringparams, edi->ring
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto updatechains_l7;
@@ -1315,23 +1276,23 @@ updatechains_l7:
 	eax = rings;
 	edx = normals;
 updatechains_l8:
-	fpu_reg10 = ( ((tvec *)eax)->x1 );
+	fpu_reg10 = ( eax->x1 );
 	fpu_reg10 = fpu_reg10 - ringparams2.r_xpos; //[ebx].cp_x
-	((tvec *)edx)->x1 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x2 );
-	((tvec *)edx)->x2 = fpu_reg10;
-	fpu_reg10 = ( ((tvec *)eax)->x3 );
+	edx->x1 = fpu_reg10;
+	fpu_reg10 = ( eax->x2 );
+	edx->x2 = fpu_reg10;
+	fpu_reg10 = ( eax->x3 );
 	fpu_reg10 = fpu_reg10 - ringparams2.r_zpos; //[ebx].cp_y
-	((tvec *)edx)->x3 = fpu_reg10;
+	edx->x3 = fpu_reg10;
 
-	eax = eax + ( sizeof(tvec) );
-	edx = edx + ( sizeof(tvec) );
+	eax = eax + ( 1 );
+	edx = edx + ( 1 );
 
 	if (eax < edi) goto updatechains_l8;
 
 
 updatechains_w:
-	esi = esi + ( sizeof(tchain) );
+	esi = esi + ( 1 );
 	z = ( (int32_t)z ) - 1;
 	if (( (int32_t)z ) != 0) goto updatechains_l;
 
@@ -1339,20 +1300,19 @@ updatechains_w:
 }
 
 
-static void checkdir(uint32_t _ebx, realnum &_fpu_reg10, realnum &_fpu_reg11) {
+static void checkdir(tscreenpoint *ebx, realnum &_fpu_reg10, realnum &_fpu_reg11) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12;
-	uint32_t ebx = _ebx;
 //-> ebx = *sp
 
-	fpu_reg10 = ( ((tscreenpoint *)ebx)[2].sp_x ); //lie points clock-wise?
-	fpu_reg10 = fpu_reg10 - ( ((tscreenpoint *)ebx)->sp_x );
-	fpu_reg11 = ( ((tscreenpoint *)ebx)[1].sp_y );
-	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)ebx)->sp_y );
+	fpu_reg10 = ( ebx[2].sp_x ); //lie points clock-wise?
+	fpu_reg10 = fpu_reg10 - ( ebx->sp_x );
+	fpu_reg11 = ( ebx[1].sp_y );
+	fpu_reg11 = fpu_reg11 - ( ebx->sp_y );
 	fpu_reg10 = fpu_reg10 * fpu_reg11;
-	fpu_reg11 = ( ((tscreenpoint *)ebx)[2].sp_y );
-	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)ebx)->sp_y );
-	fpu_reg12 = ( ((tscreenpoint *)ebx)[1].sp_x );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)ebx)->sp_x );
+	fpu_reg11 = ( ebx[2].sp_y );
+	fpu_reg11 = fpu_reg11 - ( ebx->sp_y );
+	fpu_reg12 = ( ebx[1].sp_x );
+	fpu_reg12 = fpu_reg12 - ( ebx->sp_x );
 	fpu_reg11 = fpu_reg11 * fpu_reg12;
 	_fpu_reg10 = fpu_reg10;
 	_fpu_reg11 = fpu_reg11;
@@ -1360,15 +1320,16 @@ static void checkdir(uint32_t _ebx, realnum &_fpu_reg10, realnum &_fpu_reg11) {
 
 
 
-static uint32_t subxclip(uint32_t &_ebx, uint32_t &_edi) { //x-clipping fr scanline subdiv.
+static uint32_t subxclip(tscreenpoint *&_ebx, tscreenpoint *&_edi) { //x-clipping fr scanline subdiv.
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
-	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi;
+	uint32_t eax, edx, ecx;
+	tscreenpoint *ebx = _ebx, *edi = _edi, *esi;
 //-> ebx = *sp
 //-> edi = *sp_end
 //<- ebx = *sp
 //<- edi = *sp_end
 //<- wenn weniger als 3 punkte, mit jbe wegspringen
-	uint32_t _sp, _sp_end; //beides pointer
+	tscreenpoint *_sp, *_sp_end; //beides pointer
 
 	fpu_reg10 = 0.0; //st = x
 	edx = /*(edx & 0xffffff00) |*/ (uint8_t)(( 1 )); //dl = i, 1 to 0
@@ -1377,7 +1338,7 @@ subxclip_i_l:
 	_sp_end = edi; //edi -> sp[d] (zielpunkte)  (d = m)
 
 subxclip_z_l:
-	fpu_reg11 = ( ((tscreenpoint *)ebx)->sp_x ); //inn = (sp[z].sx >= x);
+	fpu_reg11 = ( ebx->sp_x ); //inn = (sp[z].sx >= x);
 
 	eax = /*(eax & 0xffff0000) |*/ ((fpu_reg11 < fpu_reg10)?0x100:0);
 	edx = set_high_byte(edx, ( (uint8_t)(eax >> 8) )); //dh = inn
@@ -1385,72 +1346,71 @@ subxclip_z_l:
 
 	if ((eax & 0x100) == 0) goto subxclip_0;
 //punkt innerhalb
-	esi = ebx;
-	ecx = ( flatpsize / 4 );
-	for (; ecx != 0; ecx--, esi+=4, edi+=4) *(uint32_t *)edi = *(uint32_t *)esi; //sp[d] = sp[z] und d++
+	*edi = *ebx; //sp[d] = sp[z] und d++
+	edi = edi + ( 1 );
 subxclip_0:
 	esi = ebx;
-	esi = esi + ( flatpsize ); //nz = z+1
+	esi = esi + ( 1 ); //nz = z+1
 //if (nz >= m) nz = 0;
 	if (esi < _sp_end) goto subxclip_wrap;
 	esi = _sp;
 subxclip_wrap:
 
-	fpu_reg11 = ( ((tscreenpoint *)esi)->sp_x ); //if (inn ^ (sp[nz].sx >= x))
+	fpu_reg11 = ( esi->sp_x ); //if (inn ^ (sp[nz].sx >= x))
 
 	eax = (eax & 0xffff0000) | ((fpu_reg11 < fpu_reg10)?0x100:0);
 	eax = set_high_byte(eax, ( (uint8_t)(eax >> 8) ) ^ ( (uint8_t)(edx >> 8) )); //dh = inn
 
 	if ((eax & 0x100) == 0) goto subxclip_1;
 //dieser oder n„chster punkt auáerhalb
-	((tscreenpoint *)edi)->sp_x = fpu_reg10;
+	edi->sp_x = fpu_reg10;
 //sp[d].sy berechnen
-	fpu_reg11 = ( ((tscreenpoint *)esi)->sp_y ); //(sp[nz].sy - sp[z].sy)
-	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)ebx)->sp_y );
-	fpu_reg12 = ( ((tscreenpoint *)esi)->sp_x ); // /(sp[nz].sx - sp[z].sx)
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)ebx)->sp_x );
+	fpu_reg11 = ( esi->sp_y ); //(sp[nz].sy - sp[z].sy)
+	fpu_reg11 = fpu_reg11 - ( ebx->sp_y );
+	fpu_reg12 = ( esi->sp_x ); // /(sp[nz].sx - sp[z].sx)
+	fpu_reg12 = fpu_reg12 - ( ebx->sp_x );
 	fpu_reg11 = fpu_reg11 / fpu_reg12;
 	fpu_reg12 = fpu_reg10; //x
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)ebx)->sp_x ); //*(x - sp[z].sx)
+	fpu_reg12 = fpu_reg12 - ( ebx->sp_x ); //*(x - sp[z].sx)
 	fpu_reg11 = fpu_reg11 * fpu_reg12;
-	fpu_reg11 = fpu_reg11 + ( ((tscreenpoint *)ebx)->sp_y ); //+sp[z].sy
-	((tscreenpoint *)edi)->sp_y = fpu_reg11;
+	fpu_reg11 = fpu_reg11 + ( ebx->sp_y ); //+sp[z].sy
+	edi->sp_y = fpu_reg11;
 
-	fpu_reg11 = ( ((tscreenpoint *)ebx)->sp_x ); //ax = sp[z].sx *sp[z].z;
-	fpu_reg11 = fpu_reg11 * ( ((tscreenpoint *)ebx)->sp_z );
+	fpu_reg11 = ( ebx->sp_x ); //ax = sp[z].sx *sp[z].z;
+	fpu_reg11 = fpu_reg11 * ( ebx->sp_z );
 
-	fpu_reg12 = ( ((tscreenpoint *)esi)->sp_x ); //ux = sp[nz].sx*sp[nz].z - ax;
-	fpu_reg12 = fpu_reg12 * ( ((tscreenpoint *)esi)->sp_z );
+	fpu_reg12 = ( esi->sp_x ); //ux = sp[nz].sx*sp[nz].z - ax;
+	fpu_reg12 = fpu_reg12 * ( esi->sp_z );
 	fpu_reg12 = fpu_reg12 - fpu_reg11;
 
 //r = (x * sp[z].z - ax) / (ux - (sp[nz].z - sp[z].z) * x);
-	fpu_reg13 = ( ((tscreenpoint *)esi)->sp_z ); //ux - (sp[nz].z - sp[z].z) * x
-	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)ebx)->sp_z );
+	fpu_reg13 = ( esi->sp_z ); //ux - (sp[nz].z - sp[z].z) * x
+	fpu_reg13 = fpu_reg13 - ( ebx->sp_z );
 	fpu_reg13 = fpu_reg13 * fpu_reg10; //x
 	fpu_reg12 = fpu_reg12 - fpu_reg13;
-	fpu_reg13 = ( ((tscreenpoint *)ebx)->sp_z ); //(x * sp[z].z - ax)
+	fpu_reg13 = ( ebx->sp_z ); //(x * sp[z].z - ax)
 	fpu_reg13 = fpu_reg13 * fpu_reg10; //x
 	fpu_reg11 = fpu_reg13 - fpu_reg11;
 	fpu_reg11 = fpu_reg11 / fpu_reg12; //st = r
 
-	fpu_reg12 = ( ((tscreenpoint *)esi)->sp_z ); //sp[d].z
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)ebx)->sp_z );
+	fpu_reg12 = ( esi->sp_z ); //sp[d].z
+	fpu_reg12 = fpu_reg12 - ( ebx->sp_z );
 	fpu_reg12 = fpu_reg12 * fpu_reg11;
-	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)ebx)->sp_z );
-	((tscreenpoint *)edi)->sp_z = fpu_reg12;
+	fpu_reg12 = fpu_reg12 + ( ebx->sp_z );
+	edi->sp_z = fpu_reg12;
 
 	ecx = ( 1 );
 subxclip_l: //sp[d].u
-	fpu_reg12 = ( ((tscreenpoint *)esi)->sp_data[ecx] );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)ebx)->sp_data[ecx] );
+	fpu_reg12 = ( esi->sp_data[ecx] );
+	fpu_reg12 = fpu_reg12 - ( ebx->sp_data[ecx] );
 	fpu_reg12 = fpu_reg12 * fpu_reg11;
-	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)ebx)->sp_data[ecx] );
-	((tscreenpoint *)edi)->sp_data[ecx] = fpu_reg12;
+	fpu_reg12 = fpu_reg12 + ( ebx->sp_data[ecx] );
+	edi->sp_data[ecx] = fpu_reg12;
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) >= 0) goto subxclip_l;
 //r entfernen
 
-	edi = edi + ( flatpsize ); //d++
+	edi = edi + ( 1 ); //d++
 subxclip_1:
 //wz > z?
 	if (esi <= ebx) goto subxclip_z_l_2;
@@ -1461,8 +1421,7 @@ subxclip_z_l_2:
 
 	ebx = _sp_end; //ebx -> sp
 //edi -> sp_end
-	eax = edi;
-	eax = eax - ebx;
+	eax = (uintptr_t)edi - (uintptr_t)ebx;
 	eax = eax >> ( 1 );
 
 	if (eax <= ( flatpsize )) goto subxclip_w;
@@ -1485,14 +1444,16 @@ subxclip_weg:
 
 
 
-static void subpolygon(uint32_t _sp, uint32_t sp_end) { //texture mapping mit scanline subdivision
+static void subpolygon(tscreenpoint *_sp, uint32_t sp_end) { //texture mapping mit scanline subdivision
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+	uint32_t eax, edx, ecx, ebx, esi, ebp;
 	uint32_t stack_var00, stack_var01;
+	uint8_t *edi;
 
 //_sp = *sp, zeiger auf screenpoints
 
-	uint32_t pend, y, x_y, lb, lc, rb, rc; //int
+	uint32_t pend, y, lb, lc, rb, rc; //int
+	uint8_t *x_y;
 	float lx, ldx, rx, rdx; //float
 	uint32_t xa, xe, txt_x, txt_y; //int
 	tscan la, lu, ra, ru, a, u;
@@ -1503,15 +1464,14 @@ static void subpolygon(uint32_t _sp, uint32_t sp_end) { //texture mapping mit sc
 	rb = eax;
 	pend = eax;
 
-	esi = _sp; //esi -> screenpoints
-	fpu_reg10 = ( ((tscreenpoint *)esi)->sp_y ); //st(0) = ymax
+	fpu_reg10 = ( _sp->sp_y ); //st(0) = ymax
 	fpu_reg11 = fpu_reg10; //st(1) = ymin
 
 	ecx = sp_end;
 	ecx = ecx - ( flatpsize ); //esi+ecx -> sp[sp_end-1]
 subpolygon_max_l:
 
-	fpu_reg12 = ( ((tscreenpoint *)(esi + ecx))->sp_y );
+	fpu_reg12 = ( ((tscreenpoint *)(((uint8_t *)_sp) + ecx))->sp_y );
 //ymax              ;gr”áten y-wert finden (endpunkt)
 
 
@@ -1546,11 +1506,9 @@ subpolygon_min:
 	y = eax;
 subpolygon_y0:
 	eax = ( (int32_t)eax ) * ( (int32_t)xres );
-	edx = erzdata.e_buffer;
 //        shr     edx,2
 //mov edx,0A0000h
-	eax = eax + edx;
-	x_y = eax;
+	x_y = (uint8_t *)(eax + erzdata.e_buffer);
 
 	lc = ( 1 );
 	rc = ( 1 );
@@ -1562,7 +1520,6 @@ subpolygon_y_l: //y-schleife
 //links
 	lc = ( (int32_t)lc ) - 1;
 	if (( (int32_t)lc ) != 0) goto subpolygon_l_nz;
-	edi = _sp;
 	esi = lb;
 subpolygon_lc:
 
@@ -1572,37 +1529,37 @@ subpolygon_lc:
 	  if (carry == 0) goto subpolygon_l0; } //wrap
 	esi = esi + sp_end;
 subpolygon_l0:
-	fpu_reg11 = ( ((tscreenpoint *)(esi + edi))->sp_y ); //lc = ceil(sp[lb].sy) - y
+	fpu_reg11 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_y ); //lc = ceil(sp[lb].sy) - y
 	lc =  (int32_t)ceil(fpu_reg11);
 	eax = y;
 	lc = ( (int32_t)lc ) - ( (int32_t)eax );
 	if (( (int32_t)lc ) <= 0) goto subpolygon_lc; //while lc <= 0
 	lb = esi;
 
-	fpu_reg11 = ( ((tscreenpoint *)(esi + edi))->sp_z ); //sp[lb].z einlagern
+	fpu_reg11 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_z ); //sp[lb].z einlagern
 
 //la
-	fpu_reg12 = ( ((tscreenpoint *)(ebx + edi))->sp_z ); //la.z = sp[ia].z;
+	fpu_reg12 = ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_z ); //la.z = sp[ia].z;
 	la.s_z = fpu_reg12;
 
-	fpu_reg13 = ( ((tscreenpoint *)(ebx + edi))->sp_y ); //la.y = sp[ia].sy*sp[ia].z;
+	fpu_reg13 = ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_y ); //la.y = sp[ia].sy*sp[ia].z;
 	fpu_reg13 = fpu_reg13 * fpu_reg12;
 	la.s_p = fpu_reg13; //la.y
 
-	fpu_reg14 = ( ((tscreenpoint *)(ebx + edi))->sp_u ); //la.u = sp[ia].u;
+	fpu_reg14 = ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_u ); //la.u = sp[ia].u;
 	la.s_u = fpu_reg14;
 
-	fpu_reg15 = ( ((tscreenpoint *)(ebx + edi))->sp_v ); //la.v = sp[ia].v;
+	fpu_reg15 = ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_v ); //la.v = sp[ia].v;
 	la.s_v = fpu_reg15;
 
 //lu
-	fpu_reg15 = ( ((tscreenpoint *)(esi + edi))->sp_v ) - fpu_reg15; //lu.v = sp[lb].v - sp[ia].v;
+	fpu_reg15 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_v ) - fpu_reg15; //lu.v = sp[lb].v - sp[ia].v;
 	lu.s_v = fpu_reg15;
 
-	fpu_reg14 = ( ((tscreenpoint *)(esi + edi))->sp_u ) - fpu_reg14; //lu.u = sp[lb].u - sp[ia].u;
+	fpu_reg14 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_u ) - fpu_reg14; //lu.u = sp[lb].u - sp[ia].u;
 	lu.s_u = fpu_reg14;
 
-	fpu_reg14 = ( ((tscreenpoint *)(esi + edi))->sp_y ); //lu.y = sp[lb].sy*sp[lb].z - la.y;
+	fpu_reg14 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_y ); //lu.y = sp[lb].sy*sp[lb].z - la.y;
 	fpu_reg14 = fpu_reg14 * fpu_reg11; //sp[lb].z
 	fpu_reg13 = fpu_reg14 - fpu_reg13;
 	lu.s_p = fpu_reg13; //lu.y
@@ -1611,18 +1568,18 @@ subpolygon_l0:
 
 
 //ldx = (sp[lb].sx - sp[ia].sx)/(sp[lb].sy - sp[ia].sy);
-	fpu_reg11 = ( ((tscreenpoint *)(esi + edi))->sp_x );
-	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)(ebx + edi))->sp_x );
-	fpu_reg12 = ( ((tscreenpoint *)(esi + edi))->sp_y );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(ebx + edi))->sp_y );
+	fpu_reg11 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_x );
+	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_x );
+	fpu_reg12 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_y );
+	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_y );
 	fpu_reg11 = fpu_reg11 / fpu_reg12;
 	ldx = fpu_reg11;
 
 //lx = ldx   *(y  - sp[ia].sy) + sp[ia].sx;
 	fpu_reg12 = ( (int32_t)y );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(ebx + edi))->sp_y );
+	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_y );
 	fpu_reg11 = fpu_reg11 * fpu_reg12;
-	fpu_reg11 = fpu_reg11 + ( ((tscreenpoint *)(ebx + edi))->sp_x );
+	fpu_reg11 = fpu_reg11 + ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_x );
 	lx = fpu_reg11;
 	goto subpolygon_l_z;
 subpolygon_l_nz:
@@ -1633,7 +1590,6 @@ subpolygon_l_z:
 //rechts
 	rc = ( (int32_t)rc ) - 1;
 	if (( (int32_t)rc ) != 0) goto subpolygon_r_nz;
-	edi = _sp;
 	esi = rb;
 subpolygon_rc:
 
@@ -1645,37 +1601,37 @@ subpolygon_rc:
 	if (esi < sp_end) goto subpolygon_r0; //wrap
 	esi = 0;
 subpolygon_r0:
-	fpu_reg12 = ( ((tscreenpoint *)(esi + edi))->sp_y ); //rc = ceil(sp[rb].sy) - y
+	fpu_reg12 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_y ); //rc = ceil(sp[rb].sy) - y
 	rc =  (int32_t)ceil(fpu_reg12);
 	eax = y;
 	rc = ( (int32_t)rc ) - ( (int32_t)eax );
 	if (( (int32_t)rc ) <= 0) goto subpolygon_rc; //while rc <= 0
 	rb = esi;
 
-	fpu_reg12 = ( ((tscreenpoint *)(esi + edi))->sp_z ); //sp[lb].z einlagern
+	fpu_reg12 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_z ); //sp[lb].z einlagern
 
 //ra
-	fpu_reg13 = ( ((tscreenpoint *)(ebx + edi))->sp_z ); //ra.z = sp[ia].z;
+	fpu_reg13 = ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_z ); //ra.z = sp[ia].z;
 	ra.s_z = fpu_reg13;
 
-	fpu_reg14 = ( ((tscreenpoint *)(ebx + edi))->sp_y ); //ra.y = sp[ia].sy*sp[ia].z;
+	fpu_reg14 = ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_y ); //ra.y = sp[ia].sy*sp[ia].z;
 	fpu_reg14 = fpu_reg14 * fpu_reg13;
 	ra.s_p = fpu_reg14; //ra.y
 
-	fpu_reg15 = ( ((tscreenpoint *)(ebx + edi))->sp_u ); //ra.u = sp[ia].u;
+	fpu_reg15 = ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_u ); //ra.u = sp[ia].u;
 	ra.s_u = fpu_reg15;
 
-	fpu_reg16 = ( ((tscreenpoint *)(ebx + edi))->sp_v ); //ra.v = sp[ia].v;
+	fpu_reg16 = ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_v ); //ra.v = sp[ia].v;
 	ra.s_v = fpu_reg16;
 
 //ru
-	fpu_reg16 = ( ((tscreenpoint *)(esi + edi))->sp_v ) - fpu_reg16; //ru.v = sp[rb].v - sp[ia].v;
+	fpu_reg16 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_v ) - fpu_reg16; //ru.v = sp[rb].v - sp[ia].v;
 	ru.s_v = fpu_reg16;
 
-	fpu_reg15 = ( ((tscreenpoint *)(esi + edi))->sp_u ) - fpu_reg15; //ru.u = sp[rb].u - sp[ia].u;
+	fpu_reg15 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_u ) - fpu_reg15; //ru.u = sp[rb].u - sp[ia].u;
 	ru.s_u = fpu_reg15;
 
-	fpu_reg15 = ( ((tscreenpoint *)(esi + edi))->sp_y ); //ru.y = sp[rb].sy*sp[rb].z - ra.y;
+	fpu_reg15 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_y ); //ru.y = sp[rb].sy*sp[rb].z - ra.y;
 	fpu_reg15 = fpu_reg15 * fpu_reg12; //sp[lb].z
 	fpu_reg14 = fpu_reg15 - fpu_reg14;
 	ru.s_p = fpu_reg14; //ru.y
@@ -1685,18 +1641,18 @@ subpolygon_r0:
 
 
 //rdx = (sp[rb].sx - sp[ia].sx)/(sp[rb].sy - sp[ia].sy);
-	fpu_reg12 = ( ((tscreenpoint *)(esi + edi))->sp_x );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(ebx + edi))->sp_x );
-	fpu_reg13 = ( ((tscreenpoint *)(esi + edi))->sp_y );
-	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(ebx + edi))->sp_y );
+	fpu_reg12 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_x );
+	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_x );
+	fpu_reg13 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_y );
+	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_y );
 	fpu_reg12 = fpu_reg12 / fpu_reg13;
 	rdx = fpu_reg12;
 
 //rx = rdx   *(y  - sp[ia].sy) + sp[ia].sx;
 	fpu_reg13 = ( (int32_t)y );
-	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(ebx + edi))->sp_y );
+	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_y );
 	fpu_reg12 = fpu_reg12 * fpu_reg13;
-	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)(ebx + edi))->sp_x );
+	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_x );
 	rx = fpu_reg12;
 	goto subpolygon_r_z;
 subpolygon_r_nz:
@@ -1772,10 +1728,9 @@ subpolygon_r_z:
 	xa =  (int32_t)ceil(fpu_reg11); //xa = ceil(lx) (lx nicht entfernen)
 
 
-	edi = xa;
 	ecx = xe;
-	ecx = ecx - edi; //ecx = CCCC
-	edi = edi + x_y; //edi = PPPP
+	ecx = ecx - xa; //ecx = CCCC
+	edi = xa + x_y; //edi = PPPP
 
 subpolygon_l:
 
@@ -1793,17 +1748,16 @@ subpolygon_l:
 	eax = 0;
 	stack_var00 = eax; //push pixel counter (= 0)
 
-	esi = erzdata.e_divtab;
 	fpu_reg12 = a.s_u;
 	fpu_reg12 = fpu_reg12 + u.s_u; //a.u + u.u = texutur - endkoordinate
 	fpu_reg12 = fpu_reg12 - ( (int32_t)txt_x );
-	fpu_reg12 = fpu_reg12 * ( ((float *)(esi))[ecx] );
+	fpu_reg12 = fpu_reg12 * ( (erzdata.e_divtab)[ecx] );
 	txt_x =  (int32_t)ceil(fpu_reg12);
 
 	fpu_reg12 = a.s_v;
 	fpu_reg12 = fpu_reg12 + u.s_v; //a.v + u.v = texutur - endkoordinate
 	fpu_reg12 = fpu_reg12 - ( (int32_t)txt_y );
-	fpu_reg12 = fpu_reg12 * ( ((float *)(esi))[ecx] );
+	fpu_reg12 = fpu_reg12 * ( (erzdata.e_divtab)[ecx] );
 	txt_y =  (int32_t)ceil(fpu_reg12);
 
 	eax = txt_x; //eax = 00Uu
@@ -1858,13 +1812,12 @@ subpolygon_div: //scanline subdivision
 	ebx = (ebx >> ( 8 )) | (edx << (32 - ( 8 ))); //ebx = x0Yy
 	edx = (uint32_t)( (uint8_t)(edx >> 8) ); //edx = 00?X
 subpolygon_5:
-	esi = erzdata.e_pic1; //esi = TTTT
 	stack_var01 = ( 0 /*ebp*/ ); //ebp : lokale variablen
 	ebp = eax;
 
 	edx = set_high_byte(edx, ( (uint8_t)(ebx >> 8) ));
 subpolygon_inner:
-	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(esi + edx)) ));
+	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(erzdata.e_pic1 + edx)) ));
 	{ uint32_t carry = (UINT32_MAX - ebx < ebp)?1:0; ebx = ebx + ebp;
 	  edx = (edx & 0xffffff00) | (uint8_t)(( (uint8_t)edx ) + ( (uint8_t)(ecx >> 8) ) + carry); }
 //if gfx gt 0
@@ -1905,81 +1858,81 @@ subpolygon_weg:
 
 static void drawback(void) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
-	uint32_t eax, ecx, edi, ebx, esi;
+	uint32_t eax, ecx;
+	tscreenpoint *edi, *ebx;
+	tviewer *esi;
 
-
-	edi = erzdata.e_tempdata;
-	esi = ( (uint32_t)&(viewer) );
-	ebx = ( (uint32_t)&(backpoints[0]) );
+	edi = (tscreenpoint *)erzdata.e_tempdata;
+	esi = &(viewer);
+	ebx = (tscreenpoint *)&(backpoints[0]);
 
 	ecx = ( 4 );
 drawback_l0:
-	fpu_reg10 = ( ((tscreenpoint *)ebx)->sp_x );
-	fpu_reg10 = fpu_reg10 - ( ((tviewer *)esi)->v_p.x1 );
-	fpu_reg11 = ( ((tscreenpoint *)ebx)->sp_y );
-	fpu_reg11 = fpu_reg11 - ( ((tviewer *)esi)->v_p.x2 );
-	fpu_reg12 = ( ((tscreenpoint *)ebx)->sp_z );
-	fpu_reg12 = fpu_reg12 - ( ((tviewer *)esi)->v_p.x3 );
+	fpu_reg10 = ( ebx->sp_x );
+	fpu_reg10 = fpu_reg10 - ( esi->v_p.x1 );
+	fpu_reg11 = ( ebx->sp_y );
+	fpu_reg11 = fpu_reg11 - ( esi->v_p.x2 );
+	fpu_reg12 = ( ebx->sp_z );
+	fpu_reg12 = fpu_reg12 - ( esi->v_p.x3 );
 
-	fpu_reg13 = ( ((tviewer *)esi)->v_l3.x1 ); //z
+	fpu_reg13 = ( esi->v_l3.x1 ); //z
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l3.x2 );
+	fpu_reg14 = ( esi->v_l3.x2 );
 	fpu_reg14 = fpu_reg14 * fpu_reg11;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l3.x3 );
+	fpu_reg14 = ( esi->v_l3.x3 );
 	fpu_reg14 = fpu_reg14 * fpu_reg12;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
-	((tscreenpoint *)edi)->sp_z = fpu_reg13;
+	edi->sp_z = fpu_reg13;
 
-	fpu_reg13 = ( ((tviewer *)esi)->v_l1.x1 ); //x
+	fpu_reg13 = ( esi->v_l1.x1 ); //x
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l1.x2 );
+	fpu_reg14 = ( esi->v_l1.x2 );
 	fpu_reg14 = fpu_reg14 * fpu_reg11;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l1.x3 );
+	fpu_reg14 = ( esi->v_l1.x3 );
 	fpu_reg14 = fpu_reg14 * fpu_reg12;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
 	fpu_reg13 = fpu_reg13 * c_xfov;
-	fpu_reg13 = fpu_reg13 / ( ((tscreenpoint *)edi)->sp_z ); //x = (1+x/z)*xmid
+	fpu_reg13 = fpu_reg13 / ( edi->sp_z ); //x = (1+x/z)*xmid
 	fpu_reg14 = 1.0;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
 	fpu_reg13 = fpu_reg13 * xmid;
-	((tscreenpoint *)edi)->sp_x = fpu_reg13;
+	edi->sp_x = fpu_reg13;
 
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x1 ); //y
+	fpu_reg13 = ( esi->v_l2.x1 ); //y
 	fpu_reg10 = fpu_reg10 * fpu_reg13;
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x2 );
+	fpu_reg13 = ( esi->v_l2.x2 );
 	fpu_reg11 = fpu_reg11 * fpu_reg13;
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x3 );
+	fpu_reg13 = ( esi->v_l2.x3 );
 	fpu_reg12 = fpu_reg12 * fpu_reg13;
 	fpu_reg11 = fpu_reg11 + fpu_reg12;
 	fpu_reg10 = fpu_reg10 + fpu_reg11;
 	fpu_reg10 = fpu_reg10 * c_yfov; //c_1_33
-	fpu_reg10 = fpu_reg10 / ( ((tscreenpoint *)edi)->sp_z ); //y = (1-y/z)*ymid
+	fpu_reg10 = fpu_reg10 / ( edi->sp_z ); //y = (1-y/z)*ymid
 	fpu_reg11 = 1.0;
 	fpu_reg10 = fpu_reg11 - fpu_reg10;
 	fpu_reg10 = fpu_reg10 * ymid;
-	((tscreenpoint *)edi)->sp_y = fpu_reg10;
+	edi->sp_y = fpu_reg10;
 
-	fpu_reg10 = ( ((tscreenpoint *)ebx)->sp_u );
+	fpu_reg10 = ( ebx->sp_u );
 	fpu_reg10 = fpu_reg10 * erzdata.e_xres1;
-	((tscreenpoint *)edi)->sp_u = fpu_reg10;
-	fpu_reg10 = ( ((tscreenpoint *)ebx)->sp_v );
+	edi->sp_u = fpu_reg10;
+	fpu_reg10 = ( ebx->sp_v );
 	fpu_reg10 = fpu_reg10 * erzdata.e_yres1;
-	((tscreenpoint *)edi)->sp_v = fpu_reg10;
+	edi->sp_v = fpu_reg10;
 
-	ebx = ebx + ( flatpsize );
-	edi = edi + ( flatpsize );
+	ebx = ebx + ( 1 );
+	edi = edi + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto drawback_l0;
 
-	ebx = ( edi + (- 4 * flatpsize) );
+	ebx = ( edi + (- 4) );
 
 	eax = subxclip(ebx, edi);
 
 	if (( (int32_t)eax ) != 0) goto drawback_weg;
-	edi = edi - ebx;
-	subpolygon(ebx, edi);
+	subpolygon(ebx, (uintptr_t)edi - (uintptr_t)ebx);
 drawback_weg:
 	return;
 }
@@ -1987,15 +1940,16 @@ drawback_weg:
 
 
 
-static uint32_t xclip(uint32_t &_ebx, uint32_t &_edi) { //x-clipping
+static uint32_t xclip(tscreenpoint *&_ebx, tscreenpoint *&_edi) { //x-clipping
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
-	uint32_t eax, edx, ecx, edi = _edi, ebx = _ebx, esi;
+	uint32_t eax, edx, ecx;
+	tscreenpoint *ebx = _ebx, *edi = _edi, *esi;
 //-> ebx = *sp
 //-> edi = *sp_end
 //<- ebx = *sp
 //<- edi = *sp_end
 //<- wenn weniger als 3 punkte, mit jbe wegspringen
-	uint32_t _sp, _sp_end; //beides pointer
+	tscreenpoint *_sp, *_sp_end; //beides pointer
 
 	fpu_reg10 = 0.0; //st = x
 	edx = /*(edx & 0xffffff00) |*/ (uint8_t)(( 1 )); //dl = i, 1 to 0
@@ -2004,7 +1958,7 @@ xclip_i_l:
 	_sp_end = edi; //edi -> sp[d] (zielpunkte)  (d = m)
 
 xclip_z_l:
-	fpu_reg11 = ( ((tscreenpoint *)ebx)->sp_x ); //inn = (sp[z].sx >= x);
+	fpu_reg11 = ( ebx->sp_x ); //inn = (sp[z].sx >= x);
 
 	eax = /*(eax & 0xffff0000) |*/ ((fpu_reg11 < fpu_reg10)?0x100:0);
 	edx = set_high_byte(edx, ( (uint8_t)(eax >> 8) )); //dh = inn
@@ -2012,18 +1966,17 @@ xclip_z_l:
 
 	if ((eax & 0x100) == 0) goto xclip_0;
 //punkt innerhalb
-	esi = ebx;
-	ecx = ( flatpsize / 4 );
-	for (; ecx != 0; ecx--, esi+=4, edi+=4) *(uint32_t *)edi = *(uint32_t *)esi; //sp[d] = sp[z] und d++
+	*edi = *ebx; //sp[d] = sp[z] und d++
+	edi = edi + ( 1 );
 xclip_0:
 	esi = ebx;
-	esi = esi + ( flatpsize ); //nz = z+1
+	esi = esi + ( 1 ); //nz = z+1
 //if (nz >= m) nz = 0;
 	if (esi < _sp_end) goto xclip_wrap;
 	esi = _sp;
 xclip_wrap:
 
-	fpu_reg11 = ( ((tscreenpoint *)esi)->sp_x ); //if (inn ^ (sp[nz].sx >= x))
+	fpu_reg11 = ( esi->sp_x ); //if (inn ^ (sp[nz].sx >= x))
 
 	eax = (eax & 0xffff0000) | ((fpu_reg11 < fpu_reg10)?0x100:0);
 	eax = set_high_byte(eax, ( (uint8_t)(eax >> 8) ) ^ ( (uint8_t)(edx >> 8) )); //dh = inn
@@ -2031,35 +1984,35 @@ xclip_wrap:
 	if ((eax & 0x100) == 0) goto xclip_1;
 //dieser oder n„chster punkt auáerhalb
 
-	((tscreenpoint *)edi)->sp_x = fpu_reg10; //sp[d].sx speichern
+	edi->sp_x = fpu_reg10; //sp[d].sx speichern
 
 //r berechnen
 	fpu_reg11 = fpu_reg10; //x                    ;(x - sp[z].sx)
-	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)ebx)->sp_x );
-	fpu_reg12 = ( ((tscreenpoint *)esi)->sp_x ); // /(sp[nz].sx - sp[z].sx)
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)ebx)->sp_x );
+	fpu_reg11 = fpu_reg11 - ( ebx->sp_x );
+	fpu_reg12 = ( esi->sp_x ); // /(sp[nz].sx - sp[z].sx)
+	fpu_reg12 = fpu_reg12 - ( ebx->sp_x );
 	fpu_reg11 = fpu_reg11 / fpu_reg12; //st = r
 
-	fpu_reg12 = ( ((tscreenpoint *)ebx)->sp_y ); //sp[d].sy berechnen
-	fpu_reg13 = ( ((tscreenpoint *)esi)->sp_y ); // sp[z].sy + r*(sp[nz].sy - sp[z].sy)
+	fpu_reg12 = ( ebx->sp_y ); //sp[d].sy berechnen
+	fpu_reg13 = ( esi->sp_y ); // sp[z].sy + r*(sp[nz].sy - sp[z].sy)
 	fpu_reg13 = fpu_reg13 - fpu_reg12;
 	fpu_reg13 = fpu_reg13 * fpu_reg11;
 	fpu_reg12 = fpu_reg12 + fpu_reg13;
-	((tscreenpoint *)edi)->sp_y = fpu_reg12;
+	edi->sp_y = fpu_reg12;
 
 	ecx = ( 1 );
 xclip_vars:
-	fpu_reg12 = ( ((tscreenpoint *)esi)->sp_data[ecx] );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)ebx)->sp_data[ecx] );
+	fpu_reg12 = ( esi->sp_data[ecx] );
+	fpu_reg12 = fpu_reg12 - ( ebx->sp_data[ecx] );
 	fpu_reg12 = fpu_reg12 * fpu_reg11;
-	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)ebx)->sp_data[ecx] );
-	((tscreenpoint *)edi)->sp_data[ecx] = fpu_reg12;
+	fpu_reg12 = fpu_reg12 + ( ebx->sp_data[ecx] );
+	edi->sp_data[ecx] = fpu_reg12;
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) >= 0) goto xclip_vars;
 
 //r entfernen
 
-	edi = edi + ( flatpsize ); //d++
+	edi = edi + ( 1 ); //d++
 xclip_1:
 //wz > z?
 	if (esi <= ebx) goto xclip_z_l_2;
@@ -2069,8 +2022,7 @@ xclip_z_l_2:
 
 	ebx = _sp_end; //ebx -> sp
 //edi -> sp_end
-	eax = edi;
-	eax = eax - ebx;
+	eax = (uintptr_t)edi - (uintptr_t)ebx;
 
 	if (eax <= ( flatpsize * 2 )) goto xclip_w;
 
@@ -2091,13 +2043,15 @@ xclip_weg:
 }
 
 
-static void polygon(uint32_t _sp, uint32_t sp_end) {
+static void polygon(tscreenpoint *_sp, uint32_t sp_end) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+	uint32_t eax, edx, ecx, ebx, esi, ebp;
 	uint32_t stack_var00;
+	uint8_t *edi;
 
 //_sp = *sp, zeiger auf screenpoints
-	uint32_t pend, y, x_y, lb, lc, rb, rc; //int
+	uint32_t pend, y, lb, lc, rb, rc; //int
+	uint8_t *x_y;
 	float lx, ldx, lu, ldu, lv, ldv; //float
 	float rx, rdx, ru, rdu, rv, rdv; //float
 	uint32_t xa, xe, txt_x, txt_y; //int
@@ -2109,15 +2063,14 @@ static void polygon(uint32_t _sp, uint32_t sp_end) {
 	rb = eax;
 	pend = eax;
 
-	esi = _sp; //esi -> screenpoints
-	fpu_reg10 = ( ((tscreenpoint *)esi)->sp_y ); //st(0) = ymax
+	fpu_reg10 = ( _sp->sp_y ); //st(0) = ymax
 	fpu_reg11 = fpu_reg10; //st(1) = ymin
 
 	ecx = sp_end;
 	ecx = ecx - ( flatpsize ); //esi+ecx -> sp[sp_end-1]
 polygon_max_l:
 
-	fpu_reg12 = ( ((tscreenpoint *)(esi + ecx))->sp_y );
+	fpu_reg12 = ( ((tscreenpoint *)(((uint8_t *)_sp) + ecx))->sp_y );
 //ymax              ;gr”áten y-wert finden (endpunkt)
 
 
@@ -2151,11 +2104,9 @@ polygon_min:
 	y = edx;
 polygon_y0:
 	edx = ( (int32_t)edx ) * ( (int32_t)xres );
-	eax = erzdata.e_buffer;
 //        shr     eax,2
 //mov eax,0A0000h
-	edx = edx + eax;
-	x_y = edx;
+	x_y = (uint8_t *)(edx + erzdata.e_buffer);
 
 	lc = ( 1 );
 	rc = ( 1 );
@@ -2165,7 +2116,6 @@ polygon_y_l: //y-schleife
 //links
 	lc = ( (int32_t)lc ) - 1;
 	if (( (int32_t)lc ) != 0) goto polygon_l_nz;
-	edi = _sp;
 	esi = lb;
 polygon_lc:
 
@@ -2175,7 +2125,7 @@ polygon_lc:
 	  if (carry == 0) goto polygon_l0; } //wrap
 	esi = esi + sp_end;
 polygon_l0:
-	fpu_reg10 = ( ((tscreenpoint *)(esi + edi))->sp_y ); //lc = ceil(sp[lb].sy) - y
+	fpu_reg10 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_y ); //lc = ceil(sp[lb].sy) - y
 	lc =  (int32_t)ceil(fpu_reg10);
 	eax = y;
 	lc = ( (int32_t)lc ) - ( (int32_t)eax );
@@ -2184,44 +2134,44 @@ polygon_l0:
 
 
 	fpu_reg10 = ( (int32_t)y );
-	fpu_reg10 = fpu_reg10 - ( ((tscreenpoint *)(ebx + edi))->sp_y ); //(y  - sp[ia].y)
+	fpu_reg10 = fpu_reg10 - ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_y ); //(y  - sp[ia].y)
 
-	fpu_reg11 = ( ((tscreenpoint *)(edi + esi))->sp_y ); //(sp[lb].y - sp[ia].y)
-	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)(edi + ebx))->sp_y );
+	fpu_reg11 = ( ((tscreenpoint *)(((uint8_t *)_sp) + esi))->sp_y ); //(sp[lb].y - sp[ia].y)
+	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_y );
 
 //ldu = (sp[lb].u - sp[ia].u)/(sp[lb].y - sp[ia].y);
-	fpu_reg12 = ( ((tscreenpoint *)(edi + esi))->sp_u );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(edi + ebx))->sp_u );
+	fpu_reg12 = ( ((tscreenpoint *)(((uint8_t *)_sp) + esi))->sp_u );
+	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_u );
 	fpu_reg12 = fpu_reg12 / fpu_reg11;
 	ldu = fpu_reg12;
 
 //lu = ldu  *(y  - sp[ia].y) + sp[ia].u;
 	fpu_reg12 = fpu_reg12 * fpu_reg10;
-	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)(edi + ebx))->sp_u );
+	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_u );
 	txt_x =  (int32_t)ceil(fpu_reg12);
 	lu = fpu_reg12;
 
 //ldv = (sp[lb].v - sp[ia].v)/(sp[lb].y - sp[ia].y);
-	fpu_reg12 = ( ((tscreenpoint *)(edi + esi))->sp_v );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(edi + ebx))->sp_v );
+	fpu_reg12 = ( ((tscreenpoint *)(((uint8_t *)_sp) + esi))->sp_v );
+	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_v );
 	fpu_reg12 = fpu_reg12 / fpu_reg11;
 	ldv = fpu_reg12;
 
 //lv = ldv  *(y  - sp[ia].y) + sp[ia].v;
 	fpu_reg12 = fpu_reg12 * fpu_reg10;
-	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)(edi + ebx))->sp_v );
+	fpu_reg12 = fpu_reg12 + ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_v );
 	txt_y =  (int32_t)ceil(fpu_reg12);
 	lv = fpu_reg12;
 
 //ldx = (sp[lb].x - sp[ia].x)/(sp[lb].y - sp[ia].y);
-	fpu_reg12 = ( ((tscreenpoint *)(edi + esi))->sp_x );
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(edi + ebx))->sp_x );
+	fpu_reg12 = ( ((tscreenpoint *)(((uint8_t *)_sp) + esi))->sp_x );
+	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_x );
 	fpu_reg11 = fpu_reg12 / fpu_reg11;
 	ldx = fpu_reg11;
 
 //lx = ldx  *(y  - sp[ia].y) + sp[ia].x;
 	fpu_reg10 = fpu_reg10 * fpu_reg11;
-	fpu_reg10 = fpu_reg10 + ( ((tscreenpoint *)(edi + ebx))->sp_x );
+	fpu_reg10 = fpu_reg10 + ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_x );
 	lx = fpu_reg10;
 
 	goto polygon_l_z;
@@ -2243,7 +2193,6 @@ polygon_l_z:
 //rechts
 	rc = ( (int32_t)rc ) - 1;
 	if (( (int32_t)rc ) != 0) goto polygon_r_nz;
-	edi = _sp;
 	esi = rb;
 polygon_rc:
 
@@ -2254,7 +2203,7 @@ polygon_rc:
 	if (esi < sp_end) goto polygon_r0; //wrap
 	esi = 0;
 polygon_r0:
-	fpu_reg11 = ( ((tscreenpoint *)(esi + edi))->sp_y ); //rc = ceil(sp[rb].sy) - y
+	fpu_reg11 = ( ((tscreenpoint *)(esi + ((uint8_t *)_sp)))->sp_y ); //rc = ceil(sp[rb].sy) - y
 	rc =  (int32_t)ceil(fpu_reg11);
 	eax = y;
 	rc = ( (int32_t)rc ) - ( (int32_t)eax );
@@ -2263,42 +2212,42 @@ polygon_r0:
 
 
 	fpu_reg11 = ( (int32_t)y );
-	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)(ebx + edi))->sp_y ); //(y  - sp[ia].y)
+	fpu_reg11 = fpu_reg11 - ( ((tscreenpoint *)(ebx + ((uint8_t *)_sp)))->sp_y ); //(y  - sp[ia].y)
 
-	fpu_reg12 = ( ((tscreenpoint *)(edi + esi))->sp_y ); //(sp[rb].y - sp[ia].y)
-	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(edi + ebx))->sp_y );
+	fpu_reg12 = ( ((tscreenpoint *)(((uint8_t *)_sp) + esi))->sp_y ); //(sp[rb].y - sp[ia].y)
+	fpu_reg12 = fpu_reg12 - ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_y );
 
 //rdu = (sp[rb].u - sp[ia].u)/(sp[rb].y - sp[ia].y);
-	fpu_reg13 = ( ((tscreenpoint *)(edi + esi))->sp_u );
-	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(edi + ebx))->sp_u );
+	fpu_reg13 = ( ((tscreenpoint *)(((uint8_t *)_sp) + esi))->sp_u );
+	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_u );
 	fpu_reg13 = fpu_reg13 / fpu_reg12;
 	rdu = fpu_reg13;
 
 //ru = rdu  *(y  - sp[ia].y) + sp[ia].u;
 	fpu_reg13 = fpu_reg13 * fpu_reg11;
-	fpu_reg13 = fpu_reg13 + ( ((tscreenpoint *)(edi + ebx))->sp_u );
+	fpu_reg13 = fpu_reg13 + ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_u );
 	ru = fpu_reg13;
 
 //rdv = (sp[rb].v - sp[ia].v)/(sp[rb].y - sp[ia].y);
-	fpu_reg13 = ( ((tscreenpoint *)(edi + esi))->sp_v );
-	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(edi + ebx))->sp_v );
+	fpu_reg13 = ( ((tscreenpoint *)(((uint8_t *)_sp) + esi))->sp_v );
+	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_v );
 	fpu_reg13 = fpu_reg13 / fpu_reg12;
 	rdv = fpu_reg13;
 
 //rv = rdv  *(y  - sp[ia].y) + sp[ia].v;
 	fpu_reg13 = fpu_reg13 * fpu_reg11;
-	fpu_reg13 = fpu_reg13 + ( ((tscreenpoint *)(edi + ebx))->sp_v );
+	fpu_reg13 = fpu_reg13 + ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_v );
 	rv = fpu_reg13;
 
 //rdx = (sp[rb].x - sp[ia].x)/(sp[rb].y - sp[ia].y);
-	fpu_reg13 = ( ((tscreenpoint *)(edi + esi))->sp_x );
-	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(edi + ebx))->sp_x );
+	fpu_reg13 = ( ((tscreenpoint *)(((uint8_t *)_sp) + esi))->sp_x );
+	fpu_reg13 = fpu_reg13 - ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_x );
 	fpu_reg12 = fpu_reg13 / fpu_reg12;
 	rdx = fpu_reg12;
 
 //rx = rdx  *(y  - sp[ia].y) + sp[ia].x;
 	fpu_reg11 = fpu_reg11 * fpu_reg12;
-	fpu_reg11 = fpu_reg11 + ( ((tscreenpoint *)(edi + ebx))->sp_x );
+	fpu_reg11 = fpu_reg11 + ( ((tscreenpoint *)(((uint8_t *)_sp) + ebx))->sp_x );
 	rx = fpu_reg11;
 
 	goto polygon_r_z;
@@ -2327,25 +2276,23 @@ polygon_r_z:
 //edi = PPPP
 //ebp = u0Vv
 
-	edi = xa;
 	ecx = xe;
-	ecx = ( (int32_t)ecx ) - ( (int32_t)edi ); //ecx = CCCC
+	ecx = ( (int32_t)ecx ) - ( (int32_t)xa ); //ecx = CCCC
 	if (( (int32_t)ecx ) <= 0) goto polygon_w;
-	edi = edi + x_y; //edi = PPPP
+	edi = xa + x_y; //edi = PPPP
 
 	ebx = txt_x; //ebx = 00Xx
 	edx = (uint32_t)( (uint8_t)(ebx >> 8) ); //edx = 00?X
 	ebx = ebx << ( 24 ); //ebx = x000
 	ebx = (ebx & 0xffff0000) | (uint16_t)(( (uint16_t)txt_y )); //ebx = x0Yy
 
-	esi = erzdata.e_divtab;
 	fpu_reg10 = ru;
 	fpu_reg10 = fpu_reg10 - lu;
-	fpu_reg10 = fpu_reg10 * ( ((float *)(esi))[ecx] );
+	fpu_reg10 = fpu_reg10 * ( (erzdata.e_divtab)[ecx] );
 	txt_x =  (int32_t)ceil(fpu_reg10);
 	fpu_reg10 = rv;
 	fpu_reg10 = fpu_reg10 - lv;
-	fpu_reg10 = fpu_reg10 * ( ((float *)(esi))[ecx] );
+	fpu_reg10 = fpu_reg10 * ( (erzdata.e_divtab)[ecx] );
 	txt_y =  (int32_t)ceil(fpu_reg10);
 
 	ecx = ecx - 1;
@@ -2354,14 +2301,13 @@ polygon_r_z:
 	ecx = (ecx & 0xffffff00) | (uint8_t)(( (uint8_t)(eax >> 8) )); //ecx = CCCU
 	eax = eax << ( 24 ); //eax = u000
 	eax = (eax & 0xffff0000) | (uint16_t)(( (uint16_t)txt_y )); //eax = u0Vv
-	esi = erzdata.e_pic2; //esi = TTTT
 
 	stack_var00 = ( 0 /*ebp*/ ); //ebp : lokale variablen
 	ebp = eax;
 
 	edx = set_high_byte(edx, ( (uint8_t)(ebx >> 8) ));
 polygon_inner:
-	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(esi + edx)) ));
+	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(erzdata.e_pic2 + edx)) ));
 	{ uint32_t carry = (UINT32_MAX - ebx < ebp)?1:0; ebx = ebx + ebp;
 	  edx = (edx & 0xffffff00) | (uint8_t)(( (uint8_t)edx ) + ( (uint8_t)ecx ) + carry); }
 //if gfx gt 0
@@ -2392,47 +2338,50 @@ polygon_weg:
 }
 
 
-static void xformchain(uint32_t rings, uint32_t _ebx, uint32_t _edx, uint32_t _edi) {
+static void xformchain(uint32_t rings, tvec *ebx, tvec *edx, tpoint *edi) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
-	uint32_t eax, edx = _edx, ecx, edi = _edi, ebx = _ebx, esi;
-	uint32_t stack_var00, stack_var01, stack_var02;
+	uint32_t eax, ecx;
+	uint32_t stack_var00;
+	tviewer *esi;
 
 //-> ebx -> ringlist
 //-> edx -> normalslist
 //-> edi -> tempdata
 	float z;
-	uint32_t z1, xy, uv, temp;
+	uint32_t z1;
+	tpoint *xy, *uv, *es2, *eb2, *stack_var01, *stack_var02, *stack_var03;
+	tscreenpoint *temp, *ed2, *eb3;
 
 
 	xy = edi;
-	esi = ( (uint32_t)&(viewer) );
+	esi = &(viewer);
 
 	ecx = rings;
 	ecx = ( (int32_t)ecx ) * ( ringpoints );
 xformchain_l0:
-	fpu_reg10 = ( ((tvec *)ebx)->x1 );
-	fpu_reg10 = fpu_reg10 - ( ((tviewer *)esi)->v_p.x1 );
-	fpu_reg11 = ( ((tvec *)ebx)->x2 );
-	fpu_reg11 = fpu_reg11 - ( ((tviewer *)esi)->v_p.x2 );
-	fpu_reg12 = ( ((tvec *)ebx)->x3 );
-	fpu_reg12 = fpu_reg12 - ( ((tviewer *)esi)->v_p.x3 );
+	fpu_reg10 = ( ebx->x1 );
+	fpu_reg10 = fpu_reg10 - ( esi->v_p.x1 );
+	fpu_reg11 = ( ebx->x2 );
+	fpu_reg11 = fpu_reg11 - ( esi->v_p.x2 );
+	fpu_reg12 = ( ebx->x3 );
+	fpu_reg12 = fpu_reg12 - ( esi->v_p.x3 );
 
-	fpu_reg13 = ( ((tviewer *)esi)->v_l3.x1 ); //z
+	fpu_reg13 = ( esi->v_l3.x1 ); //z
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l3.x2 );
+	fpu_reg14 = ( esi->v_l3.x2 );
 	fpu_reg14 = fpu_reg14 * fpu_reg11;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l3.x3 );
+	fpu_reg14 = ( esi->v_l3.x3 );
 	fpu_reg14 = fpu_reg14 * fpu_reg12;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
 	z = fpu_reg13;
 
-	fpu_reg13 = ( ((tviewer *)esi)->v_l1.x1 ); //x
+	fpu_reg13 = ( esi->v_l1.x1 ); //x
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l1.x2 );
+	fpu_reg14 = ( esi->v_l1.x2 );
 	fpu_reg14 = fpu_reg14 * fpu_reg11;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l1.x3 );
+	fpu_reg14 = ( esi->v_l1.x3 );
 	fpu_reg14 = fpu_reg14 * fpu_reg12;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
 	fpu_reg13 = fpu_reg13 * c_xfov;
@@ -2440,13 +2389,13 @@ xformchain_l0:
 	fpu_reg14 = 1.0;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
 	fpu_reg13 = fpu_reg13 * xmid;
-	((tpoint *)edi)->p_x = fpu_reg13;
+	edi->p_x = fpu_reg13;
 
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x1 ); //y
+	fpu_reg13 = ( esi->v_l2.x1 ); //y
 	fpu_reg10 = fpu_reg10 * fpu_reg13;
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x2 );
+	fpu_reg13 = ( esi->v_l2.x2 );
 	fpu_reg11 = fpu_reg11 * fpu_reg13;
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x3 );
+	fpu_reg13 = ( esi->v_l2.x3 );
 	fpu_reg12 = fpu_reg12 * fpu_reg13;
 	fpu_reg11 = fpu_reg11 + fpu_reg12;
 	fpu_reg10 = fpu_reg10 + fpu_reg11;
@@ -2455,11 +2404,11 @@ xformchain_l0:
 	fpu_reg11 = 1.0;
 	fpu_reg10 = fpu_reg11 - fpu_reg10;
 	fpu_reg10 = fpu_reg10 * ymid;
-	((tpoint *)edi)->p_y = fpu_reg10;
+	edi->p_y = fpu_reg10;
 
 
-	ebx = ebx + ( sizeof(tvec) );
-	edi = edi + ( sizeof(tpoint) );
+	ebx = ebx + ( 1 );
+	edi = edi + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto xformchain_l0;
 
@@ -2468,47 +2417,47 @@ xformchain_l0:
 	ecx = rings;
 	ecx = ( (int32_t)ecx ) * ( ringpoints );
 xformchain_l1:
-	fpu_reg10 = ( ((tvec *)edx)->x1 );
-	fpu_reg11 = ( ((tvec *)edx)->x2 );
-	fpu_reg12 = ( ((tvec *)edx)->x3 );
+	fpu_reg10 = ( edx->x1 );
+	fpu_reg11 = ( edx->x2 );
+	fpu_reg12 = ( edx->x3 );
 
-	fpu_reg13 = ( ((tviewer *)esi)->v_l1.x1 ); //x
+	fpu_reg13 = ( esi->v_l1.x1 ); //x
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l1.x2 );
+	fpu_reg14 = ( esi->v_l1.x2 );
 	fpu_reg14 = fpu_reg14 * fpu_reg11;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
-	fpu_reg14 = ( ((tviewer *)esi)->v_l1.x3 );
+	fpu_reg14 = ( esi->v_l1.x3 );
 	fpu_reg14 = fpu_reg14 * fpu_reg12;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
 	fpu_reg14 = 1.0;
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
 	fpu_reg13 = fpu_reg13 * erzdata.e_xres2; //nscale
-	((tpoint *)edi)->p_x = fpu_reg13;
+	edi->p_x = fpu_reg13;
 
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x1 ); //y
+	fpu_reg13 = ( esi->v_l2.x1 ); //y
 	fpu_reg10 = fpu_reg10 * fpu_reg13;
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x2 );
+	fpu_reg13 = ( esi->v_l2.x2 );
 	fpu_reg11 = fpu_reg11 * fpu_reg13;
-	fpu_reg13 = ( ((tviewer *)esi)->v_l2.x3 );
+	fpu_reg13 = ( esi->v_l2.x3 );
 	fpu_reg12 = fpu_reg12 * fpu_reg13;
 	fpu_reg11 = fpu_reg11 + fpu_reg12;
 	fpu_reg10 = fpu_reg10 + fpu_reg11;
 	fpu_reg11 = 1.0;
 	fpu_reg10 = fpu_reg10 + fpu_reg11;
 	fpu_reg10 = fpu_reg10 * erzdata.e_yres2; //nscale
-	((tpoint *)edi)->p_y = fpu_reg10;
+	edi->p_y = fpu_reg10;
 
 
-	edx = edx + ( sizeof(tvec) );
-	edi = edi + ( sizeof(tpoint) );
+	edx = edx + ( 1 );
+	edi = edi + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto xformchain_l1;
 
 
-	temp = edi;
+	temp = (tscreenpoint *)edi;
 
-	esi = xy;
-	ebx = uv;
+	es2 = xy;
+	eb2 = uv;
 
 	ecx = rings;
 	ecx = ecx - 1;
@@ -2516,104 +2465,102 @@ xformchain_l1:
 xformchain_l2:
 	ecx = ( ringpoints - 1 );
 xformchain_l3:
-	edi = temp;
-	((tscreenpoint *)edi)->sp_x = ((tpoint *)esi)->p_x;
-	((tscreenpoint *)edi)->sp_y = ((tpoint *)esi)->p_y;
-	((tscreenpoint *)edi)->sp_u = ((tpoint *)ebx)->p_x;
-	((tscreenpoint *)edi)->sp_v = ((tpoint *)ebx)->p_y;
-	edi = edi + ( sizeof(tscreenpoint) );
+	ed2 = temp;
+	ed2->sp_x = es2->p_x;
+	ed2->sp_y = es2->p_y;
+	ed2->sp_u = eb2->p_x;
+	ed2->sp_v = eb2->p_y;
+	ed2 = ed2 + ( 1 );
 
-	((tscreenpoint *)edi)->sp_x = ((tpoint *)esi)[1].p_x;
-	((tscreenpoint *)edi)->sp_y = ((tpoint *)esi)[1].p_y;
-	((tscreenpoint *)edi)->sp_u = ((tpoint *)ebx)[1].p_x;
-	((tscreenpoint *)edi)->sp_v = ((tpoint *)ebx)[1].p_y;
-	edi = edi + ( sizeof(tscreenpoint) );
+	ed2->sp_x = es2[1].p_x;
+	ed2->sp_y = es2[1].p_y;
+	ed2->sp_u = eb2[1].p_x;
+	ed2->sp_v = eb2[1].p_y;
+	ed2 = ed2 + ( 1 );
 
-	((tscreenpoint *)edi)->sp_x = ((tpoint *)esi)[( ringpoints + 1 )].p_x;
-	((tscreenpoint *)edi)->sp_y = ((tpoint *)esi)[( ringpoints + 1 )].p_y;
-	((tscreenpoint *)edi)->sp_u = ((tpoint *)ebx)[( ringpoints + 1 )].p_x;
-	((tscreenpoint *)edi)->sp_v = ((tpoint *)ebx)[( ringpoints + 1 )].p_y;
-	edi = edi + ( sizeof(tscreenpoint) );
+	ed2->sp_x = es2[( ringpoints + 1 )].p_x;
+	ed2->sp_y = es2[( ringpoints + 1 )].p_y;
+	ed2->sp_u = eb2[( ringpoints + 1 )].p_x;
+	ed2->sp_v = eb2[( ringpoints + 1 )].p_y;
+	ed2 = ed2 + ( 1 );
 
-	((tscreenpoint *)edi)->sp_x = ((tpoint *)esi)[ringpoints].p_x;
-	((tscreenpoint *)edi)->sp_y = ((tpoint *)esi)[ringpoints].p_y;
-	((tscreenpoint *)edi)->sp_u = ((tpoint *)ebx)[ringpoints].p_x;
-	((tscreenpoint *)edi)->sp_v = ((tpoint *)ebx)[ringpoints].p_y;
-	edi = edi + ( sizeof(tscreenpoint) );
+	ed2->sp_x = es2[ringpoints].p_x;
+	ed2->sp_y = es2[ringpoints].p_y;
+	ed2->sp_u = eb2[ringpoints].p_x;
+	ed2->sp_v = eb2[ringpoints].p_y;
+	ed2 = ed2 + ( 1 );
 
 
 	stack_var00 = ecx;
-	stack_var01 = esi;
-	stack_var02 = ebx;
-	ebx = temp;
+	stack_var01 = es2;
+	stack_var02 = eb2;
+	eb3 = temp;
 
-	checkdir(ebx, fpu_reg10, fpu_reg11);
+	checkdir(eb3, fpu_reg10, fpu_reg11);
 
 
 
 	if (fpu_reg11 <= fpu_reg10) goto xformchain_w0;
-	eax = xclip(ebx, edi);
+	eax = xclip(eb3, ed2);
 
 	if (( (int32_t)eax ) != 0) goto xformchain_w0;
-	edi = edi - ebx;
-	polygon(ebx, edi);
+	polygon(eb3, (uintptr_t)ed2 - (uintptr_t)eb3);
 xformchain_w0:
 
-	ebx = stack_var02;
-	esi = stack_var01;
+	eb2 = stack_var02;
+	es2 = stack_var01;
 	ecx = stack_var00;
-	esi = esi + ( sizeof(tpoint) );
-	ebx = ebx + ( sizeof(tpoint) );
+	es2 = es2 + ( 1 );
+	eb2 = eb2 + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto xformchain_l3;
 
-	edi = temp;
-	((tscreenpoint *)edi)->sp_x = ((tpoint *)esi)->p_x;
-	((tscreenpoint *)edi)->sp_y = ((tpoint *)esi)->p_y;
-	((tscreenpoint *)edi)->sp_u = ((tpoint *)ebx)->p_x;
-	((tscreenpoint *)edi)->sp_v = ((tpoint *)ebx)->p_y;
-	edi = edi + ( sizeof(tscreenpoint) );
+	ed2 = temp;
+	ed2->sp_x = es2->p_x;
+	ed2->sp_y = es2->p_y;
+	ed2->sp_u = eb2->p_x;
+	ed2->sp_v = eb2->p_y;
+	ed2 = ed2 + ( 1 );
 
-	((tscreenpoint *)edi)->sp_x = ((tpoint *)esi)[( 1 - ringpoints )].p_x;
-	((tscreenpoint *)edi)->sp_y = ((tpoint *)esi)[( 1 - ringpoints )].p_y;
-	((tscreenpoint *)edi)->sp_u = ((tpoint *)ebx)[( 1 - ringpoints )].p_x;
-	((tscreenpoint *)edi)->sp_v = ((tpoint *)ebx)[( 1 - ringpoints )].p_y;
-	edi = edi + ( sizeof(tscreenpoint) );
+	ed2->sp_x = es2[( 1 - ringpoints )].p_x;
+	ed2->sp_y = es2[( 1 - ringpoints )].p_y;
+	ed2->sp_u = eb2[( 1 - ringpoints )].p_x;
+	ed2->sp_v = eb2[( 1 - ringpoints )].p_y;
+	ed2 = ed2 + ( 1 );
 
-	((tscreenpoint *)edi)->sp_x = ((tpoint *)esi)[1].p_x;
-	((tscreenpoint *)edi)->sp_y = ((tpoint *)esi)[1].p_y;
-	((tscreenpoint *)edi)->sp_u = ((tpoint *)ebx)[1].p_x;
-	((tscreenpoint *)edi)->sp_v = ((tpoint *)ebx)[1].p_y;
-	edi = edi + ( sizeof(tscreenpoint) );
+	ed2->sp_x = es2[1].p_x;
+	ed2->sp_y = es2[1].p_y;
+	ed2->sp_u = eb2[1].p_x;
+	ed2->sp_v = eb2[1].p_y;
+	ed2 = ed2 + ( 1 );
 
-	((tscreenpoint *)edi)->sp_x = ((tpoint *)esi)[ringpoints].p_x;
-	((tscreenpoint *)edi)->sp_y = ((tpoint *)esi)[ringpoints].p_y;
-	((tscreenpoint *)edi)->sp_u = ((tpoint *)ebx)[ringpoints].p_x;
-	((tscreenpoint *)edi)->sp_v = ((tpoint *)ebx)[ringpoints].p_y;
-	edi = edi + ( sizeof(tscreenpoint) );
+	ed2->sp_x = es2[ringpoints].p_x;
+	ed2->sp_y = es2[ringpoints].p_y;
+	ed2->sp_u = eb2[ringpoints].p_x;
+	ed2->sp_v = eb2[ringpoints].p_y;
+	ed2 = ed2 + ( 1 );
 
 
-	stack_var00 = esi;
-	stack_var01 = ebx;
+	stack_var03 = es2;
+	stack_var01 = eb2;
 
-	ebx = temp;
+	eb3 = temp;
 
-	checkdir(ebx, fpu_reg10, fpu_reg11);
+	checkdir(eb3, fpu_reg10, fpu_reg11);
 
 
 
 	if (fpu_reg11 <= fpu_reg10) goto xformchain_w1;
-	eax = xclip(ebx, edi);
+	eax = xclip(eb3, ed2);
 
 	if (( (int32_t)eax ) != 0) goto xformchain_w1;
-	edi = edi - ebx;
-	polygon(ebx, edi);
+	polygon(eb3, (uintptr_t)ed2 - (uintptr_t)eb3);
 xformchain_w1:
 
-	ebx = stack_var01;
-	esi = stack_var00;
-	esi = esi + ( sizeof(tpoint) );
-	ebx = ebx + ( sizeof(tpoint) );
+	eb2 = stack_var01;
+	es2 = stack_var03;
+	es2 = es2 + ( 1 );
+	eb2 = eb2 + ( 1 );
 
 
 	z1 = ( (int32_t)z1 ) - 1;
@@ -2626,71 +2573,70 @@ xformchain_w1:
 
 static void drawchains(void) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12;
-	uint32_t eax, edx, ecx, edi, ebx, esi;
-	uint32_t stack_var00, stack_var01, stack_var02;
+	uint32_t eax, ecx;
+	uint32_t stack_var02;
 	uint32_t z;
+	tvec *edi;
+	tchain *esi, *stack_var00;
+	tvec *es2;
+	tcpoint *ebx, *stack_var01;
 
 	esi = erzdata.e_chain; //esi -> tchain
 	ecx = erzdata.e_chains;
 	z = ecx;
 drawchains_l:
 
-	eax = ( ((tchain *)esi)->c_lastpoint );
+	eax = ( esi->c_lastpoint );
 
 	if (( (int32_t)eax ) == 0) goto drawchains_drops;
 
 	eax = eax + ( hsphererings * 2 + meltrings ); //eax = rings
-	ebx = ( ((tchain *)esi)->c_ringlist );
-	edx = ( ((tchain *)esi)->c_normalslist );
-	edi = erzdata.e_tempdata;
 	stack_var00 = esi;
-	xformchain(eax, ebx, edx, edi);
+	xformchain(eax, (tvec *)esi->c_ringlist, (tvec *)( esi->c_normalslist ), (tpoint *)erzdata.e_tempdata);
 	esi = stack_var00;
 drawchains_drops:
-	eax = ( ((tchain *)esi)->c_lastpoint );
-	ecx = ( ((tchain *)esi)->c_points ); //esi -> tchain
+	eax = ( esi->c_lastpoint );
+	ecx = ( esi->c_points ); //esi -> tchain
 	ecx = ( (int32_t)ecx ) - ( (int32_t)eax ); //ecx = tropfen
 	if (( (int32_t)ecx ) == 0) goto drawchains_w;
-	ebx = ( (int32_t)eax ) * ( sizeof(tcpoint) );
-	ebx = ebx + ( ((tchain *)esi)->c_pointlist );
+	ebx = eax + ( esi->c_pointlist );
 	stack_var00 = esi;
 
 //no chain left?
 	if (( (int32_t)eax ) != 0) goto drawchains_t_l;
 //last drop as sphere
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_y );
+	fpu_reg10 = ( ebx->cp_y );
 
 
 
 	if (fpu_reg10 < c_ymin) goto drawchains_w0;
 
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_dx );
+	fpu_reg10 = ( ebx->cp_dx );
 	fpu_reg10 = fpu_reg10 * t;
-	fpu_reg10 = fpu_reg10 + ( ((tcpoint *)ebx)->cp_x );
-	fpu_reg11 = ( ((tcpoint *)ebx)->cp_dy );
+	fpu_reg10 = fpu_reg10 + ( ebx->cp_x );
+	fpu_reg11 = ( ebx->cp_dy );
 	fpu_reg11 = fpu_reg11 * t;
-	fpu_reg11 = fpu_reg11 + ( ((tcpoint *)ebx)->cp_y );
+	fpu_reg11 = fpu_reg11 + ( ebx->cp_y );
 
 	stack_var01 = ebx;
 	stack_var02 = ecx;
 
-	edi = erzdata.e_tempdata;
-	ebx = edi;
-	esi = erzdata.e_sphere;
+	edi = (tvec *)erzdata.e_tempdata;
+	es2 = (tvec *)erzdata.e_sphere;
 
 	ecx = ( ( hsphererings * 2 + 1 ) * ringpoints );
 drawchains_l0:
-	fpu_reg12 = ( ((tvec *)esi)->x1 );
+	fpu_reg12 = ( es2->x1 );
 	fpu_reg12 = fpu_reg12 + fpu_reg10;
-	((tvec *)edi)->x1 = fpu_reg12;
-	fpu_reg12 = ( ((tvec *)esi)->x2 );
-	((tvec *)edi)->x2 = fpu_reg12;
-	fpu_reg12 = ( ((tvec *)esi)->x3 );
+	edi->x1 = fpu_reg12;
+	fpu_reg12 = ( es2->x2 );
+	edi->x2 = fpu_reg12;
+	fpu_reg12 = ( es2->x3 );
 	fpu_reg12 = fpu_reg12 + fpu_reg11;
-	((tvec *)edi)->x3 = fpu_reg12;
+	edi->x3 = fpu_reg12;
 
-	esi = esi + ( sizeof(tvec) );
-	edi = edi + ( sizeof(tvec) );
+	es2 = es2 + ( 1 );
+	edi = edi + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto drawchains_l0;
 
@@ -2698,50 +2644,48 @@ drawchains_l0:
 
 
 //ebx -> ringlist, edi -> tempdata
-	edx = erzdata.e_sphere;
-	xformchain(( hsphererings * 2 + 1 ), ebx, edx, edi);
+	xformchain(( hsphererings * 2 + 1 ), (tvec *)erzdata.e_tempdata, (tvec *)erzdata.e_sphere, (tpoint *)edi);
 
 	ecx = stack_var02;
 	ebx = stack_var01;
 
-	ebx = ebx + ( sizeof(tcpoint) );
+	ebx = ebx + ( 1 );
 	ecx = ecx - 1;
 
 drawchains_t_l:
 
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_y );
+	fpu_reg10 = ( ebx->cp_y );
 
 
 
 	if (fpu_reg10 < c_ymin) goto drawchains_w0;
 
-	fpu_reg10 = ( ((tcpoint *)ebx)->cp_dx );
+	fpu_reg10 = ( ebx->cp_dx );
 	fpu_reg10 = fpu_reg10 * t;
-	fpu_reg10 = fpu_reg10 + ( ((tcpoint *)ebx)->cp_x );
-	fpu_reg11 = ( ((tcpoint *)ebx)->cp_dy );
+	fpu_reg10 = fpu_reg10 + ( ebx->cp_x );
+	fpu_reg11 = ( ebx->cp_dy );
 	fpu_reg11 = fpu_reg11 * t;
-	fpu_reg11 = fpu_reg11 + ( ((tcpoint *)ebx)->cp_y );
+	fpu_reg11 = fpu_reg11 + ( ebx->cp_y );
 
 	stack_var01 = ebx;
 	stack_var02 = ecx;
 
-	edi = erzdata.e_tempdata;
-	ebx = edi;
-	esi = erzdata.e_ringlist;
+	edi = (tvec *)erzdata.e_tempdata;
+	es2 = (tvec *)erzdata.e_ringlist;
 
 	ecx = ( ( meltrings / 2 + 1 + hsphererings ) * ringpoints );
 drawchains_l1:
-	fpu_reg12 = ( ((tvec *)esi)->x1 );
+	fpu_reg12 = ( es2->x1 );
 	fpu_reg12 = fpu_reg12 + fpu_reg10;
-	((tvec *)edi)->x1 = fpu_reg12;
-	fpu_reg12 = ( ((tvec *)esi)->x2 );
-	((tvec *)edi)->x2 = fpu_reg12;
-	fpu_reg12 = ( ((tvec *)esi)->x3 );
+	edi->x1 = fpu_reg12;
+	fpu_reg12 = ( es2->x2 );
+	edi->x2 = fpu_reg12;
+	fpu_reg12 = ( es2->x3 );
 	fpu_reg12 = fpu_reg12 + fpu_reg11;
-	((tvec *)edi)->x3 = fpu_reg12;
+	edi->x3 = fpu_reg12;
 
-	esi = esi + ( sizeof(tvec) );
-	edi = edi + ( sizeof(tvec) );
+	es2 = es2 + ( 1 );
+	edi = edi + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto drawchains_l1;
 
@@ -2749,19 +2693,18 @@ drawchains_l1:
 
 
 //ebx -> ringlist, edi -> tempdata
-	edx = erzdata.e_normalslist;
-	xformchain(( meltrings / 2 + 1 + hsphererings ), ebx, edx, edi);
+	xformchain(( meltrings / 2 + 1 + hsphererings ), (tvec *)erzdata.e_tempdata, (tvec *)erzdata.e_normalslist, (tpoint *)edi);
 
 	ecx = stack_var02;
 	ebx = stack_var01;
 
-	ebx = ebx + ( sizeof(tcpoint) );
+	ebx = ebx + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto drawchains_t_l;
 drawchains_w0:
 	esi = stack_var00; //esi -> tchain
 drawchains_w:
-	esi = esi + ( sizeof(tchain) );
+	esi = esi + ( 1 );
 	z = ( (int32_t)z ) - 1;
 	if (( (int32_t)z ) != 0) goto drawchains_l;
 
@@ -2771,7 +2714,8 @@ drawchains_w:
 
 
 static void clearbuffer(void) {
-	uint32_t eax, ecx, edi;
+	uint32_t eax, ecx;
+	int8_t *edi;
 
 	ecx = xres;
 	ecx = ( (int32_t)ecx ) * ( (int32_t)yres );
@@ -2786,11 +2730,11 @@ static void clearbuffer(void) {
 
 
 static void copybuffer8(void) {
-	uint32_t ecx, edi, esi, ebp;
-	uint32_t stack_var00;
+	uint32_t ecx, ebp;
+	int8_t *edi, *esi, *stack_var00;
 
 	esi = erzdata.e_buffer;
-	edi = linbuf;
+	edi = (int8_t *)linbuf;
 	ebp = yres;
 copybuffer8_y_l:
 	stack_var00 = edi;
@@ -2810,12 +2754,11 @@ copybuffer8_y_l:
 
 
 static void copybuffer16(void) {
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
-	uint32_t stack_var00;
+	uint32_t eax, edx, ecx, ebp;
+	int8_t *edi, *esi, *stack_var00;
 
 	esi = erzdata.e_buffer;
-	edi = linbuf;
-	ebx = erzdata.e_paltab;
+	edi = (int8_t *)linbuf;
 	ebp = yres;
 	eax = 0;
 copybuffer16_y_l:
@@ -2824,14 +2767,14 @@ copybuffer16_y_l:
 	ecx = xres;
 	ecx = ecx >> ( 1 );
 copybuffer16_x_l:
-	eax = (eax & 0xffffff00) | (uint8_t)(( ((uint8_t *)(esi))[1] ));
+	eax = (uint8_t)(( ((uint8_t *)(esi))[1] ));
 
-	edx = /*(edx & 0xffff0000) |*/ (uint16_t)(( ((uint16_t *)(ebx))[eax] ));
+	edx = (uint16_t)(( ((uint16_t *)(erzdata.e_paltab))[eax] ));
 
-	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(esi)) ));
+	eax = (uint8_t)(( *((uint8_t *)(esi)) ));
 	edx = edx << ( 16 );
 	esi = esi + ( 2 );
-	edx = (edx & 0xffff0000) | (uint16_t)(( ((uint16_t *)(ebx))[eax] ));
+	edx = edx | (uint16_t)(( ((uint16_t *)(erzdata.e_paltab))[eax] ));
 
 	*((uint32_t *)(edi)) = edx;
 	edi = edi + ( 4 );
@@ -2850,12 +2793,12 @@ copybuffer16_x_l:
 
 
 static void copybuffer24(void) {
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
-	uint32_t stack_var00, stack_var01;
+	uint32_t eax, edx, ecx, ebp;
+	uint32_t stack_var01;
+	int8_t *edi, *esi, *stack_var00;
 
 	esi = erzdata.e_buffer;
-	edi = linbuf;
-	ebx = erzdata.e_paltab;
+	edi = (int8_t *)linbuf;
 	ebp = yres;
 	eax = 0;
 copybuffer24_y_l:
@@ -2866,33 +2809,33 @@ copybuffer24_y_l:
 	ecx = ecx >> ( 2 );
 copybuffer24_x_l:
 //1.
-	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(esi)) ));
+	eax = (uint8_t)(( *((uint8_t *)(esi)) ));
 	esi = esi + 1;
-	ebp = ( ((uint32_t *)(ebx))[eax] ); //030201h;
+	ebp = ( ((uint32_t *)(erzdata.e_paltab))[eax] ); //030201h;
 
 //2.
-	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(esi)) ));
+	eax = (uint8_t)(( *((uint8_t *)(esi)) ));
 	ebp = ebp << ( 8 );
 	esi = esi + 1;
-	edx = ( ((uint32_t *)(ebx))[eax] ); //060504h;
+	edx = ( ((uint32_t *)(erzdata.e_paltab))[eax] ); //060504h;
 
 //3.
-	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(esi)) ));
+	eax = (uint8_t)(( *((uint8_t *)(esi)) ));
 	ebp = (ebp >> ( 8 )) | (edx << (32 - ( 8 )));
 	esi = esi + 1;
 	*((uint32_t *)(edi)) = ebp;
 	edi = edi + ( 4 );
-	ebp = ( ((uint32_t *)(ebx))[eax] ); //090807h;
+	ebp = ( ((uint32_t *)(erzdata.e_paltab))[eax] ); //090807h;
 	edx = edx << ( 8 );
 
 //4.
-	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(esi)) ));
+	eax = (uint8_t)(( *((uint8_t *)(esi)) ));
 	edx = (edx >> ( 16 )) | (ebp << (32 - ( 16 )));
 	esi = esi + 1;
 	*((uint32_t *)(edi)) = edx;
 	edi = edi + ( 4 );
 	ebp = ebp << ( 8 );
-	edx = ( ((uint32_t *)(ebx))[eax] ); //0c0b0ah;
+	edx = ( ((uint32_t *)(erzdata.e_paltab))[eax] ); //0c0b0ah;
 
 	edx = (edx << ( 8 )) | (ebp >> (32 - ( 8 )));
 	*((uint32_t *)(edi)) = edx;
@@ -2913,12 +2856,11 @@ copybuffer24_x_l:
 
 
 static void copybuffer32(void) {
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
-	uint32_t stack_var00;
+	uint32_t eax, edx, ecx, ebp;
+	int8_t *edi, *esi, *stack_var00;
 
 	esi = erzdata.e_buffer;
-	edi = linbuf;
-	ebx = erzdata.e_paltab;
+	edi = (int8_t *)linbuf;
 	ebp = yres;
 	eax = 0;
 copybuffer32_y_l:
@@ -2926,9 +2868,9 @@ copybuffer32_y_l:
 
 	ecx = xres;
 copybuffer32_x_l:
-	eax = (eax & 0xffffff00) | (uint8_t)(( *((uint8_t *)(esi)) ));
+	eax = (uint8_t)(( *((uint8_t *)(esi)) ));
 	esi = esi + 1;
-	edx = ( ((uint32_t *)(ebx))[eax] );
+	edx = ( ((uint32_t *)(erzdata.e_paltab))[eax] );
 
 	*((uint32_t *)(edi)) = edx;
 	edi = edi + ( 4 );
@@ -3002,23 +2944,21 @@ copybuffer32_x_l:
 
 static void init1(void) {
 	realnum fpu_reg10, fpu_reg11;
-	uint32_t ecx, edi;
+	uint32_t ecx;
 
 //divtab
-	edi = erzdata.e_divtab;
 	ecx = ( 1 );
 	fpu_reg10 = 0.0;
-	*((float *)(edi)) = fpu_reg10;
+	*(erzdata.e_divtab) = fpu_reg10;
 init1_l:
 	fpu_reg11 = 1.0;
 	fpu_reg10 = fpu_reg10 + fpu_reg11;
 	fpu_reg11 = 1.0;
 	fpu_reg11 = fpu_reg11 / fpu_reg10;
-	((float *)(edi))[ecx] = fpu_reg11;
+	(erzdata.e_divtab)[ecx] = fpu_reg11;
 	ecx = ecx + 1;
 
 	if (ecx <= xres) goto init1_l;
-//edi -> divtab
 
 //xmid & ymid
 	fpu_reg10 = ( (int32_t)xres );
@@ -3032,55 +2972,47 @@ init1_l:
 }
 
 
-static void initpaltab(uint32_t _esi) {
-	uint32_t eax, edx, ecx, edi, ebx, esi = _esi;
+static void initpaltab(tvesa *esi) {
+	uint32_t eax, edx;
 //-> esi -> tvesa
 	uint32_t col;
 	//int32_t z;
+	uint8_t *ebx;
 
+	if (esi->vesa_pbytes > 1) goto initpaltab_dcol;
 
-	if (( ((tvesa *)esi)->vesa_pbytes ) > ( 1 )) goto initpaltab_dcol;
-
-	esi = erzdata.e_pal;
+	//esi = erzdata.e_pal;
 // todo:         call    setpal
 	goto initpaltab_weg;
 initpaltab_dcol:
 
 	edx = ( 255 );
-	ebx = ( 255 * 3 );
-	ebx = ebx + erzdata.e_pal;
-	edi = erzdata.e_paltab;
+	ebx = 255 * 3 + erzdata.e_pal;
 initpaltab_pl:
 	eax = (uint32_t)( *((uint8_t *)(ebx)) ); //red
-	ecx = /*(ecx & 0xffffff00) |*/ (uint8_t)(( ((tvesa *)esi)->vesa_redbits ));
-	eax = eax << ( (uint8_t)ecx );
+	eax = eax << esi->vesa_redbits;
 	eax = eax >> ( 8 );
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_redpos ));
-	eax = eax << ( (uint8_t)ecx );
+	eax = eax << esi->vesa_redpos;
 	col = eax;
 
 	eax = (uint32_t)( ((uint8_t *)(ebx))[1] ); //green
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_greenbits ));
-	eax = eax << ( (uint8_t)ecx );
+	eax = eax << esi->vesa_greenbits;
 	eax = eax >> ( 8 );
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_greenpos ));
-	eax = eax << ( (uint8_t)ecx );
+	eax = eax << esi->vesa_greenpos;
 	col = col | eax;
 
 	eax = (uint32_t)( ((uint8_t *)(ebx))[2] ); //blue
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_bluebits ));
-	eax = eax << ( (uint8_t)ecx );
+	eax = eax << esi->vesa_bluebits;
 	eax = eax >> ( 8 );
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_bluepos ));
-	eax = eax << ( (uint8_t)ecx );
+	eax = eax << esi->vesa_bluepos;
 	eax = eax | col;
 
 
-	if (( ((tvesa *)esi)->vesa_pbytes ) > ( 2 )) goto initpaltab_32;
-	((uint16_t *)(edi))[edx] = (uint16_t) (( (uint16_t)eax ));
+	if (esi->vesa_pbytes > 2) goto initpaltab_32;
+	((uint16_t *)(erzdata.e_paltab))[edx] = (uint16_t) (( (uint16_t)eax ));
 	goto initpaltab_0;
 initpaltab_32:
-	((uint32_t *)(edi))[edx] = eax;
+	((uint32_t *)(erzdata.e_paltab))[edx] = eax;
 initpaltab_0:
 	ebx = ebx - ( 3 );
 	edx = ( (int32_t)edx ) - 1;
@@ -3093,22 +3025,16 @@ initpaltab_weg:
 
 
 
-extern "C" void initedata(uint32_t _esi) {
-	uint32_t eax, esi = _esi;
+extern "C" void initedata(tvesa *esi) {
 //esi -> tvesa
 
-	eax = ( ((tvesa *)esi)->vesa_xbytes );
-	xbytes = eax;
-	eax = ( ((tvesa *)esi)->vesa_xres );
-	xres = eax;
-	eax = ( ((tvesa *)esi)->vesa_yres );
-	yres = eax;
-	eax = ( ((tvesa *)esi)->vesa_pbytes );
-	pbytes = eax; //2: 16 bit, 3: 24 bit, 4: 32 bit
-	eax = ( ((tvesa *)esi)->vesa_linbuf );
-	linbuf = eax;
-	texture = (SDL_Texture *) ( ((tvesa *)esi)->vesa_texture );
-	renderer = (SDL_Renderer *) ( ((tvesa *)esi)->vesa_renderer );
+	xbytes = esi->vesa_xbytes;
+	xres = esi->vesa_xres;
+	yres = esi->vesa_yres;
+	pbytes = esi->vesa_pbytes; //2: 16 bit, 3: 24 bit, 4: 32 bit
+	linbuf = (uint8_t *)esi->vesa_linbuf;
+	texture = (SDL_Texture *)esi->vesa_texture;
+	renderer = (SDL_Renderer *)esi->vesa_renderer;
 
 	initpaltab(esi);
 
@@ -3123,8 +3049,9 @@ extern "C" void initedata(uint32_t _esi) {
 
 
 static void upscroll(void) {
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+	uint32_t eax, edx, ecx, ebx, ebp;
 	uint32_t stack_var00;
+	int8_t *edi, *esi;
 	uint32_t oldlines;
 	uint32_t dolines;
 	//int32_t texty;
@@ -3190,10 +3117,7 @@ upscroll_c0:
 
 	for (; ecx != 0; ecx--, esi+=4, edi+=4) *(uint32_t *)edi = *(uint32_t *)esi;
 upscroll_y_l:
-	esi = ypos;
-	esi = esi >> ( 8 );
-	esi = ( (int32_t)esi ) * ( 320 );
-	esi = esi + erzdata.e_scroller;
+	esi = ( (int32_t)( ypos >> 8 ) * 320 ) + erzdata.e_scroller;
 
 
 
@@ -3228,7 +3152,7 @@ upscroll_x_l:
 
 	SDL_RenderClear(renderer);
 	SDL_LockTexture(texture, NULL, &pixels, &pitch);
-	linbuf = (uint32_t)pixels;
+	linbuf = (uint8_t *)pixels;
 	xbytes = pitch;
 
 	if (pbytes > ( 3 )) goto upscroll_32;
@@ -3273,7 +3197,7 @@ upscroll_weg:
 
 extern "C" void starterz(void) {
 	realnum fpu_reg10;
-	uint32_t eax, edi/*, ebp*/;
+	uint32_t eax/*, edi, ebp*/;
 	uint32_t /*stack_var00,*/ stack_var01;
 	//stack_var00 = ( 0 /*ebp*/ );
 	void *pixels;
@@ -3318,10 +3242,8 @@ starterz_0:
 	updatechains();
 
 //tracks
-	edi = ( (uint32_t)&(viewer.v_p) );
-	dotrack(erzdata.e_camtrack, ( 3 ), edi);
-	edi = ( (uint32_t)&(target) );
-	dotrack(erzdata.e_targettrack, ( 3 ), edi);
+	dotrack(erzdata.e_camtrack, ( 3 ), (float *)&(viewer.v_p));
+	dotrack(erzdata.e_targettrack, ( 3 ), (float *)&(target));
 
 	doviewer();
 	drawback();
@@ -3339,7 +3261,7 @@ starterz_0:
 
 	SDL_RenderClear(renderer);
 	SDL_LockTexture(texture, NULL, &pixels, &pitch);
-	linbuf = (uint32_t)pixels;
+	linbuf = (uint8_t *)pixels;
 	xbytes = pitch;
 
 	if (pbytes > ( 3 )) goto starterz_32;

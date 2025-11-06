@@ -1,6 +1,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <ctype.h>
+#include <stdint.h>
 #include "demo.h"
 
 //#define MEM_CHECK
@@ -96,7 +97,7 @@ void *getalignmem(int size, int align) {
   char *p;
 
   align--;
-  p = (char *) ((int) (memptr + align) & ~(align));
+  p = (char *) ((intptr_t) (memptr + align) & ~(intptr_t)(align));
 
   memptr = p + size;
   if (memptr > memtop) exit(mem_err);

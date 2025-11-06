@@ -1,3 +1,4 @@
+/* encoding = IBM852 */
 #include <stdio.h>
 #include "demo.h"
 //#include "copro.h"
@@ -16,7 +17,7 @@ const int zxres       = 64;
 const int fogmapsteps = 32;
 const int fogmapsize  = 16;
 
-const int tempsize    = 80000;//65536;
+const int tempsize    = 80000+5000*(sizeof(void*)-4);//65536;
 
 
 const int sfTeilung   = 1;
@@ -510,7 +511,7 @@ void v_readdata(tstream &s, tviewer &viewer) {
 void c_readdata(tstream &s, tobject *obj, int htracknum) {
   tcamera *cam = (tcamera *) obj;
   int z;
-  int *i;
+//  int *i;
 
   v_readdata(s,cam->viewer);
 
@@ -522,12 +523,12 @@ void c_readdata(tstream &s, tobject *obj, int htracknum) {
   cam->switchtrack[0] = z;
   s.read(&cam->switchtrack[1],z*2*sizeof(int));
 
-  i = &cam->switchtrack[1+1]; //change cube numbers to cube pointers
-  while (z > 0) {
-    *i = (int) &scene.cubedata[*i];
-    i+=2;
-    z--;
-  }
+//  i = &cam->switchtrack[1+1]; //change cube numbers to cube pointers
+//  while (z > 0) {
+//    *i = (int) &scene.cubedata[*i];
+//    i+=2;
+//    z--;
+//  }
 };
 
 void l_readdata(tstream &s, tobject *obj, int htracknum) {

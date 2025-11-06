@@ -11,30 +11,30 @@
 
 extern "C" uint32_t pFireRGBLookUp[256];
 
-static uint32_t pcBackBuffer1;
-static uint32_t pcBackBuffer2;
-static uint32_t piPolarTab;
-static uint32_t pfDistFunc;
-static uint32_t pfSinTab;
-static uint32_t pfCosTab;
-static uint32_t pcDestBackBuffer;
-static uint32_t dwCrossfadeFactor;
+//static uint32_t pcBackBuffer1;
+//static uint32_t pcBackBuffer2;
+//static uint32_t piPolarTab;
+//static uint32_t pfDistFunc;
+//static uint32_t pfSinTab;
+//static uint32_t pfCosTab;
+//static uint32_t pcDestBackBuffer;
+//static uint32_t dwCrossfadeFactor;
 
 
 static uint32_t pBuffer[4000];
 
 //dwXCounter			dd ?
-static uint32_t dwYCounter;
-static uint32_t dwYOffset;
+//static uint32_t dwYCounter;
+//static uint32_t dwYOffset;
 
-static uint32_t dwXmax;
-static uint32_t dwYmax;
-static uint32_t dwXmaxDiv2;
-static uint32_t dwYmaxDiv2;
+//static uint32_t dwXmax;
+//static uint32_t dwYmax;
+//static uint32_t dwXmaxDiv2;
+//static uint32_t dwYmaxDiv2;
 
 const static float fDistanceScaleRZP = 0.25f; // 1/4
-static uint32_t dwX;
-static uint32_t dwY;
+//static uint32_t dwX;
+//static uint32_t dwY;
 //DreamJmpTab			dd 9 dup (?)
 //FadeJmpTab			dd 9 dup (?)
 //BeamFadeJmpTab			dd 9 dup (?)
@@ -53,22 +53,22 @@ static uint32_t dwY;
 
 //const static float fNum2Exp16 = 65536.0f;
 
-static uint32_t pcSrcBack;
+//static uint32_t pcSrcBack;
 
-static uint32_t pcMoveListTab;
-static uint32_t pcMask;
-static uint32_t pcPic;
-static uint32_t pcDestBack;
-static uint32_t dwNum;
-static uint32_t pcFade;
-static uint32_t dwFadeFactor;
+//static uint32_t pcMoveListTab;
+//static uint32_t pcMask;
+//static uint32_t pcPic;
+//static uint32_t pcDestBack;
+//static uint32_t dwNum;
+//static uint32_t pcFade;
+//static uint32_t dwFadeFactor;
 
-static uint32_t piSinTabX;
-static uint32_t piSinTabY;
+//static uint32_t piSinTabX;
+//static uint32_t piSinTabY;
 
 
-static uint32_t pcAmpTab;
-static uint32_t pcYAmpTab;
+//static uint32_t pcAmpTab;
+//static uint32_t pcYAmpTab;
 
 
 
@@ -150,81 +150,51 @@ extern "C" void Init2DBeamFadeJumpTableASM(void) {
 
 
 
-extern "C" void Draw2DDreamASM(uint32_t _pBackB1, uint32_t _pBackB2, uint32_t _pPolarTab, uint32_t _pDistFunc, uint32_t _pSinTab, uint32_t _pCosTab, uint32_t _pDestBBack, uint32_t _dwCFadeFactor, uint32_t _dwXmax, uint32_t _dwYmax) {
+extern "C" void Draw2DDreamASM(int8_t *_pBackB1, int8_t *_pBackB2, uint32_t *_pPolarTab, float *_pDistFunc, float *_pSinTab, float *_pCosTab, int8_t *_pDestBBack, uint32_t _dwCFadeFactor, uint32_t _dwXmax, uint32_t _dwYmax) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+	uint32_t _dwYCounter, _dwYOffset, _dwXmaxDiv2, _dwYmaxDiv2, _dwX, _dwY;
+	int8_t *_pLoopDestBBack;
+	uint32_t *_pLoopPolarTab;
 
 
 
 
-	eax = _pBackB1;
-	ebx = _pBackB2;
-	ecx = _pPolarTab;
-	edx = _pDistFunc;
-	esi = _pSinTab;
-	edi = _pCosTab;
+	_dwXmaxDiv2 = _dwXmax >> ( 1 );
+	_dwYmaxDiv2 = _dwYmax >> ( 1 );
 
-	pcBackBuffer1 = eax;
-	pcBackBuffer2 = ebx;
-	piPolarTab = ecx;
-	pfDistFunc = edx;
-	pfSinTab = esi;
-	pfCosTab = edi;
+	_dwYOffset = 0; //_dwYOffset init.
 
-	eax = _pDestBBack;
-	ebx = _dwCFadeFactor;
-	ecx = _dwXmax;
-	edx = _dwYmax;
-	pcDestBackBuffer = eax;
-	dwCrossfadeFactor = ebx;
-	dwXmax = ecx;
-	dwYmax = edx;
-	ecx = ecx >> ( 1 );
-	edx = edx >> ( 1 );
-	dwXmaxDiv2 = ecx;
-	dwYmaxDiv2 = edx;
-
-	eax = 0;
-	dwYOffset = eax; //dwYOffset init.
-
-	eax = dwYmax;
-	dwYCounter = eax; //dwYCounter init.
+	_dwYCounter = _dwYmax; //_dwYCounter init.
 
 	fpu_reg10 = fDistanceScaleRZP;
 
 Draw2DDreamASM_YLoop:
-	eax = pfSinTab;
-	ebx = pfCosTab;
-
-	esi = dwYOffset;
-	esi = esi << ( 2 );
-	esi = esi + piPolarTab;
+	_pLoopPolarTab = _dwYOffset + _pPolarTab;
 
 	edi = 0;
-	ebp = dwXmax;
+	ebp = _dwXmax;
 Draw2DDreamASM_XLoop:
-// eax = pSinTab
-// ebx = pCosTab
+// eax =
+// ebx =
 // ecx =
 // edx =
-// esi = PolarTab
-// edi = Dest
+// esi =
+// edi =
 // ebp = XCounter
 
-	edx = ( *((uint32_t *)(esi)) );
+	edx = ( *((uint32_t *)(_pLoopPolarTab)) );
 	ecx = edx;
 	edx = edx >> ( 16 ); //Distance
 	ecx = ecx & ( 0x0ffff );
-	*((uint32_t *)(((uint32_t)&(pBuffer[0])) + edi)) = edx;
-	edx = edx << ( 2 );
-	edx = edx + pfDistFunc;
+	*((uint32_t *)(((uintptr_t)&(pBuffer[0])) + edi)) = edx;
 
 
-	fpu_reg11 = ( ((float *)(eax))[ecx] );
-	fpu_reg12 = ( *((int32_t *)(((uint32_t)&(pBuffer[0])) + edi)) );
-	fpu_reg12 = fpu_reg12 * ( *((float *)(edx)) );
+	fpu_reg11 = ( ((float *)(_pSinTab))[ecx] );
+	fpu_reg12 = ( *((int32_t *)(((uintptr_t)&(pBuffer[0])) + edi)) );
+	fpu_reg12 = fpu_reg12 * ( *((float *)(edx + _pDistFunc)) );
 	fpu_reg12 = fpu_reg12 * fpu_reg10;
-	fpu_reg13 = ( ((float *)(ebx))[ecx] );
+	fpu_reg13 = ( ((float *)(_pCosTab))[ecx] );
 //st0 = Cos, st1 = Distance, st2 = Sin, st3 = 1/DSCale
 	fpu_reg13 = fpu_reg13 * fpu_reg12;
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
@@ -234,44 +204,42 @@ Draw2DDreamASM_XLoop:
 	{ realnum tmp = fpu_reg12; fpu_reg12 = fpu_reg11; fpu_reg11 = tmp; }
 //st0 = X, st1 = Y, st2 = 1/DScale
 
-	dwX = (int32_t)round(fpu_reg12);
-	dwY = (int32_t)round(fpu_reg11);
+	_dwX = (int32_t)round(fpu_reg12);
+	_dwY = (int32_t)round(fpu_reg11);
 //st0 = 1/DScale
 
-	ecx = dwX;
-	edx = dwY;
-	ecx = ecx + dwXmaxDiv2;
-	edx = edx + dwYmaxDiv2;
+	ecx = _dwX;
+	edx = _dwY;
+	ecx = ecx + _dwXmaxDiv2;
+	edx = edx + _dwYmaxDiv2;
 
-	edx = ( (int32_t)edx ) * ( (int32_t)dwXmax );
+	edx = ( (int32_t)edx ) * ( (int32_t)_dwXmax );
 	ecx = ecx + edx;
 	edx = ecx;
 
 	ecx = ecx << ( 2 );
 	edx = edx << ( 2 );
-	ecx = ecx + pcBackBuffer1;
-	edx = edx + pcBackBuffer2;
 
-	ecx = ( *((uint32_t *)(ecx)) ); //Col1
-	edx = ( *((uint32_t *)(edx)) ); //Col1
+	ecx = ( *((uint32_t *)(ecx + _pBackB1)) ); //Col1
+	edx = ( *((uint32_t *)(edx + _pBackB2)) ); //Col1
 
-	*((uint32_t *)(((uint32_t)&(pBuffer[0])) + edi + 4)) = ecx;
-	*((uint32_t *)(((uint32_t)&(pBuffer[0])) + edi + 8)) = edx;
+	*((uint32_t *)(((uintptr_t)&(pBuffer[0])) + edi + 4)) = ecx;
+	*((uint32_t *)(((uintptr_t)&(pBuffer[0])) + edi + 8)) = edx;
 
-	esi = esi + ( 4 );
+	_pLoopPolarTab = _pLoopPolarTab + ( 1 );
 	edi = edi + ( 12 );
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DDreamASM_XLoop;
 
 	esi = 0;
-	edi = dwYOffset;
+	edi = _dwYOffset;
 	edi = edi << ( 2 );
-	edi = edi + pcDestBackBuffer; // edi init.
-	ebp = dwXmax; // ebp init.
+	_pLoopDestBBack = edi + _pDestBBack; // edi init.
+	ebp = _dwXmax; // ebp init.
 Draw2DDreamASM_CopyXLoop:
-	eax = dwCrossfadeFactor;
-	eax = eax - ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi)) );
+	eax = _dwCFadeFactor;
+	eax = eax - ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi)) );
 	eax = ( (int32_t)eax ) >> ( 7 );
 
 
@@ -287,14 +255,14 @@ Draw2DDreamASM_FadeMaxOK:
 	switch (eax) {
 	case 0:
 //DreamCase0:
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
-	*((uint32_t *)(edi)) = ecx;
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
+	*((uint32_t *)(_pLoopDestBBack)) = ecx;
 //jmp		@@FadeDone
 	break;
 	case 1:
 //DreamCase1:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 8)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 8)) );
 	ebx = eax;
 	edx = ecx;
 
@@ -314,14 +282,14 @@ Draw2DDreamASM_FadeMaxOK:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestBBack)) = ebx;
 
 //jmp		@@FadeDone
 	break;
 	case 2:
 //DreamCase2:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 8)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 8)) );
 	ebx = eax;
 	edx = ecx;
 
@@ -343,13 +311,13 @@ Draw2DDreamASM_FadeMaxOK:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestBBack)) = ebx;
 //jmp		@@FadeDone
 	break;
 	case 3:
 //DreamCase3:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 8)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 8)) );
 	ebx = eax;
 	edx = ecx;
 
@@ -369,13 +337,13 @@ Draw2DDreamASM_FadeMaxOK:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestBBack)) = ebx;
 //jmp		@@FadeDone
 	break;
 	case 4:
 //DreamCase4:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 8)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 8)) );
 	ebx = eax;
 	edx = ecx;
 
@@ -395,13 +363,13 @@ Draw2DDreamASM_FadeMaxOK:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestBBack)) = ebx;
 //jmp		@@FadeDone
 	break;
 	case 5:
 //DreamCase5:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 8)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 8)) );
 	ebx = eax;
 	edx = ecx;
 
@@ -421,13 +389,13 @@ Draw2DDreamASM_FadeMaxOK:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestBBack)) = ebx;
 //jmp		@@FadeDone
 	break;
 	case 6:
 //DreamCase6:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 8)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 8)) );
 	ebx = eax;
 	edx = ecx;
 
@@ -449,13 +417,13 @@ Draw2DDreamASM_FadeMaxOK:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestBBack)) = ebx;
 //jmp		@@FadeDone
 	break;
 	case 7:
 //DreamCase7:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 8)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 8)) );
 	ebx = eax;
 	edx = ecx;
 
@@ -476,28 +444,28 @@ Draw2DDreamASM_FadeMaxOK:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestBBack)) = ebx;
 //jmp		@@FadeDone
 	break;
 	case 8:
 //DreamCase8:
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 8)) );
-	*((uint32_t *)(edi)) = ecx;
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 8)) );
+	*((uint32_t *)(_pLoopDestBBack)) = ecx;
 //jmp		@@FadeDone
 	break;
 //@@FadeDone:
 	}
 
 	esi = esi + ( 12 );
-	edi = edi + ( 4 );
+	_pLoopDestBBack = _pLoopDestBBack + ( 4 );
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DDreamASM_CopyXLoop;
 
-	eax = dwXmax;
-	dwYOffset = dwYOffset + eax;
-	dwYCounter = ( (int32_t)dwYCounter ) - 1;
-	if (( (int32_t)dwYCounter ) != 0) goto Draw2DDreamASM_YLoop;
+	eax = _dwXmax;
+	_dwYOffset = _dwYOffset + eax;
+	_dwYCounter = ( (int32_t)_dwYCounter ) - 1;
+	if (( (int32_t)_dwYCounter ) != 0) goto Draw2DDreamASM_YLoop;
 
 //ffree		st(0)
 
@@ -569,48 +537,32 @@ extern "C" void Scale8ASM(char *pcSrc, char *pcDest, int iSrcXmax, int iSrcYmax,
 
 
 
-extern "C" void Draw2DEyeASM(uint32_t _pMoveListTab, uint32_t _pMask, uint32_t _pPic, uint32_t _pSrcBack, uint32_t _pDestBack, uint32_t _dwNum) {
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
-	uint32_t stack_var00;
+extern "C" void Draw2DEyeASM(uint8_t *_pMoveListTab, int8_t *_pMask, int8_t *_pPic, int8_t *_pSrcBack, int8_t *_pDestBack, uint32_t _dwNum) {
+	uint32_t eax, ebx, ebp;
+	uint8_t *stack_var00;
+	int8_t *edx, *ecx, *edi, *esi;
 
 
 
 
-	eax = _pMoveListTab;
-	ebx = _pMask;
-	ecx = _pPic;
-	edx = _pSrcBack;
-	esi = _pDestBack;
-	edi = _dwNum;
-
-	pcMoveListTab = eax;
-	pcMask = ebx;
-	pcPic = ecx;
-	pcSrcBack = edx;
-	pcDestBack = esi;
-	dwNum = edi;
-
-
-	ebx = pcMoveListTab;
-	ecx = pcMask;
-	edx = pcPic;
-	esi = pcSrcBack;
-	edi = pcDestBack;
-	ebp = dwNum;
+	stack_var00 = _pMoveListTab;
+	ecx = _pMask;
+	edx = _pPic;
+	esi = _pSrcBack;
+	edi = _pDestBack;
+	ebp = _dwNum;
 
 Draw2DEyeASM_Loop:
 // eax =
-// ebx = MoveListTab
+// stack_var00 = MoveListTab
 // ecx = Mask
 // edx = Pic
 // esi = SrcBack
 // edi = DestBack
 // ebp = counter
-	stack_var00 = ebx;
-
 	if ( (( *((int8_t *)(ecx)) ) - ( 0 )) == 0) goto Draw2DEyeASM_DontDraw;
 
-	eax = ( *((uint32_t *)(ebx)) ); // from Movelist: offset
+	eax = ( *((uint32_t *)(stack_var00)) ); // from Movelist: offset
 	ebx = ( ((uint32_t *)(esi))[eax] ); // col from SrcBackBuffer
 
 	eax = ( *((uint32_t *)(edx)) ); // col from Pic
@@ -628,9 +580,8 @@ Draw2DEyeASM_DontDraw:
 	*((uint32_t *)(edi)) = eax; // setpixel
 Draw2DEyeASM_Drawed:
 	ecx = ecx + 1;
-	ebx = stack_var00;
 	edx = edx + ( 4 );
-	ebx = ebx + ( 4 );
+	stack_var00 = stack_var00 + ( 4 );
 	edi = edi + ( 4 );
 
 	ebp = ( (int32_t)ebp ) - 1;
@@ -648,47 +599,33 @@ Draw2DEyeASM_Drawed:
 
 
 
-extern "C" void Draw2DFadeASM(uint32_t _pBackBuffer1, uint32_t _pBackBuffer2, uint32_t _pDestBack, uint32_t _pFade, uint32_t _dwFadeFactor, uint32_t _dwNum) {
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
-	uint32_t stack_var00, stack_var01;
+extern "C" void Draw2DFadeASM(int8_t *_pBackBuffer1, int8_t *_pBackBuffer2, int8_t *_pDestBack, int8_t *_pFade, uint32_t _dwFadeFactor, uint32_t _dwNum) {
+	uint32_t eax, edx, ecx, ebx;
+	uint32_t stack_var00;
+	int8_t *edi, *esi, *ebp, *stack_var01;
 
 
 
 
 
-	eax = _pBackBuffer1;
-	ebx = _pBackBuffer2;
-	ecx = _pDestBack;
-	edx = _pFade;
-	esi = _dwFadeFactor;
-	edi = _dwNum;
-
-	pcBackBuffer1 = eax;
-	pcBackBuffer2 = ebx;
-	pcDestBack = ecx;
-	pcFade = edx;
-	dwFadeFactor = esi;
-	dwNum = edi;
-
-	ecx = dwNum;
-	edx = pcFade;
-	esi = pcBackBuffer1;
-	edi = pcDestBack;
-	ebp = pcBackBuffer2;
+	ecx = _dwNum;
+	stack_var01 = _pFade;
+	esi = _pBackBuffer1;
+	edi = _pDestBack;
+	ebp = _pBackBuffer2;
 Draw2DFadeASM_Loop:
 // eax =
 // ebx =
 // ecx = Counter
-// edx = FadePic
+// stack_var01 = FadePic
 // esi = SrcBack1
 // edi = DestBack
 // ebp = SrcBack2
 	ebx = 0;
 
 	stack_var00 = ecx;
-	ebx = (ebx & 0xffffff00) | (uint8_t)(( *((uint8_t *)(edx)) ));
-	stack_var01 = edx;
-	ebx = ebx + dwFadeFactor;
+	ebx = (ebx & 0xffffff00) | (uint8_t)(( *((uint8_t *)(stack_var01)) ));
+	ebx = ebx + _dwFadeFactor;
 	ebx = ( (int32_t)ebx ) >> ( 2 );
 
 
@@ -904,13 +841,12 @@ Draw2DFadeASM_FadeMaxOK:
 	break;
 //@@FadeDone:
 	}
-	edx = stack_var01;
 	ecx = stack_var00;
 	esi = esi + ( 4 );
 	edi = edi + ( 4 );
 	ebp = ebp + ( 4 );
 
-	edx = edx + 1;
+	stack_var01 = stack_var01 + 1;
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto Draw2DFadeASM_Loop;
 
@@ -947,78 +883,53 @@ Draw2DFadeASM_FadeMaxOK:
 
 
 
-extern "C" void Draw2DBeamFadeASM(uint32_t _pBackB1, uint32_t _pBackB2, uint32_t _pDestB, uint32_t _dwFFactor, uint32_t _dwXmax, uint32_t _dwYmax, uint32_t _pSinTabX, uint32_t _pSinTabY) {
+extern "C" void Draw2DBeamFadeASM(int8_t *_pBackB1, int8_t *_pBackB2, int8_t *_pDestB, uint32_t _dwFFactor, uint32_t _dwXmax, uint32_t _dwYmax, int32_t *_pSinTabX, int32_t *_pSinTabY) {
 	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+	uint32_t _dwYCounter, _dwY;
+	int8_t *_pLoopBackB1, *_pLoopBackB2, *_pLoopDestB;
 
 
 
 
+	_dwYCounter = _dwYmax;
 
-	eax = _pBackB1;
-	ebx = _pBackB2;
-	ecx = _pDestB;
-//mov	edx,_pFade
-	esi = _dwFFactor;
-	edi = _dwXmax;
-
-	pcBackBuffer1 = eax;
-	pcBackBuffer2 = ebx;
-	pcDestBack = ecx;
-//mov	pcFade,edx
-	dwFadeFactor = esi;
-	dwXmax = edi;
-
-	eax = _dwYmax;
-	ebx = _pSinTabX;
-	ecx = _pSinTabY;
-
-	dwYmax = eax;
-	piSinTabX = ebx;
-	piSinTabY = ecx;
-
-	eax = dwYmax;
-	dwYCounter = eax;
-
-	eax = 0;
-	dwY = eax;
+	_dwY = 0;
 
 Draw2DBeamFadeASM_YLoop:
-	ebx = dwY;
-	edx = piSinTabY;
+	ebx = _dwY;
 
 	ecx = ebx;
-	ecx = ( (int32_t)ecx ) * ( (int32_t)dwXmax );
+	ecx = ( (int32_t)ecx ) * ( (int32_t)_dwXmax );
 	ecx = ecx << ( 2 );
-	ecx = ecx + pcBackBuffer1;
+	_pLoopBackB1 = ecx + _pBackB1;
 
-	esi = ( ((uint32_t *)(edx))[ebx] );
-	esi = ( (int32_t)esi ) * ( (int32_t)dwXmax );
+	esi = ( ((uint32_t *)(_pSinTabY))[ebx] );
+	esi = ( (int32_t)esi ) * ( (int32_t)_dwXmax );
 	esi = esi << ( 2 );
-	esi = esi + pcBackBuffer2; // esi init.
+	_pLoopBackB2 = esi + _pBackB2; // esi init.
 
-	edx = piSinTabX;
 	ebx = 0; // ebx init.
 	edi = 0; // edi init.
-	ebp = dwXmax; // ebp init.
+	ebp = _dwXmax; // ebp init.
 
 
 Draw2DBeamFadeASM_BeamXLoop:
 // eax =
 // ebx =
-// ecx = pBackBuffer1 + (YOffset + DeltaSinY)
-// edx = SinTabX
-// esi = pBackBuffer2 + (YOffset + DeltaSinY)
+// _pLoopBackB1 = pBackBuffer1 + (YOffset + DeltaSinY)
+// edx =
+// _pLoopBackB2 = pBackBuffer2 + (YOffset + DeltaSinY)
 // edi = pBuffer == x
 // ebp = XCounter
 
 // st0 = Amplitude
-	eax = ( ((uint32_t *)(edx))[edi] );
+	eax = ( ((uint32_t *)(_pSinTabX))[edi] );
 
-	ebx = ( ((uint32_t *)(ecx))[edi] );
-	*((uint32_t *)(((uint32_t)&(pBuffer[0])) + edi * 8 + 0)) = ebx;
+	ebx = ( ((uint32_t *)(_pLoopBackB1))[edi] );
+	*((uint32_t *)(((uintptr_t)&(pBuffer[0])) + edi * 8 + 0)) = ebx;
 
-	eax = ( ((uint32_t *)(esi))[eax] );
-	*((uint32_t *)(((uint32_t)&(pBuffer[0])) + edi * 8 + 4)) = eax;
+	eax = ( ((uint32_t *)(_pLoopBackB2))[eax] );
+	*((uint32_t *)(((uintptr_t)&(pBuffer[0])) + edi * 8 + 4)) = eax;
 
 	edi = edi + 1;
 	ebp = ( (int32_t)ebp ) - 1;
@@ -1026,14 +937,14 @@ Draw2DBeamFadeASM_BeamXLoop:
 
 
 	esi = 0;
-	edi = dwY;
-	edi = ( (int32_t)edi ) * ( (int32_t)dwXmax );
+	edi = _dwY;
+	edi = ( (int32_t)edi ) * ( (int32_t)_dwXmax );
 	edi = edi << ( 2 );
-	edi = edi + pcDestBack;
+	_pLoopDestB = edi + _pDestB;
 
-	ebp = dwXmax;
+	ebp = _dwXmax;
 
-	eax = dwFadeFactor;
+	eax = _dwFFactor;
 
 	if ( (( (int32_t)eax ) - ( 0 )) >= 0) goto Draw2DBeamFadeASM_FadeFactorMinOK;
 	eax = 0;
@@ -1050,17 +961,17 @@ Draw2DBeamFadeASM_FadeFactorMaxOK:
 // ecx =
 // edx =
 // esi = pBuffer
-// edi = dest
+// _pLoopDestB = dest
 // ebp = XCounter
 
 
 	case 0:
 Draw2DBeamFadeASM_BeamFadeCase0:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi)) );
-	*((uint32_t *)(edi)) = eax;
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi)) );
+	*((uint32_t *)(_pLoopDestB)) = eax;
 
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase0;
@@ -1068,16 +979,16 @@ Draw2DBeamFadeASM_BeamFadeCase0:
 	break;
 	case 1:
 Draw2DBeamFadeASM_BeamFadeCase1:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 0)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 0)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
 	ebx = eax;
 	edx = ecx;
 
 
 	if ( (( (int32_t)ecx ) - ( 0 )) != 0) goto Draw2DBeamFadeASM_NotBlack1;
-	*((uint32_t *)(edi)) = eax;
+	*((uint32_t *)(_pLoopDestB)) = eax;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase1;
 //jmp	@@Done
@@ -1100,26 +1011,26 @@ Draw2DBeamFadeASM_NotBlack1:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestB)) = ebx;
 
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase1;
 //jmp	@@Done
 	break;
 	case 2:
 Draw2DBeamFadeASM_BeamFadeCase2:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 0)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 0)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
 	ebx = eax;
 	edx = ecx;
 
 
 	if ( (( (int32_t)ecx ) - ( 0 )) != 0) goto Draw2DBeamFadeASM_NotBlack2;
-	*((uint32_t *)(edi)) = eax;
+	*((uint32_t *)(_pLoopDestB)) = eax;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase2;
 //jmp	@@Done
@@ -1144,26 +1055,26 @@ Draw2DBeamFadeASM_NotBlack2:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestB)) = ebx;
 
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase2;
 //jmp	@@Done
 	break;
 	case 3:
 Draw2DBeamFadeASM_BeamFadeCase3:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 0)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 0)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
 	ebx = eax;
 	edx = ecx;
 
 
 	if ( (( (int32_t)ecx ) - ( 0 )) != 0) goto Draw2DBeamFadeASM_NotBlack3;
-	*((uint32_t *)(edi)) = eax;
+	*((uint32_t *)(_pLoopDestB)) = eax;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase3;
 //jmp	@@Done
@@ -1186,25 +1097,25 @@ Draw2DBeamFadeASM_NotBlack3:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestB)) = ebx;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase3;
 //jmp	@@Done
 	break;
 	case 4:
 Draw2DBeamFadeASM_BeamFadeCase4:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 0)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 0)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
 	ebx = eax;
 	edx = ecx;
 
 
 	if ( (( (int32_t)ecx ) - ( 0 )) != 0) goto Draw2DBeamFadeASM_NotBlack4;
-	*((uint32_t *)(edi)) = eax;
+	*((uint32_t *)(_pLoopDestB)) = eax;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase4;
 //jmp	@@Done
@@ -1227,26 +1138,26 @@ Draw2DBeamFadeASM_NotBlack4:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestB)) = ebx;
 
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase4;
 //jmp	@@Done
 	break;
 	case 5:
 Draw2DBeamFadeASM_BeamFadeCase5:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 0)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 0)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
 	ebx = eax;
 	edx = ecx;
 
 
 	if ( (( (int32_t)ecx ) - ( 0 )) != 0) goto Draw2DBeamFadeASM_NotBlack5;
-	*((uint32_t *)(edi)) = eax;
+	*((uint32_t *)(_pLoopDestB)) = eax;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase5;
 //jmp	@@Done
@@ -1269,26 +1180,26 @@ Draw2DBeamFadeASM_NotBlack5:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestB)) = ebx;
 
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase5;
 //jmp	@@Done
 	break;
 	case 6:
 Draw2DBeamFadeASM_BeamFadeCase6:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 0)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 0)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
 	ebx = eax;
 	edx = ecx;
 
 
 	if ( (( (int32_t)ecx ) - ( 0 )) != 0) goto Draw2DBeamFadeASM_NotBlack6;
-	*((uint32_t *)(edi)) = eax;
+	*((uint32_t *)(_pLoopDestB)) = eax;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase6;
 //jmp	@@Done
@@ -1313,26 +1224,26 @@ Draw2DBeamFadeASM_NotBlack6:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestB)) = ebx;
 
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase6;
 //jmp	@@Done
 	break;
 	case 7:
 Draw2DBeamFadeASM_BeamFadeCase7:
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 0)) );
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 0)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
 	ebx = eax;
 	edx = ecx;
 
 
 	if ( (( (int32_t)ecx ) - ( 0 )) != 0) goto Draw2DBeamFadeASM_NotBlack7;
-	*((uint32_t *)(edi)) = eax;
+	*((uint32_t *)(_pLoopDestB)) = eax;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase7;
 //jmp	@@Done
@@ -1356,43 +1267,43 @@ Draw2DBeamFadeASM_NotBlack7:
 	ebx = ebx & ( 0x0f8f8f8f8 );
 	ebx = ebx + eax;
 	ebx = ebx >> ( 3 );
-	*((uint32_t *)(edi)) = ebx;
+	*((uint32_t *)(_pLoopDestB)) = ebx;
 
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase7;
 //jmp	@@Done
 	break;
 	case 8:
 Draw2DBeamFadeASM_BeamFadeCase8:
-	ecx = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 4)) );
+	ecx = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 4)) );
 
 
 	if ( (( (int32_t)ecx ) - ( 0 )) != 0) goto Draw2DBeamFadeASM_NotBlack8;
-	eax = ( *((uint32_t *)(((uint32_t)&(pBuffer[0])) + esi + 0)) );
-	*((uint32_t *)(edi)) = eax;
+	eax = ( *((uint32_t *)(((uintptr_t)&(pBuffer[0])) + esi + 0)) );
+	*((uint32_t *)(_pLoopDestB)) = eax;
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase8;
 //jmp	@@Done
 	break;
 Draw2DBeamFadeASM_NotBlack8:
-	*((uint32_t *)(edi)) = ecx;
+	*((uint32_t *)(_pLoopDestB)) = ecx;
 
 	esi = esi + ( 8 );
-	edi = edi + ( 4 );
+	_pLoopDestB = _pLoopDestB + ( 4 );
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto Draw2DBeamFadeASM_BeamFadeCase8;
 //jmp	@@Done
 	break;
 //@@Done:
 	}
-	dwY = dwY + 1;
+	_dwY = _dwY + 1;
 
-	dwYCounter = ( (int32_t)dwYCounter ) - 1;
-	if (( (int32_t)dwYCounter ) != 0) goto Draw2DBeamFadeASM_YLoop;
+	_dwYCounter = ( (int32_t)_dwYCounter ) - 1;
+	if (( (int32_t)_dwYCounter ) != 0) goto Draw2DBeamFadeASM_YLoop;
 
 
 
@@ -1405,44 +1316,34 @@ Draw2DBeamFadeASM_NotBlack8:
 
 
 
-extern "C" void DrawFireASM(uint32_t _pDestBack, uint32_t _pAmpTab, uint32_t _pYAmpTab, uint32_t _dwXmax, uint32_t _dwYmax) {
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+extern "C" void DrawFireASM(int8_t *_pDestBack, uint8_t *_pAmpTab, uint8_t *_pYAmpTab, uint32_t _dwXmax, uint32_t _dwYmax) {
+	uint32_t eax, edx, ecx, ebx;
+	int8_t *edi;
+	uint8_t *esi, *ebp;
+	uint32_t _dwY;
 
 
 
 
-	eax = _pDestBack;
-	ebx = _pAmpTab;
-	ecx = _pYAmpTab;
-	edx = _dwXmax;
-	esi = _dwYmax;
+	esi = _pAmpTab;
+	ebp = _pYAmpTab;
 
-	pcDestBack = eax;
-	pcAmpTab = ebx;
-	pcYAmpTab = ecx;
-	dwXmax = edx;
-	dwYmax = esi;
+	_dwY = 0;
 
-	esi = pcAmpTab;
-	ebp = pcYAmpTab;
-
-	eax = 0;
-	dwY = eax;
-
-	ecx = dwYmax;
+	ecx = _dwYmax;
 
 	ecx = ecx << ( 8 ); // ch init.
 
 	ebx = 0; // (ebx init.)
 DrawFireASM_YLoop:
-	eax = dwY;
+	eax = _dwY;
 	ebx = (ebx & 0xffffff00) | (uint8_t)(( *((uint8_t *)(ebp + eax)) )); // ebx init.
 
 	eax = eax << ( 10 );
-	edi = pcDestBack;
+	edi = _pDestBack;
 	edi = edi + eax; // edi init.
 
-	eax = dwXmax;
+	eax = _dwXmax;
 	ecx = (ecx & 0xffffff00) | (uint8_t)(( (uint8_t)eax )); // cl init.
 
 DrawFireASM_XLoop:
@@ -1467,7 +1368,7 @@ DrawFireASM_XLoop:
 	ecx = (ecx & 0xffffff00) | (uint8_t)(( (int8_t)ecx ) - 1);
 	if (( (int8_t)ecx ) != 0) goto DrawFireASM_XLoop;
 
-	dwY = dwY + 1;
+	_dwY = _dwY + 1;
 
 	ecx = set_high_byte(ecx, ( (int8_t)(ecx >> 8) ) - 1);
 	if (( (int8_t)(ecx >> 8) ) != 0) goto DrawFireASM_YLoop;

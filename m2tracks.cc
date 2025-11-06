@@ -491,7 +491,7 @@ extern "C" void m_dotracksM2(uint32_t _esi) {
 //hidetrack
 	ebx = ( (uint32_t)&(((tmesh *)esi)->m_hidetrack[0]) );
 	edi = ( (uint32_t)&(((tobject *)esi)->o_hidden) );
-	dohidetrack(ebx, edi);
+	dohidetrack((void *)ebx, (int32_t *)edi);
 
 
 
@@ -499,11 +499,11 @@ extern "C" void m_dotracksM2(uint32_t _esi) {
 
 //rotation track (4)
 	edi = ( (uint32_t)&(((tobject *)esi)->o_A) );
-	dorottrack(( ((tmesh *)esi)->m_rottrack ), edi);
+	dorottrack((void *)( ((tmesh *)esi)->m_rottrack ), (float *)edi);
 
 //position track (3)
 	edi = ( (uint32_t)&(((tobject *)esi)->o_p) );
-	dotrack(( ((tmesh *)esi)->m_postrack ), ( 3 ), edi);
+	dotrack((void *)( ((tmesh *)esi)->m_postrack ), ( 3 ), (float *)edi);
 
 
 	if (( ((tobject *)esi)->o_hidden ) > ( 0 )) goto m_dotracksM2_weg;
@@ -514,7 +514,7 @@ m_dotracksM2_abs: //absolute
 
 //position track (3)
 	edi = ( (uint32_t)&(((tobject *)esi)->o_p) );
-	doltrack(( ((tmesh *)esi)->m_postrack ), ( 3 ), edi);
+	doltrack((void *)( ((tmesh *)esi)->m_postrack ), ( 3 ), (float *)edi);
 
 
 //morphtrack (2*vertices*3)
@@ -549,15 +549,15 @@ extern "C" void c_dotracksM2(uint32_t _esi) {
 
 //position track (3)
 	edi = ( (uint32_t)&(((tobject *)esi)->o_p) );
-	dotrack(( ((tcamera *)esi)->c_postrack ), ( 3 ), edi); //eax, 3
+	dotrack((void *)( ((tcamera *)esi)->c_postrack ), ( 3 ), (float *)edi); //eax, 3
 
 //FOV track (1)
 	edi = ( (uint32_t)&(((tcamera *)esi)->c_FOV) );
-	dotrack(( ((tcamera *)esi)->c_FOVtrack ), ( 1 ), edi); //eax, 1
+	dotrack((void *)( ((tcamera *)esi)->c_FOVtrack ), ( 1 ), (float *)edi); //eax, 1
 
 //roll track (1)
 	edi = ( (uint32_t)&(((tcamera *)esi)->c_roll) );
-	dotrack(( ((tcamera *)esi)->c_rolltrack ), ( 1 ), edi); //eax, 1
+	dotrack((void *)( ((tcamera *)esi)->c_rolltrack ), ( 1 ), (float *)edi); //eax, 1
 
 //no matrix
 	return;
@@ -571,7 +571,7 @@ extern "C" void t_dotracksM2(uint32_t _esi) {
 
 //position track (3)
 	edi = ( (uint32_t)&(((tobject *)esi)->o_p) );
-	dotrack(( ((ttarget *)esi)->t_postrack ), ( 3 ), edi);
+	dotrack((void *)( ((ttarget *)esi)->t_postrack ), ( 3 ), (float *)edi);
 
 //no matrix
 //t_dotracksM2_weg:
@@ -584,16 +584,16 @@ extern "C" void i_dotracksM2(uint32_t _esi) {
 
 //position track (3)
 	edi = ( (uint32_t)&(((tobject *)esi)->o_p) );
-	dotrack(( ((tomni *)esi)->i_postrack ), ( 3 ), edi);
+	dotrack((void *)( ((tomni *)esi)->i_postrack ), ( 3 ), (float *)edi);
 
 //color track (3)
 	edi = ( (uint32_t)&(((tomni *)esi)->i_color[0]) );
-	dotrack(( ((tomni *)esi)->i_coltrack ), ( 3 ), edi);
+	dotrack((void *)( ((tomni *)esi)->i_coltrack ), ( 3 ), (float *)edi);
 
 //hidetrack
 	ebx = ( (uint32_t)&(((tomni *)esi)->i_hidetrack[0]) );
 	edi = ( (uint32_t)&(((tobject *)esi)->o_hidden) );
-	dohidetrack(ebx, edi);
+	dohidetrack((void *)ebx, (int32_t *)edi);
 
 //no matrix
 //i_dotracksM2_weg:
@@ -607,7 +607,7 @@ extern "C" void d_dotracksM2(uint32_t _esi) {
 //hidetrack
 	ebx = ( (uint32_t)&(((tdummy *)esi)->d_hidetrack[0]) );
 	edi = ( (uint32_t)&(((tobject *)esi)->o_hidden) );
-	dohidetrack(ebx, edi);
+	dohidetrack((void *)ebx, (int32_t *)edi);
 
 //no matrix
 //d_dotracksM2_weg:
@@ -944,16 +944,16 @@ extern "C" void calcbumpomni(uint32_t _esi) {
 
 //color track (3)
 	edi = ( (uint32_t)&(((tbumpomni *)esi)->bo_color[0]) );
-	dotrack(( ((tbumpomni *)esi)->bo_coltrack ), ( 3 ), edi);
+	dotrack((void *)( ((tbumpomni *)esi)->bo_coltrack ), ( 3 ), (float *)edi);
 
 //multiplier track (1)
 	edi = ( (uint32_t)&(((tbumpomni *)esi)->bo_multiplier) );
-	dotrack(( ((tbumpomni *)esi)->bo_multtrack ), ( 1 ), edi);
+	dotrack((void *)( ((tbumpomni *)esi)->bo_multtrack ), ( 1 ), (float *)edi);
 
 //hidetrack
 	ebx = ( (uint32_t)&(((tbumpomni *)esi)->bo_hidetrack[0]) );
 	edi = ( (uint32_t)&(((tbumpomni *)esi)->bo_hidden) );
-	dohidetrack(ebx, edi);
+	dohidetrack((void *)ebx, (int32_t *)edi);
 
 	return;
 }

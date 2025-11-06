@@ -44,18 +44,18 @@ typedef struct {
 typedef struct {
  uint32_t cr_xres;
  uint32_t cr_yres;
- uint32_t cr_picdata;
+ int8_t *cr_picdata;
  uint32_t cr_xpos;
  uint32_t cr_ypos;
  uint32_t cr_starttime;
  uint32_t cr_startstep;
  uint32_t cr_fadespeed;
- uint32_t cr_paltab;
+ void *cr_paltab;
 } tcredit;
 
 typedef struct {
  uint32_t d_xpos;
- uint32_t d_credit[2];
+ tcredit *d_credit[2];
 } tcreditdef;
 
 typedef struct {
@@ -63,27 +63,27 @@ typedef struct {
  uint32_t pt_green;
  uint32_t pt_blue;
  uint32_t pt_trans;
- uint32_t pt_paltab;
+ void *pt_paltab;
 } tpaltab;
 
 typedef struct {
  uint32_t cd_xres;
  uint32_t cd_yres;
- uint32_t cd_pal;       //-> tpal
- uint32_t cd_picdata;
+ void *cd_pal;       //-> tpal
+ int8_t *cd_picdata;
  uint32_t cd_starttime;
  uint32_t cd_scrollspeed;
  uint32_t cd_scrolltime;
  uint32_t cd_enginetime;
 
- int32_t cd_credits;    //-> array of tcredit
+ tcredit *cd_credits;    //-> array of tcredit
 
  uint32_t cd_nocreditdefs;
- uint32_t cd_creditdefs;//-> array of tcreditdef
+ tcreditdef *cd_creditdefs;//-> array of tcreditdef
 
  uint32_t cd_nopaltabs;
- uint32_t cd_paltabs;   //16 bit: fvalues*256*2, 32 bit: fvalues*256*4
- uint32_t cd_paltab;
+ tpaltab *cd_paltabs;   //16 bit: fvalues*256*2, 32 bit: fvalues*256*4
+ void *cd_paltab;
 
  uint32_t cd_creditnum;
 } tcreddata;
@@ -102,8 +102,8 @@ static uint32_t pbytes;
 static uint32_t xbytes;
 static uint32_t xres;
 static uint32_t yres;
-static uint32_t linbuf;
-static uint32_t bufend;
+static uint8_t *linbuf;
+static uint8_t *bufend;
 static SDL_Renderer *renderer;
 static SDL_Texture *texture;
 
@@ -117,8 +117,9 @@ static uint32_t ystep;
 
 
 
-static void mosaic(uint32_t gstep, uint32_t dpic, uint32_t _esi) {
-	uint32_t eax, edx, ecx, edi, ebx, esi = _esi;
+static void mosaic(uint32_t gstep, int8_t *dpic, tcredit *esi) {
+	uint32_t eax, edx, ecx, ebx;
+	int8_t *edi;
 //-> esi -> tcredit
 
 	uint32_t t;
@@ -135,14 +136,14 @@ static void mosaic(uint32_t gstep, uint32_t dpic, uint32_t _esi) {
 	edx = 0;
 
 	ebx = ( 256 );
-	ebx = ebx - ( ((tcredit *)esi)->cr_startstep );
+	ebx = ebx - ( esi->cr_startstep );
 
 	{ int64_t d1 = (((uint64_t)edx) << 32) | eax; int32_t d2 = ( (int32_t)ebx ); eax = d1 / d2; edx = d1 % d2; }
 	eax = eax + ( 256 );
 	t = eax; //transparency (0..256)
 
 
-	eax = ( ((tcredit *)esi)->cr_yres ); //gmy = yres << 7
+	eax = ( esi->cr_yres ); //gmy = yres << 7
 	eax = eax << ( 8 - 1 );
 	edx = ((int32_t)eax) >> 31; //ya = gmy % gstep - gstep
 	{ int64_t d1 = (int64_t)(int32_t)eax; int32_t d2 = ( (int32_t)gstep ); eax = d1 / d2; edx = d1 % d2; }
@@ -163,13 +164,13 @@ mosaic_0:
 	ye = eax;
 	eax = ( (int32_t)eax ) >> ( 8 ); //yew = ye >> 8
 
-	if (( (int32_t)eax ) < ( (int32_t)(((tcredit *)esi)->cr_yres) )) goto mosaic_1; //if (yew > yres) yew = yres
-	eax = ( ((tcredit *)esi)->cr_yres );
+	if (( (int32_t)eax ) < ( (int32_t)(esi->cr_yres) )) goto mosaic_1; //if (yew > yres) yew = yres
+	eax = ( esi->cr_yres );
 mosaic_1:
 	yew = eax;
 
 
-	eax = ( ((tcredit *)esi)->cr_xres ); //gmx = xres << 7
+	eax = ( esi->cr_xres ); //gmx = xres << 7
 	eax = eax << ( 8 - 1 );
 	edx = ((int32_t)eax) >> 31; //xa = gmx % gstep - gstep;
 	{ int64_t d1 = (int64_t)(int32_t)eax; int32_t d2 = ( (int32_t)gstep ); eax = d1 / d2; edx = d1 % d2; }
@@ -189,8 +190,8 @@ mosaic_2:
 	xe = eax;
 	eax = ( (int32_t)eax ) >> ( 8 ); //xew = xe >> 8
 
-	if (( (int32_t)eax ) < ( (int32_t)(((tcredit *)esi)->cr_xres) )) goto mosaic_3; //if (xew > xres) xew = xres
-	eax = ( ((tcredit *)esi)->cr_xres );
+	if (( (int32_t)eax ) < ( (int32_t)(esi->cr_xres) )) goto mosaic_3; //if (xew > xres) xew = xres
+	eax = ( esi->cr_xres );
 mosaic_3:
 	xew = eax;
 
@@ -207,10 +208,10 @@ mosaic_3:
 	if (( (int32_t)eax ) <= 0) goto mosaic_w0;
 	x = eax;
 
-	ebx = ( (int32_t)ebx ) * ( (int32_t)(((tcredit *)esi)->cr_xres) ); //ebx = offset
+	ebx = ( (int32_t)ebx ) * ( (int32_t)(esi->cr_xres) ); //ebx = offset
 	ebx = ebx + edx;
 
-	edi = ( ((tcredit *)esi)->cr_picdata ); //edi -> source-pic
+	edi = ( esi->cr_picdata ); //edi -> source-pic
 	edi = edi + ebx; //edi -> source-square
 	eax = 0; //col = 0
 	ecx = set_high_byte(0 /*ecx*/, ( (uint8_t)y ));
@@ -224,7 +225,7 @@ mosaic_xl0:
 	ecx = (ecx & 0xffffff00) | (uint8_t)(( (int8_t)ecx ) - 1);
 	if (( (int8_t)ecx ) != 0) goto mosaic_xl0;
 	edi = edi - x;
-	edi = edi + ( ((tcredit *)esi)->cr_xres );
+	edi = edi + ( esi->cr_xres );
 	ecx = set_high_byte(ecx, ( (int8_t)(ecx >> 8) ) - 1);
 	if (( (int8_t)(ecx >> 8) ) != 0) goto mosaic_yl0;
 
@@ -244,7 +245,7 @@ mosaic_xl1:
 	ecx = (ecx & 0xffffff00) | (uint8_t)(( (int8_t)ecx ) - 1);
 	if (( (int8_t)ecx ) != 0) goto mosaic_xl1;
 	edi = edi - x;
-	edi = edi + ( ((tcredit *)esi)->cr_xres );
+	edi = edi + ( esi->cr_xres );
 	ecx = set_high_byte(ecx, ( (int8_t)(ecx >> 8) ) - 1);
 	if (( (int8_t)(ecx >> 8) ) != 0) goto mosaic_yl1;
 
@@ -254,14 +255,14 @@ mosaic_w0:
 
 	eax = xew; //} while (xew < xres)
 
-	if (( (int32_t)eax ) < ( (int32_t)(((tcredit *)esi)->cr_xres) )) goto mosaic_do2;
+	if (( (int32_t)eax ) < ( (int32_t)(esi->cr_xres) )) goto mosaic_do2;
 
 	eax = ye; //ya = ye
 	ya = eax;
 
 	eax = yew; //} while (yew < yres)
 
-	if (( (int32_t)eax ) < ( (int32_t)(((tcredit *)esi)->cr_yres) )) goto mosaic_do1;
+	if (( (int32_t)eax ) < ( (int32_t)(esi->cr_yres) )) goto mosaic_do1;
 
 
 //mosaic_weg:
@@ -271,9 +272,9 @@ mosaic_w0:
 
 
 
-static uint32_t copypic(uint32_t xpos, uint32_t _eax, uint32_t _edx, uint32_t _esi, uint32_t &_edi) {
-	uint32_t eax = _eax, edx = _edx, ecx, edi = _edi, ebx, esi = _esi, ebp;
-	uint32_t stack_var00, stack_var01;
+static uint32_t copypic(uint32_t xpos, uint32_t _eax, uint32_t _edx, uint8_t *&_edi) {
+	uint32_t eax = _eax, edx = _edx, ecx, es2, ebp;
+	uint8_t *ebx, *esi, *edi = _edi, *stack_var00;
 //-> eax = actual ypos
 //-> edx = end ypos
 //-> esi -> tcredit
@@ -287,17 +288,16 @@ static uint32_t copypic(uint32_t xpos, uint32_t _eax, uint32_t _edx, uint32_t _e
 
 	if (( (int32_t)eax ) >= ( (int32_t)edx )) goto copypic_weg;
 	yend = edx;
-	ebx = creddata.cd_paltab;
+	ebx = (uint8_t *)creddata.cd_paltab;
 copypic_yl:
 	ypos = eax;
-	esi = (uint32_t)( (uint8_t)(eax >> 8) );
-	esi = ( (int32_t)esi ) * ( (int32_t)creddata.cd_xres );
+	es2 = (uint32_t)( (uint8_t)(eax >> 8) );
+	es2 = ( (int32_t)es2 ) * ( (int32_t)creddata.cd_xres );
 //        add     esi,xpos
-	esi = esi + creddata.cd_picdata;
+	esi = (uint8_t *)(es2 + creddata.cd_picdata);
 	eax = xpos; //eax = xpos
 
 	stack_var00 = edi;
-	stack_var01 = ( 0 /*ebp*/ );
 	ecx = xstep;
 	ebp = (uint32_t)( (uint8_t)(ecx >> 8) );
 //xor     ch,ch
@@ -356,7 +356,6 @@ copypic_l_32:
 //------
 copypic_endcase:
 
-	ebp = stack_var01;
 	edi = stack_var00;
 	edi = edi + xbytes;
 
@@ -373,9 +372,9 @@ copypic_weg:
 }
 
 
-static uint32_t copycpic(uint32_t xpos, uint32_t mpic, uint32_t _eax, uint32_t &_esi, uint32_t &_edi) {
-	uint32_t eax = _eax, edx, ecx, edi = _edi, ebx, esi = _esi;
-	uint32_t stack_var00;
+static uint32_t copycpic(uint32_t xpos, int8_t *mpic, uint32_t _eax, tcredit *credit, uint8_t *&_edi) {
+	uint32_t eax = _eax, edx, ecx, ebx, es2;
+	uint8_t *eb2, *ed2, *esi, *edi = _edi, *stack_var00;
 //-> eax = actual ypos
 //-> esi -> tcredit
 //-> edi -> pos in framebuffer
@@ -383,12 +382,11 @@ static uint32_t copycpic(uint32_t xpos, uint32_t mpic, uint32_t _eax, uint32_t &
 //<- edi -> new pos in framebuffer
 
 	uint32_t ypos, yend;
-	uint32_t credit;
 	uint32_t c1, c2, c3, z, hiadd;
 	uint8_t frac;
 
-	edx = ( ((tcredit *)esi)->cr_ypos );
-	edx = edx + ( ((tcredit *)esi)->cr_yres );
+	edx = ( credit->cr_ypos );
+	edx = edx + ( credit->cr_yres );
 	edx = edx << ( 8 );
 
 	if (( (int32_t)eax ) >= ( (int32_t)edx )) goto copycpic_weg;
@@ -397,13 +395,13 @@ static uint32_t copycpic(uint32_t xpos, uint32_t mpic, uint32_t _eax, uint32_t &
 
 	ebx = xstep; //ebx = xstep
 	ecx = xres;
-	eax = ( ((tcredit *)esi)->cr_xpos );
+	eax = ( credit->cr_xpos );
 	eax = eax << ( 8 );
 	edx = 0;
 	{ uint64_t d1 = (uint64_t)eax; uint32_t d2 = ebx; eax = d1 / d2; edx = d1 % d2; }
 	ecx = ecx - eax;
 	c1 = eax;
-	eax = ( ((tcredit *)esi)->cr_xres );
+	eax = ( credit->cr_xres );
 	eax = eax << ( 8 );
 	edx = 0;
 	{ uint64_t d1 = (uint64_t)eax; uint32_t d2 = ebx; eax = d1 / d2; edx = d1 % d2; }
@@ -415,17 +413,15 @@ static uint32_t copycpic(uint32_t xpos, uint32_t mpic, uint32_t _eax, uint32_t &
 	ebx = ebx >> ( 8 );
 	hiadd = ebx;
 
-	credit = esi;
-
-	ebx = ( ((tcredit *)esi)->cr_paltab );
+	eb2 = (uint8_t *)credit->cr_paltab;
 copycpic_yl:
-	esi = (uint32_t)( (uint8_t)(ypos >> 8) );
-	esi = ( (int32_t)esi ) * ( (int32_t)creddata.cd_xres );
+	es2 = (uint32_t)( (uint8_t)(ypos >> 8) );
+	es2 = ( (int32_t)es2 ) * ( (int32_t)creddata.cd_xres );
 	eax = xpos;
 	ecx = set_high_byte(ecx, ( (uint8_t)eax ));
 	eax = eax >> ( 8 );
-	esi = esi + eax; //xpos
-	esi = esi + creddata.cd_picdata;
+	es2 = es2 + eax; //xpos
+	esi = (uint8_t *)(es2 + creddata.cd_picdata);
 
 //        xor     ch,ch
 
@@ -441,7 +437,7 @@ copycpic_yl:
 	edx = c1;
 copycpic_l1_16:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = (eax & 0xffff0000) | (uint16_t)(( ((uint16_t *)(ebx))[eax] ));
+	eax = (eax & 0xffff0000) | (uint16_t)(( ((uint16_t *)(eb2))[eax] ));
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
 	*((uint16_t *)(edi)) = (uint16_t) (( (uint16_t)eax ));
@@ -449,11 +445,10 @@ copycpic_l1_16:
 	edx = ( (int32_t)edx ) - 1;
 	if (( (int32_t)edx ) != 0) goto copycpic_l1_16;
 
-	eax = credit;
 	edx = (uint32_t)( (uint8_t)(ypos >> 8) );
-	edx = edx - ( ((tcredit *)eax)->cr_ypos );
-	edx = ( (int32_t)edx ) * ( (int32_t)(((tcredit *)eax)->cr_xres) );
-	edx = edx + mpic;
+	edx = edx - ( credit->cr_ypos );
+	edx = ( (int32_t)edx ) * ( (int32_t)(credit->cr_xres) );
+	ed2 = (uint8_t *)(edx + mpic);
 //sub     edx,esi
 	frac = (( 0 ));
 
@@ -461,12 +456,12 @@ copycpic_l1_16:
 	z = eax;
 copycpic_l2_16:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = set_high_byte(eax, ( *((uint8_t *)(edx)) ));
+	eax = set_high_byte(eax, ( *((uint8_t *)(ed2)) ));
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
-	eax = (eax & 0xffff0000) | (uint16_t)(( ((uint16_t *)(ebx))[eax] ));
+	eax = (eax & 0xffff0000) | (uint16_t)(( ((uint16_t *)(eb2))[eax] ));
 	{ uint32_t carry = (UINT8_MAX - frac < ( (uint8_t)ecx ))?1:0; frac = (frac + ( (uint8_t)ecx ));
-	  edx = edx + hiadd + carry; }
+	  ed2 = ed2 + hiadd + carry; }
 	*((uint16_t *)(edi)) = (uint16_t) (( (uint16_t)eax ));
 	edi = edi + ( 2 );
 	z = ( (int32_t)z ) - 1;
@@ -475,7 +470,7 @@ copycpic_l2_16:
 	edx = c3;
 copycpic_l3_16:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = (eax & 0xffff0000) | (uint16_t)(( ((uint16_t *)(ebx))[eax] ));
+	eax = (eax & 0xffff0000) | (uint16_t)(( ((uint16_t *)(eb2))[eax] ));
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
 	*((uint16_t *)(edi)) = (uint16_t) (( (uint16_t)eax ));
@@ -488,7 +483,7 @@ copycpic_24: //------ 24 bit
 	edx = c1;
 copycpic_l1_24:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = ( ((uint32_t *)(ebx))[eax] );
+	eax = ( ((uint32_t *)(eb2))[eax] );
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
 	*((uint16_t *)(edi)) = (uint16_t) (( (uint16_t)eax ));
@@ -498,11 +493,10 @@ copycpic_l1_24:
 	edx = ( (int32_t)edx ) - 1;
 	if (( (int32_t)edx ) != 0) goto copycpic_l1_24;
 
-	eax = credit;
 	edx = (uint32_t)( (uint8_t)(ypos >> 8) );
-	edx = edx - ( ((tcredit *)eax)->cr_ypos );
-	edx = ( (int32_t)edx ) * ( (int32_t)(((tcredit *)eax)->cr_xres) );
-	edx = edx + mpic;
+	edx = edx - ( credit->cr_ypos );
+	edx = ( (int32_t)edx ) * ( (int32_t)(credit->cr_xres) );
+	ed2 = (uint8_t *)(edx + mpic);
 //        sub     edx,esi
 	frac = (( 0 ));
 
@@ -510,13 +504,13 @@ copycpic_l1_24:
 	z = eax;
 copycpic_l2_24:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = set_high_byte(eax, ( *((uint8_t *)(edx)) ));
+	eax = set_high_byte(eax, ( *((uint8_t *)(ed2)) ));
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
-	eax = ( ((uint32_t *)(ebx))[eax] );
+	eax = ( ((uint32_t *)(eb2))[eax] );
 	*((uint16_t *)(edi)) = (uint16_t) (( (uint16_t)eax ));
 	{ uint32_t carry = (UINT8_MAX - frac < ( (uint8_t)ecx ))?1:0; frac = (frac + ( (uint8_t)ecx ));
-	  edx = edx + hiadd + carry; }
+	  ed2 = ed2 + hiadd + carry; }
 	eax = ((eax & 0xff000000) >> 24) | ((eax & 0x00ff0000) >> 8) | ((eax & 0x0000ff00) << 8) | ((eax & 0x000000ff) << 24);
 	((uint8_t *)(edi))[2] = (uint8_t) (( (uint8_t)(eax >> 8) ));
 	edi = edi + ( 3 );
@@ -526,7 +520,7 @@ copycpic_l2_24:
 	edx = c3;
 copycpic_l3_24:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = ( ((uint32_t *)(ebx))[eax] );
+	eax = ( ((uint32_t *)(eb2))[eax] );
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
 	*((uint16_t *)(edi)) = (uint16_t) (( (uint16_t)eax ));
@@ -541,7 +535,7 @@ copycpic_32: //------ 32 bit
 	edx = c1;
 copycpic_l1_32:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = ( ((uint32_t *)(ebx))[eax] );
+	eax = ( ((uint32_t *)(eb2))[eax] );
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
 	*((uint32_t *)(edi)) = eax;
@@ -549,11 +543,10 @@ copycpic_l1_32:
 	edx = ( (int32_t)edx ) - 1;
 	if (( (int32_t)edx ) != 0) goto copycpic_l1_32;
 
-	eax = credit;
 	edx = (uint32_t)( (uint8_t)(ypos >> 8) );
-	edx = edx - ( ((tcredit *)eax)->cr_ypos );
-	edx = ( (int32_t)edx ) * ( (int32_t)(((tcredit *)eax)->cr_xres) );
-	edx = edx + mpic;
+	edx = edx - ( credit->cr_ypos );
+	edx = ( (int32_t)edx ) * ( (int32_t)(credit->cr_xres) );
+	ed2 = (uint8_t *)(edx + mpic);
 //        sub     edx,esi
 	frac = (( 0 ));
 
@@ -561,12 +554,12 @@ copycpic_l1_32:
 	z = eax;
 copycpic_l2_32:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = set_high_byte(eax, ( *((uint8_t *)(edx)) ));
+	eax = set_high_byte(eax, ( *((uint8_t *)(ed2)) ));
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
-	eax = ( ((uint32_t *)(ebx))[eax] );
+	eax = ( ((uint32_t *)(eb2))[eax] );
 	{ uint32_t carry = (UINT8_MAX - frac < ( (uint8_t)ecx ))?1:0; frac = (frac + ( (uint8_t)ecx ));
-	  edx = edx + hiadd + carry; }
+	  ed2 = ed2 + hiadd + carry; }
 	*((uint32_t *)(edi)) = eax;
 	edi = edi + ( 4 );
 	z = ( (int32_t)z ) - 1;
@@ -575,7 +568,7 @@ copycpic_l2_32:
 	edx = c3;
 copycpic_l3_32:
 	eax = (uint32_t)( *((uint8_t *)(esi)) );
-	eax = ( ((uint32_t *)(ebx))[eax] );
+	eax = ( ((uint32_t *)(eb2))[eax] );
 	{ uint32_t carry = (UINT8_MAX - ( (uint8_t)(ecx >> 8) ) < ( (uint8_t)ecx ))?1:0; ecx = set_high_byte(ecx, ( (uint8_t)(ecx >> 8) ) + ( (uint8_t)ecx ));
 	  esi = esi + hiadd + carry; }
 	*((uint32_t *)(edi)) = eax;
@@ -596,45 +589,47 @@ copycpic_endcase:
 
 copycpic_weg:
 	_edi = edi;
-	_esi = esi;
 	return eax;
 }
 
 
 
-extern "C" uint32_t docredits(uint32_t mpic, uint32_t _eax) {
-	uint32_t eax = _eax, edx, ecx, edi, ebx, esi;
-	uint32_t stack_var00, stack_var01, stack_var02;
+extern "C" uint32_t docredits(int8_t *mpic, uint32_t _eax) {
+	uint32_t eax = _eax, edx, ecx, ebx;
+	uint32_t stack_var00, stack_var01;
+	uint8_t *edi;
+	tcreddata *esi;
+	tcredit *es2;
+	int8_t *eb2;
 //, creditnum            ;mpic: mosaic picture
 //-> eax = frame
 //<- eax = scrolltime
-	uint32_t creditdef;
+	tcreditdef *creditdef;
 	uint32_t mainstart, time;
-	uint32_t ypos, fbuf, xpos;
+	uint32_t ypos, xpos;
+	uint8_t *fbuf;
 	uint8_t last;
 	void *pixels;
 	int pitch;
 
-	esi = ( (uint32_t)&(creddata) );
-	eax = ( (int32_t)eax ) - ( (int32_t)(((tcreddata *)esi)->cd_starttime) ); //eax = relative time
+	esi = &(creddata);
+	eax = ( (int32_t)eax ) - ( (int32_t)(esi->cd_starttime) ); //eax = relative time
 	if (( (int32_t)eax ) < 0) goto docredits_no_c;
 	edx = maincount;
 	edx = edx - eax;
 	mainstart = edx;
 
-	edx = ( ((tcreddata *)esi)->cd_enginetime );
-	((tcreddata *)esi)->cd_starttime = ( ((tcreddata *)esi)->cd_starttime ) + edx;
+	edx = ( esi->cd_enginetime );
+	esi->cd_starttime = ( esi->cd_starttime ) + edx;
 
-	eax = ( ((tcreddata *)esi)->cd_creditnum ); //credit number
+	eax = ( esi->cd_creditnum ); //credit number
 	edx = eax;
 	edx = edx + 1;
 
-	last = ((edx >= ( ((tcreddata *)esi)->cd_nocreditdefs ))?1:0);
-	((tcreddata *)esi)->cd_creditnum = ( ((tcreddata *)esi)->cd_creditnum ) + 1;
+	last = ((edx >= ( esi->cd_nocreditdefs ))?1:0);
+	esi->cd_creditnum = ( esi->cd_creditnum ) + 1;
 
-	eax = ( (int32_t)eax ) * ( sizeof(tcreditdef) );
-	eax = eax + ( ((tcreddata *)esi)->cd_creditdefs );
-	creditdef = eax;
+	creditdef = eax + ( esi->cd_creditdefs );
 
 
 	clearlinbuf();
@@ -647,8 +642,7 @@ docredits_fl:
 
 	eax = ( (int32_t)eax ) * ( (int32_t)creddata.cd_scrollspeed ); //xpos
 	eax = ( (int32_t)eax ) >> ( 10 - 8 );
-	ebx = creditdef;
-	edx = ( ((tcreditdef *)ebx)->d_xpos );
+	edx = ( creditdef->d_xpos );
 	edx = edx << ( 8 );
 	eax = eax + edx;
 	edx = creddata.cd_xres;
@@ -666,7 +660,7 @@ docredits_0:
 
 	SDL_RenderClear(renderer);
 	SDL_LockTexture(texture, NULL, &pixels, &pitch);
-	linbuf = (uint32_t)pixels;
+	linbuf = (uint8_t *)pixels;
 	xbytes = pitch;
 	bufend = linbuf + xbytes * yres;
 
@@ -678,40 +672,37 @@ docredits_0:
 	ecx = 0;
 
 docredits_cl: //credit loop
-	ebx = creditdef;
-	esi = ( ((tcreditdef *)ebx)->d_credit[ecx] );
+	es2 = ( creditdef->d_credit[ecx] );
 
-	if (( (int32_t)esi ) == 0) goto docredits_w0;
+	if (es2 == 0) goto docredits_w0;
 
-	eax = ( ((tcredit *)esi)->cr_starttime );
+	eax = ( es2->cr_starttime );
 	eax = ( (int32_t)eax ) - ( (int32_t)time );
 	if (( (int32_t)eax ) > 0) goto docredits_w0;
 
 	stack_var00 = ecx;
 
 	stack_var01 = eax;
-	stack_var02 = esi;
 	eax = ypos;
-	edx = ( ((tcredit *)esi)->cr_ypos );
+	edx = ( es2->cr_ypos );
 	edi = fbuf;
-	eax = copypic(xpos, eax, edx, esi, edi); //only copy picture
+	eax = copypic(xpos, eax, edx, edi); //only copy picture
 	fbuf = edi;
 	ypos = eax;
-	esi = stack_var02;
 	eax = stack_var01;
 
-	eax = ( (int32_t)eax ) * ( (int32_t)(((tcredit *)esi)->cr_fadespeed) );
+	eax = ( (int32_t)eax ) * ( (int32_t)(es2->cr_fadespeed) );
 	eax = ( (int32_t)eax ) >> ( 10 );
-	eax = eax + ( ((tcredit *)esi)->cr_startstep );
-	ebx = ( ((tcredit *)esi)->cr_picdata ); //ebx -> mpic
+	eax = eax + ( es2->cr_startstep );
+	eb2 = es2->cr_picdata; //ebx -> mpic
 
 	if (( (int32_t)eax ) <= ( 256 )) goto docredits_1;
-	mosaic(eax, mpic, esi);
-	ebx = mpic; //ebx -> mpic
+	mosaic(eax, mpic, es2);
+	eb2 = mpic; //ebx -> mpic
 docredits_1:
 	edi = fbuf;
 	eax = ypos;
-	eax = copycpic(xpos, ebx, eax, esi, edi); //copy pic with credit
+	eax = copycpic(xpos, eb2, eax, es2, edi); //copy pic with credit
 	fbuf = edi;
 	ypos = eax;
 
@@ -725,7 +716,7 @@ docredits_w0:
 	eax = ypos; //copy rest
 	edx = ( 1000 );
 	edi = fbuf;
-	eax = copypic(xpos, eax, edx, esi, edi);
+	eax = copypic(xpos, eax, edx, edi);
 
 	SDL_UnlockTexture(texture);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -767,8 +758,9 @@ docredits_weg:
 
 
 
-static void initpaltab(uint32_t _ebx, uint32_t _esi) {
-	uint32_t eax, edx, ecx, edi, ebx = _ebx, esi = _esi;
+static void initpaltab(tpaltab *ebx, tvesa *esi) {
+	uint32_t eax, edx, ecx;
+	uint8_t *edi;
 //-> ebx -> tpaltab
 //-> esi -> tvesa
 	uint32_t col, z, dmul;
@@ -776,57 +768,57 @@ static void initpaltab(uint32_t _ebx, uint32_t _esi) {
 	z = ( fvalues - 1 );
 initpaltab_fl:
 	eax = z;
-	eax = ( (int32_t)eax ) * ( (int32_t)(((tpaltab *)ebx)->pt_trans) );
+	eax = ( (int32_t)eax ) * ( (int32_t)(ebx->pt_trans) );
 	dmul = eax;
 
 	edx = ( 255 );
 initpaltab_pl:
-	edi = creddata.cd_pal;
+	edi = (uint8_t *)creddata.cd_pal;
 
 	eax = (uint32_t)( ((tpal *)(edi + edx))->p_red[0] ); //red
-	ecx = ( ((tpaltab *)ebx)->pt_red );
+	ecx = ( ebx->pt_red );
 	ecx = ecx - eax;
 	ecx = ( (int32_t)ecx ) * ( (int32_t)dmul ); //z
 	ecx = ecx >> ( ld_fvalues + 8 );
 	eax = eax + ecx;
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_redbits ));
+	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_redbits ));
 	eax = eax << ( (uint8_t)ecx );
 	eax = eax >> ( 8 );
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_redpos ));
+	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_redpos ));
 	eax = eax << ( (uint8_t)ecx );
 	col = eax;
 
 	eax = (uint32_t)( ((tpal *)(edi + edx))->p_green[0] ); //green
-	ecx = ( ((tpaltab *)ebx)->pt_green );
+	ecx = ( ebx->pt_green );
 	ecx = ecx - eax;
 	ecx = ( (int32_t)ecx ) * ( (int32_t)dmul ); //z
 	ecx = ecx >> ( ld_fvalues + 8 );
 	eax = eax + ecx;
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_greenbits ));
+	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_greenbits ));
 	eax = eax << ( (uint8_t)ecx );
 	eax = eax >> ( 8 );
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_greenpos ));
+	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_greenpos ));
 	eax = eax << ( (uint8_t)ecx );
 	col = col | eax;
 
 	eax = (uint32_t)( ((tpal *)(edi + edx))->p_blue[0] ); //blue
-	ecx = ( ((tpaltab *)ebx)->pt_blue );
+	ecx = ( ebx->pt_blue );
 	ecx = ecx - eax;
 	ecx = ( (int32_t)ecx ) * ( (int32_t)dmul ); //z
 	ecx = ecx >> ( ld_fvalues + 8 );
 	eax = eax + ecx;
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_bluebits ));
+	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_bluebits ));
 	eax = eax << ( (uint8_t)ecx );
 	eax = eax >> ( 8 );
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( ((tvesa *)esi)->vesa_bluepos ));
+	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_bluepos ));
 	eax = eax << ( (uint8_t)ecx );
 	eax = eax | col;
 
-	edi = ( ((tpaltab *)ebx)->pt_paltab );
+	edi = (uint8_t *)ebx->pt_paltab;
 	ecx = edx;
 	ecx = set_high_byte(ecx, ( (uint8_t)z ));
 //bpp,16
-	if (( ((tvesa *)esi)->vesa_pbytes ) > ( 2 )) goto initpaltab_32;
+	if (( esi->vesa_pbytes ) > ( 2 )) goto initpaltab_32;
 	((uint16_t *)(edi))[ecx] = (uint16_t) (( (uint16_t)eax ));
 	goto initpaltab_0;
 initpaltab_32:
@@ -849,30 +841,24 @@ initpaltab_0:
 
 
 
-extern "C" void initcdata(uint32_t _esi) {
-	uint32_t eax, edx, ecx, ebx, esi = _esi/*, ebp*/;
-	uint32_t /*stack_var00, */stack_var01;
+extern "C" void initcdata(tvesa *esi) {
+	uint32_t eax, edx, ecx;
+	tpaltab *ebx;
 //-> esi -> tvesa
 //cld
-	//stack_var00 = ( 0 /*ebp*/ );
 
 
-	edx = ( ((tvesa *)esi)->vesa_xbytes );
-	xbytes = edx;
-	eax = ( ((tvesa *)esi)->vesa_xres );
-	xres = eax;
-	ebx = ( ((tvesa *)esi)->vesa_yres );
-	yres = ebx;
-	eax = ( ((tvesa *)esi)->vesa_linbuf );
-	linbuf = eax;
-	texture = (SDL_Texture *) ( ((tvesa *)esi)->vesa_texture );
-	renderer = (SDL_Renderer *) ( ((tvesa *)esi)->vesa_renderer );
+	xbytes = esi->vesa_xbytes;
+	xres = esi->vesa_xres;
+	yres = esi->vesa_yres;
+	linbuf = (uint8_t *)esi->vesa_linbuf;
+	texture = (SDL_Texture *) ( esi->vesa_texture );
+	renderer = (SDL_Renderer *) ( esi->vesa_renderer );
 
-	edx = ( (int32_t)edx ) * ( (int32_t)ebx ); //bufend
-	eax = eax + edx;
-	bufend = eax;
+	edx = ( (int32_t)xbytes ) * ( (int32_t)yres ); //bufend
+	bufend = linbuf + edx;
 
-	eax = ( ((tvesa *)esi)->vesa_pbytes ); //bpp      ;bppflag
+	eax = ( esi->vesa_pbytes ); //bpp      ;bppflag
 	pbytes = eax;
 //        sub     eax,17
 //        sar     eax,3
@@ -882,10 +868,8 @@ extern "C" void initcdata(uint32_t _esi) {
 	ecx = creddata.cd_nopaltabs;
 	ebx = creddata.cd_paltabs;
 initcdata_ptl:
-	stack_var01 = ecx;
 	initpaltab(ebx, esi); //esi -> tvesa
-	ecx = stack_var01;
-	ebx = ebx + ( sizeof(tpaltab) );
+	ebx = ebx + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto initcdata_ptl;
 
@@ -902,7 +886,6 @@ initcdata_ptl:
 	creddata.cd_creditnum = ( 0 );
 
 //initcdata_weg:
-	//ebp = stack_var00;
 	return;
 }
 

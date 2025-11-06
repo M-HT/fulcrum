@@ -141,8 +141,8 @@ struct tdummy {
 
 struct tmaterial {
   int flag;
-  char *txtmap;
-  char *bumpmap;
+  int txtmapidx;//char *txtmap;
+  int bumpmapidx;//char *bumpmap;
 };
 
 
@@ -228,6 +228,7 @@ static tvmt vmtlist[] = {
 //global
 tmaterial *matlist;
 char *txtdata;
+char *bumpdata;
 tobject *root;
 tbumpomni *bumpomni;
 char *firemap;
@@ -430,8 +431,14 @@ void m_readM2(tstream &s, tobject *obj) {
 	  pPolygon->m_pDot2 = &pDot3D[1];
 	  pPolygon->m_pDot3 = &pDot3D[2];
 
-	  pPolygon->m_pcTexture = mat->txtmap;
-	  pPolygon->m_pcBumpmap = mat->bumpmap;
+	  //convert material pointers
+	  if (!mat->flag) {
+		pPolygon->m_pcTexture = &txtdata[mat->txtmapidx << 18];
+		pPolygon->m_pcBumpmap = (mat->bumpmapidx != -1) ? &bumpdata[mat->bumpmapidx << 17] : NULL;
+	  } else {
+		pPolygon->m_pcTexture = firemap;
+		pPolygon->m_pcBumpmap = NULL;
+	  }
 	  pPolygon->m_iType = iJump;
 	  pPolygon->m_iFlag = 0;
 
@@ -537,10 +544,10 @@ void d_readM2(tstream &s, tobject *obj) {
 
 void readmaterials(tstream &s) {
   int count, z;
-  tmaterial *mat;
+//  tmaterial *mat;
   char pal[768];
-  char *txtdata;
-  char *bumpdata;
+//  char *txtdata;
+//  char *bumpdata;
   char *map;
   char *tempdata;
 //  char *firemap;
@@ -595,18 +602,18 @@ void readmaterials(tstream &s) {
   s.read(matlist,count*sizeof(tmaterial));
 
   //convert material pointers
-  mat = matlist;
-  for(z = 0; z < count; z++) {
-    if (!mat->flag) {
-      mat->txtmap = &txtdata[((int) mat->txtmap) << 18];
-      mat->bumpmap = ((int) mat->bumpmap != -1) ?
-	&bumpdata[((int) mat->bumpmap) << 17] : NULL;
-    } else {
-      mat->txtmap = firemap;
-      mat->bumpmap = NULL;
-    }
-    mat++;
-  }
+//  mat = matlist;
+//  for(z = 0; z < count; z++) {
+//    if (!mat->flag) {
+//      mat->txtmap = &txtdata[((int) mat->txtmap) << 18];
+//      mat->bumpmap = ((int) mat->bumpmap != -1) ?
+//	&bumpdata[((int) mat->bumpmap) << 17] : NULL;
+//    } else {
+//      mat->txtmap = firemap;
+//      mat->bumpmap = NULL;
+//    }
+//    mat++;
+//  }
 }
 
 

@@ -57,7 +57,7 @@ typedef struct {  //fixed size of 16 byte
 //track:
 //------
 typedef struct {
- uint32_t	t_data;			//track-data
+ void*		t_data;			//track-data
  uint32_t	t_key;			//actual key
 } ttrack;
 
@@ -77,12 +77,12 @@ typedef struct {
 //linear track:
 //-------------
 typedef struct {
- uint32_t	lt_startstate;
+ float*		lt_startstate;
  uint32_t	lt_startframe;
- uint32_t	lt_endstate;
+ float*		lt_endstate;
  uint32_t	lt_endframe;
  uint32_t	lt_keys;
- uint32_t	lt_data;
+ void*		lt_data;
 } tltrack;
 
 
@@ -101,20 +101,17 @@ uint32_t		frame;			//global frame counter
 //.code
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 
-extern "C" void dotrack(uint32_t _track, uint32_t typesize, uint32_t _edi) {
+extern "C" void dotrack(void *_track, uint32_t typesize, float *edi) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
-	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
-	uint32_t stack_var00;
+	uint32_t eax, edx, ecx, ebx;
+	uint8_t *eb2, *esi;
 
 //edi -> result
 	uint32_t key;
 
-	stack_var00 = ( 0 /*esi*/ );
-
-	ebx = _track; //ebx -> ttrack
-	eax = ( ((ttrack *)ebx)->t_key );
+	eax = ( ((ttrack *)_track)->t_key );
 	key = eax;
-	esi = ( ((ttrack *)ebx)->t_data ); //esi -> track-data
+	esi = (uint8_t *)( ((ttrack *)_track)->t_data ); //esi -> track-data
 
 
 	ecx = ( ((ttrackh *)esi)->th_keys );
@@ -141,7 +138,7 @@ extern "C" void dotrack(uint32_t _track, uint32_t typesize, uint32_t _edi) {
 dotrack_c: //copy first or last control point
 	esi = esi + ecx;
 	ecx = typesize;
-	for (; ecx != 0; ecx--, esi+=4, edi+=4) *(uint32_t *)edi = *(uint32_t *)esi;
+	for (; ecx != 0; ecx--, esi+=4, edi+=1) *(uint32_t *)edi = *(uint32_t *)esi;
 	goto dotrack_weg;
 dotrack_loop:
 //loop & repeat
@@ -164,16 +161,16 @@ dotrack_key: //edx = frame
 	ebx = ( sizeof(tkey) - 4 );
 	ebx = ( (int32_t)ebx ) * ( (int32_t)key );
 	ebx = ebx + ( sizeof(ttrackh) - 4 );
-	ebx = ebx + esi;
+	eb2 = ebx + esi;
 
 //search actual key
-	if (edx >= ( ((tkey *)ebx)->k_sframe )) goto dotrack_1;
+	if (edx >= ( ((tkey *)eb2)->k_sframe )) goto dotrack_1;
 	key = ( 0 );
-	ebx = ( esi + (sizeof(ttrackh) - 4) );
+	eb2 = ( esi + (sizeof(ttrackh) - 4) );
 dotrack_1:
 
-	if (edx < ( ((tkey *)ebx)->k_eframe )) goto dotrack_2; //e
-	ebx = ebx + ( sizeof(tkey) - 4 );
+	if (edx < ( ((tkey *)eb2)->k_eframe )) goto dotrack_2; //e
+	eb2 = eb2 + ( sizeof(tkey) - 4 );
 	key = key + 1;
 	goto dotrack_1;
 dotrack_2:
@@ -181,12 +178,12 @@ dotrack_2:
 
 //dotrack_spline:
 //t
-	eax = ( ((tkey *)ebx)->k_sframe );
+	eax = ( ((tkey *)eb2)->k_sframe );
 	edx = edx - eax; //edx = (frame - sframe)
 	*((uint32_t *)(edi)) = edx; //temp
 	fpu_reg10 = ( *((int32_t *)(edi)) );
 	eax = - ( (int32_t)eax );
-	eax = eax + ( ((tkey *)ebx)->k_eframe ); //eax = (eframe - sframe)
+	eax = eax + ( ((tkey *)eb2)->k_eframe ); //eax = (eframe - sframe)
 	*((uint32_t *)(edi)) = eax; //temp
 	fpu_reg11 = ( *((int32_t *)(edi)) );
 	fpu_reg10 = fpu_reg10 / fpu_reg11; //t = (frame - sframe) / (eframe - sframe);
@@ -254,7 +251,7 @@ dotrack_l:
 	*((float *)(edi)) = fpu_reg15;
 
 	esi = esi - eax; //reset control point pointer
-	edi = edi + ( 4 ); //next target component
+	edi = edi + ( 1 ); //next target component
 
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto dotrack_l;
@@ -266,19 +263,17 @@ dotrack_l:
 
 
 dotrack_weg:
-	ebx = _track; //ebx -> ttrack
 	eax = key;
-	((ttrack *)ebx)->t_key = eax; //write key back
+	((ttrack *)_track)->t_key = eax; //write key back
 
-	esi = stack_var00;
 	return;
 }
 
 
 
-static void slerp(uint32_t _edx, uint32_t _esi, uint32_t _edi, realnum _fpu_reg9) {
+static void slerp(uint32_t _edx, float *esi, float *edi, realnum _fpu_reg9) {
 	realnum fpu_reg8, fpu_reg9 = _fpu_reg9, fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14;
-	uint32_t edx = _edx, ecx, edi = _edi, esi = _esi;
+	uint32_t edx = _edx, ecx;
 //esi -> input quaternions (lie one after another)
 //edi -> resulting quaternions
 //st = t
@@ -349,10 +344,10 @@ slerp_l:
 	fpu_reg13 = fpu_reg13 * fpu_reg11;
 	fpu_reg14 = ( ((float *)(esi))[4] );
 	fpu_reg14 = fpu_reg14 * fpu_reg12;
-	esi = esi + ( 4 );
+	esi = esi + ( 1 );
 	fpu_reg13 = fpu_reg13 + fpu_reg14;
 	*((float *)(edi)) = fpu_reg13;
-	edi = edi + ( 4 );
+	edi = edi + ( 1 );
 	ecx = ( (int32_t)ecx ) - 1;
 	if (( (int32_t)ecx ) != 0) goto slerp_l;
 
@@ -370,21 +365,19 @@ slerp_l:
 
 
 
-extern "C" void dorottrack(uint32_t _track, uint32_t _edi) {
+extern "C" void dorottrack(void *_track, float *edi) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16;
-	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
-	uint32_t stack_var00, stack_var01;
+	uint32_t eax, edx, ecx, ebx;
+	uint8_t *esi, *eb2;
 
 //edi -> result
 	uint32_t key;
 	//int32_t q0[4], q1[4], q2[4];
 	float q0[4*3];
-	stack_var00 = ( 0 /*esi*/ );
 
-	ebx = _track; //ebx -> ttrack
-	eax = ( ((ttrack *)ebx)->t_key );
+	eax = ( ((ttrack *)_track)->t_key );
 	key = eax;
-	esi = ( ((ttrack *)ebx)->t_data ); //esi -> track-data
+	esi = (uint8_t *)( ((ttrack *)_track)->t_data ); //esi -> track-data
 
 
 	ecx = ( ((ttrackh *)esi)->th_keys );
@@ -433,16 +426,16 @@ dorottrack_key: //edx = frame
 	ebx = ( sizeof(tkey) - 4 );
 	ebx = ( (int32_t)ebx ) * ( (int32_t)key );
 	ebx = ebx + ( sizeof(ttrackh) - 4 );
-	ebx = ebx + esi;
+	eb2 = ebx + esi;
 
 //search actual key
-	if (edx >= ( ((tkey *)ebx)->k_sframe )) goto dorottrack_1;
+	if (edx >= ( ((tkey *)eb2)->k_sframe )) goto dorottrack_1;
 	key = ( 0 );
-	ebx = ( esi + (sizeof(ttrackh) - 4) );
+	eb2 = ( esi + (sizeof(ttrackh) - 4) );
 dorottrack_1:
 
-	if (edx <= ( ((tkey *)ebx)->k_eframe )) goto dorottrack_2;
-	ebx = ebx + ( sizeof(tkey) - 4 );
+	if (edx <= ( ((tkey *)eb2)->k_eframe )) goto dorottrack_2;
+	eb2 = eb2 + ( sizeof(tkey) - 4 );
 	key = key + 1;
 	goto dorottrack_1;
 dorottrack_2:
@@ -450,12 +443,12 @@ dorottrack_2:
 
 //dorottrack_spline:
 //t
-	eax = ( ((tkey *)ebx)->k_sframe );
+	eax = ( ((tkey *)eb2)->k_sframe );
 	edx = edx - eax; //edx = (frame - sframe)
 	*((uint32_t *)(edi)) = edx; //temp
 	fpu_reg10 = ( *((int32_t *)(edi)) );
 	eax = - ( (int32_t)eax );
-	eax = eax + ( ((tkey *)ebx)->k_eframe ); //eax = (eframe - sframe)
+	eax = eax + ( ((tkey *)eb2)->k_eframe ); //eax = (eframe - sframe)
 	*((uint32_t *)(edi)) = eax; //temp
 	fpu_reg11 = ( *((int32_t *)(edi)) );
 	fpu_reg10 = fpu_reg10 / fpu_reg11; //t = (frame - sframe) / (eframe - sframe);
@@ -469,28 +462,19 @@ dorottrack_2:
 	esi = esi + ebx; //esi -> qn, an, bn, qn1
 
 
-	stack_var01 = edi;
-
-	edi = ( (uint32_t)&(q0[0]) );
 	edx = ( 3 ); //3 repititions
-	slerp(edx, esi, edi, fpu_reg10); //q0 = slerp(qn,an,t);
+	slerp(edx, (float *)esi, &(q0[0]), fpu_reg10); //q0 = slerp(qn,an,t);
 //q1 = slerp(an,bn1,t);
 //q2 = slerp(bn1,qn1,t);
-	esi = ( (uint32_t)&(q0[0]) );
-	edi = esi;
 	edx = ( 2 ); //2 repititions
-	slerp(edx, esi, edi, fpu_reg10); //q0 = slerp(q0,q1,t);
+	slerp(edx, &(q0[0]), &(q0[0]), fpu_reg10); //q0 = slerp(q0,q1,t);
 //q1 = slerp(q1,q2,t);
-	esi = ( (uint32_t)&(q0[0]) );
-	edi = esi;
 	edx = ( 1 ); //1 repitition
-	slerp(edx, esi, edi, fpu_reg10); //q0 = slerp(q0,q1,t);
+	slerp(edx, &(q0[0]), &(q0[0]), fpu_reg10); //q0 = slerp(q0,q1,t);
 
 //r
 
-	edi = stack_var01;
-
-	esi = ( (uint32_t)&(q0[0]) );
+	esi = (uint8_t *)( &(q0[0]) );
 dorottrack_notrack: //frame out of track range
 	fpu_reg10 = ( ((tquaternion *)esi)->q_x );
 	fpu_reg10 = fpu_reg10 + fpu_reg10;
@@ -568,50 +552,46 @@ dorottrack_notrack: //frame out of track range
 
 
 //dorottrack_weg:
-	ebx = _track; //ebx -> ttrack
 	eax = key;
-	((ttrack *)ebx)->t_key = eax; //write key back
+	((ttrack *)_track)->t_key = eax; //write key back
 
-	esi = stack_var00;
 	return;
 }
 
 
 
 
-extern "C" void doltrack(uint32_t _track, uint32_t typesize, uint32_t _edi) {
+extern "C" void doltrack(void *_track, uint32_t typesize, float *edi) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12;
-	uint32_t eax, edx, ecx, edi = _edi, ebx, esi;
-	uint32_t stack_var00;
+	uint32_t eax, edx, ecx;
+	tltrack *ebx;
+	uint8_t *esi;
 
 //edi -> result
 	uint32_t temp;
 
-	stack_var00 = ( 0 /*esi*/ );
-
-	ebx = _track;
+	ebx = (tltrack *)_track;
 doltrack_r:
 	edx = frame;
 
-	if (edx <= ( ((tltrack *)ebx)->lt_endframe )) goto doltrack_i;
+	if (edx <= ( ebx->lt_endframe )) goto doltrack_i;
 //end of key
 
-	if (( ((tltrack *)ebx)->lt_keys ) > ( 0 )) goto doltrack_next;
+	if (( ebx->lt_keys ) > ( 0 )) goto doltrack_next;
 //end of track
 	fpu_reg10 = 1.0;
 	goto doltrack_e;
 doltrack_next: //get next key
-	eax = ( ((tltrack *)ebx)->lt_endframe );
-	((tltrack *)ebx)->lt_startframe = eax; //old endframe is new startframe
+	eax = ( ebx->lt_endframe );
+	ebx->lt_startframe = eax; //old endframe is new startframe
 
-	((tltrack *)ebx)->lt_keys = ( ((tltrack *)ebx)->lt_keys ) - 1;
+	ebx->lt_keys = ( ebx->lt_keys ) - 1;
 
-	esi = ( ((tltrack *)ebx)->lt_data );
+	esi = (uint8_t *)( ebx->lt_data );
 	eax = (int32_t)( *((int8_t *)(esi)) ); //get scale value
 	esi = esi + 1;
 	temp = eax;
 
-	edx = ( ((tltrack *)ebx)->lt_endstate );
 	ecx = 0;
 doltrack_l:
 
@@ -620,12 +600,10 @@ doltrack_l:
 
 	fpu_reg11 = ldexp(fpu_reg11, (int32_t)temp);
 
-	eax = ( ((tltrack *)ebx)->lt_startstate );
-
-	fpu_reg12 = ( ((float *)(edx))[ecx] );
-	fpu_reg12 = fpu_reg12 + ( ((float *)(eax))[ecx] );
-	((float *)(eax))[ecx] = fpu_reg12;
-	((float *)(edx))[ecx] = fpu_reg11;
+	fpu_reg12 = ( ebx->lt_endstate[ecx] );
+	fpu_reg12 = fpu_reg12 + ( ebx->lt_startstate[ecx] );
+	ebx->lt_startstate[ecx] = fpu_reg12;
+	ebx->lt_endstate[ecx] = fpu_reg11;
 
 
 	ecx = ecx + 1;
@@ -635,30 +613,26 @@ doltrack_l:
 
 
 	eax = ( *((uint32_t *)(esi + ecx)) ); //get endframe
-	((tltrack *)ebx)->lt_endframe = eax;
+	ebx->lt_endframe = eax;
 
-	eax = ( esi + ecx + (4) ); //update data pointer
-	((tltrack *)ebx)->lt_data = eax;
+	ebx->lt_data = (void*)( esi + ecx + (4) ); //update data pointer
 	goto doltrack_r;
 doltrack_i: //interpolate		;edx = frame
-	eax = ( ((tltrack *)ebx)->lt_startframe );
+	eax = ( ebx->lt_startframe );
 	edx = edx - eax; //edx = (frame - sframe)
 	temp = edx;
 	fpu_reg10 = ( (int32_t)temp );
 	eax = - ( (int32_t)eax );
-	eax = eax + ( ((tltrack *)ebx)->lt_endframe ); //eax = (eframe - sframe)
+	eax = eax + ( ebx->lt_endframe ); //eax = (eframe - sframe)
 	temp = eax;
 	fpu_reg11 = ( (int32_t)temp );
 	fpu_reg10 = fpu_reg10 / fpu_reg11; //t = (frame - sframe) / (eframe - sframe);
 doltrack_e:
-	esi = ( ((tltrack *)ebx)->lt_startstate );
-	edx = ( ((tltrack *)ebx)->lt_endstate );
-
 	ecx = 0;
 doltrack_l2:
-	fpu_reg11 = ( ((float *)(edx))[ecx] );
+	fpu_reg11 = ( ebx->lt_endstate[ecx] );
 	fpu_reg11 = fpu_reg11 * fpu_reg10;
-	fpu_reg11 = fpu_reg11 + ( ((float *)(esi))[ecx] );
+	fpu_reg11 = fpu_reg11 + ( ebx->lt_startstate[ecx] );
 	((float *)(edi))[ecx] = fpu_reg11;
 
 	ecx = ecx + 1;
@@ -667,22 +641,18 @@ doltrack_l2:
 
 
 
-	esi = stack_var00;
-
 	return;
 }
 
 
-extern "C" void dohidetrack(uint32_t _ebx, uint32_t _edi) { //pascal
-	uint32_t eax, edx, edi = _edi, ebx = _ebx, esi;
-	uint32_t stack_var00;
+extern "C" void dohidetrack(void *ebx, int32_t *edi) { //pascal
+	uint32_t eax, edx;
+	int32_t *esi;
 //ebx -> track
 
-	stack_var00 = ( 0 /*esi*/ );
+	esi = (int32_t *)( ((ttrack *)(ebx))->t_data ); //esi -> track
 
-	esi = ( *((uint32_t *)(ebx)) ); //esi -> track
-
-	edx = ( ((uint32_t *)(ebx))[1] ); //edx = key
+	edx = ( ((ttrack *)(ebx))->t_key ); //edx = key
 
 dohidetrack_l:
 //end of track? (esi -> keys)
@@ -695,9 +665,8 @@ dohidetrack_l:
 	edx = edx + 1; //next key
 	goto dohidetrack_l;
 dohidetrack_w:
-	((uint32_t *)(ebx))[1] = edx; //write key back
+	((ttrack *)(ebx))->t_key = edx; //write key back
 
-	esi = stack_var00;
 	return;
 }
 
