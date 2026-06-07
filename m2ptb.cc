@@ -1,5 +1,7 @@
 #include <malloc.h>
 #include "cc.h"
+#include "m2struct.inc.h"
+
 //;/*
 //.486
 
@@ -11,7 +13,7 @@
 //.data
 
 //EXTRN	ppPolygons			:DWORD
-extern "C" uint32_t pcBackBuffer;
+extern "C" uint32_t *pcBackBuffer;
 extern "C" uint32_t dwXmax;
 extern "C" uint32_t iPixelCounter;
 extern "C" uint8_t pAngleJoinTab[65536];
@@ -25,12 +27,12 @@ static uint32_t pBackBumpBuffer[1600];
 static uint32_t pBackTextureBuffer[1600];
 static uint32_t pBackShadeBuffer[1600];
 
-static uint32_t pcTexture;
-static uint32_t pcBumpmap;
+static uint32_t *pcTexture;
+static uint16_t *pcBumpmap;
 
-static uint32_t pDot1;
-static uint32_t pDot2;
-static uint32_t pDot3;
+static CMV2Dot3D *pDot1;
+static CMV2Dot3D *pDot2;
+static CMV2Dot3D *pDot3;
 
 
 static float fYCounter;
@@ -180,7 +182,7 @@ static uint32_t dwScanlineXCounter;
 //YLoopVariable
 
 
-static uint32_t dwESPStartPoint;
+static void *dwESPStartPoint;
 //dwOldESP					dd ?
 static uint32_t dwScreenXf;
 
@@ -202,9 +204,9 @@ static float fTextureVdY2;
 static float fTextureVdX;
 static float fTextureUdX;
 
-static uint32_t dwRGBIntLoop_eax;
-static uint32_t dwRGBIntLoop_ecx;
-static uint32_t dwRGBIntLoop_esi;
+static uint32_t dwRGBIntLoop_eax1;
+static uint32_t dwRGBIntLoop_ecx1;
+static uint32_t dwRGBIntLoop_esi1;
 static uint32_t dwRGBIntLoop_ebp;
 
 
@@ -217,8 +219,6 @@ static uint32_t dwRGBIntLoop_ebp;
 //ends
 
 //.code
-
-#include "m2struct.inc.h"
 
 static void *allocated_pointer = NULL;
 static uint32_t allocated_size = 0;
@@ -241,66 +241,64 @@ static void *mem_alloc_endptr(uint32_t size)
     return (void *) (allocated_size + (uintptr_t) allocated_pointer);
 }
 
-extern "C" void MV2DrawPolygonTBASM(uint32_t _edi) {
+extern "C" void MV2DrawPolygonTBASM(CMV2Polygon *_edi1) {
 	float fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17, fpu_reg18;
-	uint32_t eax, edx, ecx, edi = _edi, ebx, esi, ebp;
+	uint32_t eax1, edx1, ecx1, edi1, ebx1, esi1, ebp;
 	uint32_t stack_var00;
 // edi = pPolygon
-	CMV2ScanlinerPerspTG *SPTG;
-	CMV2ScanlinerLinTG *SLTG;
+	CMV2Dot3D *eax2, *ebx2, *ecx2, *edx2, *esi2, *edi2;
+	CMV2Dot3DPos *eax3, *ebx3, *ecx3, *edx3, *esi3, *edi3;
+	CMV2ScanlinerPerspTG *SPTG, *edx4;
+	CMV2ScanlinerLinTG *SLTG, *edx5;
 
-	eax = ( ((CMV2Polygon *)edi)->CMV2Polygon__m_pDot1 );
-	ebx = ( ((CMV2Polygon *)edi)->CMV2Polygon__m_pDot2 );
-	ecx = ( ((CMV2Polygon *)edi)->CMV2Polygon__m_pDot3 );
+	eax2 = _edi1->CMV2Polygon__m_pDot1;
+	ebx2 = _edi1->CMV2Polygon__m_pDot2;
+	ecx2 = _edi1->CMV2Polygon__m_pDot3;
 //eax - ecx: pDot3D1 - pDot3D3
 
-	pDot1 = eax;
-	pDot2 = ebx;
-	pDot3 = ecx;
+	pDot1 = eax2;
+	pDot2 = ebx2;
+	pDot3 = ecx2;
 
-	edx = ( ((CMV2Polygon *)edi)->CMV2Polygon__m_pcTexture );
-	eax = ( ((CMV2Dot3D *)eax)->CMV2Dot3D__m_pPos );
-	edx = edx >> ( 2 );
-	ebx = ( ((CMV2Dot3D *)ebx)->CMV2Dot3D__m_pPos );
-	ecx = ( ((CMV2Dot3D *)ecx)->CMV2Dot3D__m_pPos );
+	eax3 = eax2->CMV2Dot3D__m_pPos;
+	ebx3 = ebx2->CMV2Dot3D__m_pPos;
+	ecx3 = ecx2->CMV2Dot3D__m_pPos;
 //eax - ecx: pDot3DPos1 - pDot3DPos3
-	pcTexture = edx;
-	edx = ( ((CMV2Polygon *)edi)->CMV2Polygon__m_pcBumpmap );
-	edx = edx >> ( 1 );
-	pcBumpmap = edx;
+	pcTexture = (uint32_t *)_edi1->CMV2Polygon__m_pcTexture;
+	pcBumpmap = (uint16_t *)_edi1->CMV2Polygon__m_pcBumpmap;
 
-	edx = ( ((CMV2Dot3DPos *)eax)->CMV2Dot3DPos__m_iScreenY );
-	esi = ( ((CMV2Dot3DPos *)ebx)->CMV2Dot3DPos__m_iScreenY );
-	edi = ( ((CMV2Dot3DPos *)ecx)->CMV2Dot3DPos__m_iScreenY );
-	eax = pDot1;
-	ebx = pDot2;
-	ecx = pDot3;
+	edx1 = eax3->CMV2Dot3DPos__m_iScreenY;
+	esi1 = ebx3->CMV2Dot3DPos__m_iScreenY;
+	edi1 = ecx3->CMV2Dot3DPos__m_iScreenY;
+	eax2 = pDot1;
+	ebx2 = pDot2;
+	ecx2 = pDot3;
 
 // find dot with smallest y
 
-	if (edx <= esi) goto MV2DrawPolygonTBASM_Dot1YSmallerDot2Y; // dot1.y <= dot2.y
+	if (edx1 <= esi1) goto MV2DrawPolygonTBASM_Dot1YSmallerDot2Y; // dot1.y <= dot2.y
 
 
-	if (esi <= edi) goto MV2DrawPolygonTBASM_Dot2YSmallest; // dot2.y <(=) dot3.y&dot1.y
+	if (esi1 <= edi1) goto MV2DrawPolygonTBASM_Dot2YSmallest; // dot2.y <(=) dot3.y&dot1.y
 	goto MV2DrawPolygonTBASM_Dot3YSmallest; // dot3.y <    dot2.y&dot1.y
 MV2DrawPolygonTBASM_Dot1YSmallerDot2Y:
 
-	if (edx >= edi) goto MV2DrawPolygonTBASM_Dot3YSmallest; // dot3.y <    dot1.y&dot2.y
+	if (edx1 >= edi1) goto MV2DrawPolygonTBASM_Dot3YSmallest; // dot3.y <    dot1.y&dot2.y
 
 //MV2DrawPolygonTBASM_Dot1YSmallest:
-	edx = eax;
-	esi = ebx;
-	edi = ecx;
+	edx2 = eax2;
+	esi2 = ebx2;
+	edi2 = ecx2;
 	goto MV2DrawPolygonTBASM_DotsSorted;
 MV2DrawPolygonTBASM_Dot2YSmallest:
-	edx = ebx;
-	esi = ecx;
-	edi = eax;
+	edx2 = ebx2;
+	esi2 = ecx2;
+	edi2 = eax2;
 	goto MV2DrawPolygonTBASM_DotsSorted;
 MV2DrawPolygonTBASM_Dot3YSmallest:
-	edx = ecx;
-	esi = eax;
-	edi = ebx;
+	edx2 = ecx2;
+	esi2 = eax2;
+	edi2 = ebx2;
 	goto MV2DrawPolygonTBASM_DotsSorted;
 MV2DrawPolygonTBASM_DotsSorted:
 
@@ -308,24 +306,24 @@ MV2DrawPolygonTBASM_DotsSorted:
 // esi = pDot2
 // edi = pDot3
 
-	pDot1 = edx;
-	pDot2 = esi;
-	pDot3 = edi;
+	pDot1 = edx2;
+	pDot2 = esi2;
+	pDot3 = edi2;
 
-	edx = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_pPos );
-	esi = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_pPos );
-	edi = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_pPos );
+	edx3 = edx2->CMV2Dot3D__m_pPos;
+	esi3 = esi2->CMV2Dot3D__m_pPos;
+	edi3 = edi2->CMV2Dot3D__m_pPos;
 
-	eax = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_iScreenY );
-	ecx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY );
-
-
-	if (eax == ebx) goto MV2DrawPolygonTBASM_PolygonType4;
+	eax1 = edx3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = esi3->CMV2Dot3DPos__m_iScreenY;
+	ecx1 = edi3->CMV2Dot3DPos__m_iScreenY;
 
 
-	if (ebx == ecx) goto MV2DrawPolygonTBASM_PolygonType3;
-	if (ebx < ecx) goto MV2DrawPolygonTBASM_PolygonType2;
+	if (eax1 == ebx1) goto MV2DrawPolygonTBASM_PolygonType4;
+
+
+	if (ebx1 == ecx1) goto MV2DrawPolygonTBASM_PolygonType3;
+	if (ebx1 < ecx1) goto MV2DrawPolygonTBASM_PolygonType2;
 
 
 //=============>                <==============
@@ -336,9 +334,9 @@ MV2DrawPolygonTBASM_DotsSorted:
 // esi = pDot2
 // edi = pDot3
 
-	fpu_reg10 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenY );
-	fpu_reg11 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenY );
-	fpu_reg12 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenY );
+	fpu_reg10 = edx3->CMV2Dot3DPos__m_fScreenY;
+	fpu_reg11 = esi3->CMV2Dot3DPos__m_fScreenY;
+	fpu_reg12 = edi3->CMV2Dot3DPos__m_fScreenY;
 //st0 = (y3), st1 = (y2), st2 = (y1)
 
 	fpu_reg13 = fpu_reg11;
@@ -359,38 +357,38 @@ MV2DrawPolygonTBASM_DotsSorted:
 	fpu_reg14 = 1.0f;
 	fpu_reg11 = fpu_reg14 / fpu_reg11;
 
-	eax = dwXmax;
-	ebx = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ebx - 1; // subpixel/clipping reason
-	eax = ( (int32_t)eax ) * ( (int32_t)ebx );
-	eax = eax + pcBackBuffer;
-	dwYOffset1 = eax;
+	eax1 = dwXmax;
+	ebx1 = edx3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = ebx1 - 1; // subpixel/clipping reason
+	eax1 = ( (int32_t)eax1 ) * ( (int32_t)ebx1 );
+	//eax1 = eax1 + pcBackBuffer;
+	dwYOffset1 = eax1;
 
 	fpu_reg14 = 1.0f;
 	fpu_reg12 = fpu_reg14 / fpu_reg12;
 
-	eax = dwXmax;
-	ebx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ebx - 1;
-	eax = ( (int32_t)eax ) * ( (int32_t)ebx );
-	eax = eax + pcBackBuffer;
-	dwYOffset2 = eax;
+	eax1 = dwXmax;
+	ebx1 = edi3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = ebx1 - 1;
+	eax1 = ( (int32_t)eax1 ) * ( (int32_t)ebx1 );
+	//eax1 = eax1 + pcBackBuffer;
+	dwYOffset2 = eax1;
 
 	fpu_reg14 = 1.0f;
 	fpu_reg13 = fpu_reg14 / fpu_reg13;
 
-	eax = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_iScreenY );
-	ecx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY );
+	eax1 = edx3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = esi3->CMV2Dot3DPos__m_iScreenY;
+	ecx1 = edi3->CMV2Dot3DPos__m_iScreenY;
 
-	ebp = ebx;
-	ebp = ebp - eax;
+	ebp = ebx1;
+	ebp = ebp - eax1;
 	dwYCounter = ebp;
-	ebp = ecx;
-	ebp = ebp - eax;
+	ebp = ecx1;
+	ebp = ebp - eax1;
 	dwYCounter1 = ebp;
-	ebp = ebx;
-	ebp = ebp - ecx;
+	ebp = ebx1;
+	ebp = ebp - ecx1;
 	dwYCounter2 = ebp;
 
 	// fpu_reg10 = 0.0f;
@@ -401,9 +399,9 @@ MV2DrawPolygonTBASM_DotsSorted:
 //===>	Screen Delta Calculation {                                   <===
 //===>                                                                <===
 //st0 = 1/YCounter1, st1 = 1/YCounter2, st2 = 1/YCounter
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg15 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg16 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg14 = edx3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg15 = esi3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg16 = edi3->CMV2Dot3DPos__m_fScreenX;
 //st0 = (x3), st1 = (x2), st2 = (x1)
 //st4 = 1/YCounter1, st5 = 1/YCounter2, st6 = 1/YCounter
 
@@ -426,15 +424,15 @@ MV2DrawPolygonTBASM_DotsSorted:
 //st2 = DeltaScreenX1, st3 = 1/YCounter1,
 //st4 = 1/YCounter2, st5 = 1/YCounter
 
-	fpu_reg17 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg17 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg18 = fpu_reg17;
 	fpu_reg18 = fpu_reg18 * fpu_reg14;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg18 = fpu_reg18 * fpu_reg16;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 //st0 = ScreenX1
 //st1 = ScreenX2
@@ -444,7 +442,7 @@ MV2DrawPolygonTBASM_DotsSorted:
 
 	dwScreenX1 = (int32_t)ceilf(fpu_reg18);
 
-	fpu_reg18 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg18 = edi3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg18 = fpu_reg18 * fpu_reg15;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 //st0 = dwScreenX2
@@ -455,7 +453,7 @@ MV2DrawPolygonTBASM_DotsSorted:
 
 	dwScreenX2 = (int32_t)ceilf(fpu_reg18);
 
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg17 = fpu_reg17 + edi3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg17; fpu_reg17 = tmp; }
 //st0 = DeltaScreenX1
 //st1 = DeltaScreenX, st2 = DeltaScreenX2
@@ -483,8 +481,8 @@ MV2DrawPolygonTBASM_DotsSorted:
 
 	fpu_reg15 = fYCounter1;
 	fpu_reg15 = fpu_reg15 * fpu_reg14;
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg15 = fpu_reg15 - ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenX ); //fp dep.
+	fpu_reg15 = fpu_reg15 + edx3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg15 = fpu_reg15 - edi3->CMV2Dot3DPos__m_fScreenX; //fp dep.
 	dwMaxXCounter = (int32_t)ceilf(fpu_reg15);
 	fpu_reg16 = 1.0f;
 	fpu_reg15 = fpu_reg16 / fpu_reg15;
@@ -503,9 +501,9 @@ MV2DrawPolygonTBASM_DotsSorted:
 //===>	R DeltaY Calculation {                            	 		 <===
 //===>                                                                <===
 
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
-	fpu_reg15 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fR );
-	fpu_reg16 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fR );
+	fpu_reg14 = edx3->CMV2Dot3DPos__m_fR;
+	fpu_reg15 = esi3->CMV2Dot3DPos__m_fR;
+	fpu_reg16 = edi3->CMV2Dot3DPos__m_fR;
 	fpu_reg17 = fpu_reg15;
 	fpu_reg17 = fpu_reg17 - fpu_reg16;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
@@ -525,15 +523,15 @@ MV2DrawPolygonTBASM_DotsSorted:
 //st2 = RdY1, st3 = 1/YCounter1,
 //st4 = 1/YCounter2, st5 = 1/YCounter
 
-	fpu_reg17 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
-	fpu_reg18 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg17 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fpu_reg18 = edi3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg18 = fpu_reg18 * fpu_reg15;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg18 = fpu_reg18 * fpu_reg14;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fR );
+	fpu_reg18 = fpu_reg18 + edi3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 
 	fR3 = fpu_reg18;
@@ -550,9 +548,9 @@ MV2DrawPolygonTBASM_DotsSorted:
 //===>	G DeltaY Calculation {                            	 		 <===
 //===>                                                                <===
 
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
-	fpu_reg15 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fG );
-	fpu_reg16 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fG );
+	fpu_reg14 = edx3->CMV2Dot3DPos__m_fG;
+	fpu_reg15 = esi3->CMV2Dot3DPos__m_fG;
+	fpu_reg16 = edi3->CMV2Dot3DPos__m_fG;
 	fpu_reg17 = fpu_reg15;
 	fpu_reg17 = fpu_reg17 - fpu_reg16;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
@@ -568,15 +566,15 @@ MV2DrawPolygonTBASM_DotsSorted:
 //fincstp
 
 	fpu_reg16 = fpu_reg16 * fpu_reg11;
-	fpu_reg17 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
-	fpu_reg18 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg17 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fpu_reg18 = edi3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg18 = fpu_reg18 * fpu_reg15;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg18 = fpu_reg18 * fpu_reg14;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fG );
+	fpu_reg18 = fpu_reg18 + edi3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 
 	fG3 = fpu_reg18;
@@ -591,9 +589,9 @@ MV2DrawPolygonTBASM_DotsSorted:
 //===>                                                                <===
 //===>	B DeltaY Calculation {                            	 		 <===
 //===>                                                                <===
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
-	fpu_reg15 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fB );
-	fpu_reg16 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fB );
+	fpu_reg14 = edx3->CMV2Dot3DPos__m_fB;
+	fpu_reg15 = esi3->CMV2Dot3DPos__m_fB;
+	fpu_reg16 = edi3->CMV2Dot3DPos__m_fB;
 	fpu_reg17 = fpu_reg15;
 	fpu_reg17 = fpu_reg17 - fpu_reg16;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
@@ -609,15 +607,15 @@ MV2DrawPolygonTBASM_DotsSorted:
 //fincstp
 
 	fpu_reg16 = fpu_reg16 * fpu_reg11;
-	fpu_reg17 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
-	fpu_reg18 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg17 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fpu_reg18 = edi3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg18 = fpu_reg18 * fpu_reg15;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg18 = fpu_reg18 * fpu_reg14;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fB );
+	fpu_reg18 = fpu_reg18 + edi3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 
 	fB3 = fpu_reg18;
@@ -658,20 +656,20 @@ MV2DrawPolygonTBASM_DotsSorted:
 //st3 = 1/MaxXCounter, st4 = 1/YCounter1, st5 = 1/YCounter2
 //st6 = 1/YCounter
 
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg17 = fpu_reg17 + edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
+	fpu_reg17 = fpu_reg17 + edx3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg17 = fpu_reg17 + edx3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
 
-	fpu_reg17 = fpu_reg17 - ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fG );
+	fpu_reg17 = fpu_reg17 - edi3->CMV2Dot3DPos__m_fG ;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg17 = fpu_reg17 - ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fR );
+	fpu_reg17 = fpu_reg17 - edi3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg17 = fpu_reg17 - ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fB );
+	fpu_reg17 = fpu_reg17 - edi3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
 
 	fpu_reg17 = fpu_reg17 * fpu_reg14;
@@ -692,66 +690,66 @@ MV2DrawPolygonTBASM_DotsSorted:
 //===>	RGB DeltaX Calculation }                            	 	 <===
 //===>                                                                <===
 
-	ebx = dwYCounter;
+	ebx1 = dwYCounter;
 
-	if (ebx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT1;
+	if (ebx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT1;
 
-	eax = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenX );
-	ebx = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_iScreenX );
-	ebp = eax;
-	ecx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenX );
+	eax1 = edx3->CMV2Dot3DPos__m_iScreenX;
+	ebx1 = esi3->CMV2Dot3DPos__m_iScreenX;
+	ebp = eax1;
+	ecx1 = edi3->CMV2Dot3DPos__m_iScreenX;
 
-	eax = eax - ebx; // p1 - p2
-	ebx = ebx - ecx; // p2 - p3
-	ecx = ecx - ebp; // p3 - p1
+	eax1 = eax1 - ebx1; // p1 - p2
+	ebx1 = ebx1 - ecx1; // p2 - p3
+	ecx1 = ecx1 - ebp; // p3 - p1
 
 
-	if ( (( (int32_t)eax ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck1PT1;
-	eax = - ( (int32_t)eax );
+	if ( (( (int32_t)eax1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck1PT1;
+	eax1 = - ( (int32_t)eax1 );
 MV2DrawPolygonTBASM_PerspCheck1PT1:
 
-	if ( (( (int32_t)ebx ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck2PT1;
-	ebx = - ( (int32_t)ebx );
+	if ( (( (int32_t)ebx1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck2PT1;
+	ebx1 = - ( (int32_t)ebx1 );
 MV2DrawPolygonTBASM_PerspCheck2PT1:
 
-	if ( (( (int32_t)ecx ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck3PT1;
-	ecx = - ( (int32_t)ecx );
+	if ( (( (int32_t)ecx1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck3PT1;
+	ecx1 = - ( (int32_t)ecx1 );
 MV2DrawPolygonTBASM_PerspCheck3PT1:
 
 
-	if (eax >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT1;
+	if (eax1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT1;
 
 
-	if (ebx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT1;
+	if (ebx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT1;
 
 
-	if (ecx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT1;
+	if (ecx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT1;
 
 	goto MV2DrawPolygonTBASM_LinearPolygonType1;
 MV2DrawPolygonTBASM_PerspPT1:
 
 
-	fOneDivZ1NSBC = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fZNewRZP;
-	fOneDivZ2NSBC = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fZNewRZP;
-	fOneDivZ3NSBC = ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ1NSBC = edx3->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ2NSBC = esi3->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ3NSBC = edi3->CMV2Dot3DPos__m_fZNewRZP;
 
-	fScreenYError1 = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError;
-	fScreenYError3 = ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError1 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError3 = edi3->CMV2Dot3DPos__m_fScreenYError;
 
-	edx = pDot1;
-	esi = pDot2;
-	edi = pDot3;
+	edx2 = pDot1;
+	esi2 = pDot2;
+	edi2 = pDot3;
 
 //===>                                                                <===
 //===>	TextureUDivZ DeltaY Calculation {                            <===
 //===>                                                                <===
 //st0=1/YCounter1, st1=1/YCounter2, st2=1/YCounter
 
-	fpu_reg14 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg14 = edx2->CMV2Dot3D__m_fTextureU;
 	fpu_reg14 = fpu_reg14 * fOneDivZ1NSBC;
-	fpu_reg15 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg15 = esi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg15 = fpu_reg15 * fOneDivZ2NSBC;
-	fpu_reg16 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg16 = edi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg16 = fpu_reg16 * fOneDivZ3NSBC;
 
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
@@ -860,11 +858,11 @@ MV2DrawPolygonTBASM_PerspPT1:
 //===>                                                                <===
 //st0=1/YCounter1, st1=1/YCounter2, st2=1/YCounter
 
-	fpu_reg14 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg14 = edx2->CMV2Dot3D__m_fTextureV;
 	fpu_reg14 = fpu_reg14 * fOneDivZ1NSBC;
-	fpu_reg15 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg15 = esi2->CMV2Dot3D__m_fTextureV;
 	fpu_reg15 = fpu_reg15 * fOneDivZ2NSBC;
-	fpu_reg16 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg16 = edi2->CMV2Dot3D__m_fTextureV;
 	fpu_reg16 = fpu_reg16 * fOneDivZ3NSBC;
 
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
@@ -1191,40 +1189,40 @@ MV2DrawPolygonTBASM_PerspPT1:
 
 
 
-	eax = dwDeltaScreenX1;
-	ebx = dwDeltaScreenX;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwXmax;
-	edi = edi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX1f = eax;
-	dwAdderScreenX2f = ebx;
+	eax1 = dwDeltaScreenX1;
+	ebx1 = dwDeltaScreenX;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX1f = eax1;
+	dwAdderScreenX2f = ebx1;
 
-	eax = dwScreenX1;
-	ebx = dwScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwYOffset1;
-	edi = edi + dwYOffset1;
+	eax1 = dwScreenX1;
+	ebx1 = dwScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset1;
+	edi1 = edi1 + dwYOffset1;
 
 	ebp = dwYCounter1;
-	ecx = edi;
+	ecx1 = edi1;
 
 //mov		dwOldESP,esp
 //and		esp,0ffffffe0h
 	SPTG = (CMV2ScanlinerPerspTG *) mem_alloc_endptr(dwYCounter * sizeof(CMV2ScanlinerPerspTG));
 //mov		dwESPStartPoint,esp
-	dwESPStartPoint = (uint32_t)SPTG;
+	dwESPStartPoint = (void *)SPTG;
 
 	fpu_reg10 = fNum_2EXP_20;
 	fpu_reg11 = fNum_2EXP20;
@@ -1248,13 +1246,13 @@ MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass1:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerPerspTG__size
 	SPTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg15 = ( (int32_t)dwScreenXf );
 	fpu_reg15 = fpu_reg11 - fpu_reg15;
@@ -1304,8 +1302,8 @@ MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass1:
 
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwXCounter,ecx
-	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi;
-	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx;
+	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi1;
+	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx1;
 
 	fpu_reg14 = fpu_reg14 + fOneDivZdY1;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
@@ -1315,11 +1313,11 @@ MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass1:
 	fpu_reg14 = fpu_reg14 + fTextureVDivZdY1;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass1;
@@ -1331,19 +1329,19 @@ MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass1:
 
 //***> TODO: paire the instructions..
 
-	eax = dwDeltaScreenX2;
-	esi = eax;
-	eax = eax << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	esi = esi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX1f = eax;
+	eax1 = dwDeltaScreenX2;
+	esi1 = eax1;
+	eax1 = eax1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX1f = eax1;
 
-	eax = dwScreenX3;
-	esi = eax;
-	eax = eax << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	esi = esi + dwYOffset2;
+	eax1 = dwScreenX3;
+	esi1 = eax1;
+	eax1 = eax1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset2;
 
 	ebp = dwYCounter2;
 
@@ -1367,13 +1365,13 @@ MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass2:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerPerspTG__size
 	SPTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg15 = ( (int32_t)dwScreenXf );
 	fpu_reg15 = fpu_reg11 - fpu_reg15;
@@ -1423,8 +1421,8 @@ MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass2:
 
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwXCounter,ecx
-	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi;
-	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx;
+	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi1;
+	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx1;
 
 	fpu_reg14 = fpu_reg14 + fOneDivZdY2;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
@@ -1434,11 +1432,11 @@ MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass2:
 	fpu_reg14 = fpu_reg14 + fTextureVDivZdY2;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass2;
@@ -1449,7 +1447,7 @@ MV2DrawPolygonTBASM_PerspPT1ScanlinerTGLoopPass2:
 
 
 
-	edx = dwESPStartPoint;
+	edx4 = (CMV2ScanlinerPerspTG *)dwESPStartPoint;
 	ebp = dwYCounter1;
 
 	fpu_reg12 = fB1;
@@ -1471,9 +1469,9 @@ MV2DrawPolygonTBASM_PerspPT1GouraudPass1:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerPerspTG__size );
+	edx4--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__fScreenXError );
+	fpu_reg15 = edx4->CMV2ScanlinerPerspTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -1499,9 +1497,9 @@ MV2DrawPolygonTBASM_PerspPT1GouraudPass1:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx4->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx4->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx4->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY1;
@@ -1540,9 +1538,9 @@ MV2DrawPolygonTBASM_PerspPT1GouraudPass2:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerPerspTG__size );
+	edx4--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__fScreenXError );
+	fpu_reg15 = edx4->CMV2ScanlinerPerspTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -1568,9 +1566,9 @@ MV2DrawPolygonTBASM_PerspPT1GouraudPass2:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx4->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx4->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx4->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY2;
@@ -1604,9 +1602,9 @@ MV2DrawPolygonTBASM_PolygonType2:
 // edx = pDot1
 // esi = pDot2
 // edi = pDot3
-	fpu_reg10 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenY );
-	fpu_reg11 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenY );
-	fpu_reg12 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenY );
+	fpu_reg10 = edx3->CMV2Dot3DPos__m_fScreenY;
+	fpu_reg11 = esi3->CMV2Dot3DPos__m_fScreenY;
+	fpu_reg12 = edi3->CMV2Dot3DPos__m_fScreenY;
 //st0 = (y3), st1 = (y2), st2 = (y1)
 
 	fpu_reg13 = fpu_reg12;
@@ -1626,38 +1624,38 @@ MV2DrawPolygonTBASM_PolygonType2:
 	fpu_reg14 = 1.0f;
 	fpu_reg11 = fpu_reg14 / fpu_reg11;
 
-	eax = dwXmax;
-	ebx = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ebx - 1;
-	eax = ( (int32_t)eax ) * ( (int32_t)ebx );
-	eax = eax + pcBackBuffer;
-	dwYOffset1 = eax;
+	eax1 = dwXmax;
+	ebx1 = edx3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = ebx1 - 1;
+	eax1 = ( (int32_t)eax1 ) * ( (int32_t)ebx1 );
+	//eax1 = eax1 + pcBackBuffer;
+	dwYOffset1 = eax1;
 
 	fpu_reg14 = 1.0f;
 	fpu_reg12 = fpu_reg14 / fpu_reg12;
 
-	eax = dwXmax;
-	ebx = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ebx - 1;
-	eax = ( (int32_t)eax ) * ( (int32_t)ebx );
-	eax = eax + pcBackBuffer;
-	dwYOffset2 = eax;
+	eax1 = dwXmax;
+	ebx1 = esi3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = ebx1 - 1;
+	eax1 = ( (int32_t)eax1 ) * ( (int32_t)ebx1 );
+	//eax1 = eax1 + pcBackBuffer;
+	dwYOffset2 = eax1;
 
 	fpu_reg14 = 1.0f;
 	fpu_reg13 = fpu_reg14 / fpu_reg13;
 
-	eax = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_iScreenY );
-	ecx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY );
+	eax1 = edx3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = esi3->CMV2Dot3DPos__m_iScreenY;
+	ecx1 = edi3->CMV2Dot3DPos__m_iScreenY;
 
-	ebp = ebx;
-	ebp = ebp - eax;
+	ebp = ebx1;
+	ebp = ebp - eax1;
 	dwYCounter1 = ebp;
-	ebp = ecx;
-	ebp = ebp - eax;
+	ebp = ecx1;
+	ebp = ebp - eax1;
 	dwYCounter = ebp;
-	ebp = ecx;
-	ebp = ebp - ebx;
+	ebp = ecx1;
+	ebp = ebp - ebx1;
 	dwYCounter2 = ebp;
 
 	// fpu_reg10 = 0.0f;
@@ -1666,9 +1664,9 @@ MV2DrawPolygonTBASM_PolygonType2:
 //===>                                                                <===
 //===>	Screen Delta Calculation {                                   <===
 //===>                                                                <===
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg15 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg16 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg14 = edx3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg15 = esi3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg16 = edi3->CMV2Dot3DPos__m_fScreenX;
 //st0 = (x3), st1 = (x2), st2 = (x1)
 //st3 = 1/YCounter, st4 = 1/YCounter2, st5 = 1/YCounter1
 
@@ -1691,15 +1689,15 @@ MV2DrawPolygonTBASM_PolygonType2:
 //st2 = DeltaScreenX
 //st3 = 1/YCounter, st4 = 1/YCounter2, st5 = 1/YCounter1
 
-	fpu_reg17 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg17 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg18 = fpu_reg17;
 	fpu_reg18 = fpu_reg18 * fpu_reg16;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg18 = fpu_reg18 * fpu_reg14;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 //st0 = ScreenYError1*DeltaScreenX1 + ScreenX1
 //st1 = ScreenYError1*DeltaScreenX + ScreenX1
@@ -1708,11 +1706,11 @@ MV2DrawPolygonTBASM_PolygonType2:
 //st4 = 1/YCounter2, st5 = 1/YCounter1
 	dwScreenX2 = (int32_t)ceilf(fpu_reg18);
 
-	fpu_reg18 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg18 = esi3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg18 = fpu_reg18 * fpu_reg15;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	dwScreenX1 = (int32_t)ceilf(fpu_reg18);
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg17 = fpu_reg17 + esi3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 	dwDeltaScreenX1 = (int32_t)ceilf(fpu_reg17);
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
@@ -1722,10 +1720,10 @@ MV2DrawPolygonTBASM_PolygonType2:
 //===>	MaxXCounter calculation	{        	                         <===
 //st0 = DeltaScreenX
 //st1 = 1/YCounter, st2 = 1/YCounter2, st3 = 1/YCounter1
-	fpu_reg15 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg15 = esi3->CMV2Dot3DPos__m_fScreenX;
 	fpu_reg16 = fYCounter1;
 	fpu_reg16 = fpu_reg16 * fpu_reg14;
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg16 = fpu_reg16 + edx3->CMV2Dot3DPos__m_fScreenX;
 	fpu_reg15 = fpu_reg15 - fpu_reg16;
 	dwMaxXCounter = (int32_t)ceilf(fpu_reg15);
 	fpu_reg16 = 1.0f;
@@ -1746,16 +1744,16 @@ MV2DrawPolygonTBASM_PolygonType2:
 //===>	RGB DeltaY Calculation {   		                         	 <===
 //===>                                                                <===
 
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fR );
-	fpu_reg14 = fpu_reg14 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
-	fpu_reg15 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fG );
-	fpu_reg15 = fpu_reg15 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg14 = edi3->CMV2Dot3DPos__m_fR;
+	fpu_reg14 = fpu_reg14 - edx3->CMV2Dot3DPos__m_fR;
+	fpu_reg15 = edi3->CMV2Dot3DPos__m_fG;
+	fpu_reg15 = fpu_reg15 - edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 	fpu_reg15 = fpu_reg15 * fpu_reg13;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 	fpu_reg15 = fpu_reg15 * fpu_reg13; // fmul stall (+1 Cycle)
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg16 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg16 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg17 = fpu_reg16;
 	fpu_reg17 = fpu_reg17 * fpu_reg15;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
@@ -1766,9 +1764,9 @@ MV2DrawPolygonTBASM_PolygonType2:
 //st2 = RdY, st3 = GdY
 //st4 = 1/YCounter, st5 = 1/YCounter2, st6 = 1/YCounter1
 
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
+	fpu_reg17 = fpu_reg17 + edx3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg17 = fpu_reg17 + edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 
 	fR1 = fpu_reg17;
@@ -1776,14 +1774,14 @@ MV2DrawPolygonTBASM_PolygonType2:
 	fRdY = fpu_reg15;
 	fGdY = fpu_reg14;
 
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fB );
-	fpu_reg14 = fpu_reg14 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg14 = edi3->CMV2Dot3DPos__m_fB;
+	fpu_reg14 = fpu_reg14 - edx3->CMV2Dot3DPos__m_fB;
 	fpu_reg14 = fpu_reg14 * fpu_reg13;
 //st0 = BdY, st1 = 1/YCounter, st2 = 1/YCounter2, st3 = 1/YCounter1
 
-	fpu_reg15 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg15 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg15 = fpu_reg15 * fpu_reg14;
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg15 = fpu_reg15 + edx3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 	fBdY = fpu_reg15;
 	fB1 = fpu_reg14;
@@ -1814,20 +1812,20 @@ MV2DrawPolygonTBASM_PolygonType2:
 	fpu_reg18 = fpu_reg18 * fpu_reg15;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg18; fpu_reg18 = tmp; }
 
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg18; fpu_reg18 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
+	fpu_reg18 = fpu_reg18 + edx3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg18; fpu_reg18 = tmp; }
 
-	fpu_reg18 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fB ) - fpu_reg18;
+	fpu_reg18 = esi3->CMV2Dot3DPos__m_fB - fpu_reg18;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fG ) - fpu_reg18;
+	fpu_reg18 = esi3->CMV2Dot3DPos__m_fG - fpu_reg18;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg18; fpu_reg18 = tmp; }
-	fpu_reg18 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fR ) - fpu_reg18;
+	fpu_reg18 = esi3->CMV2Dot3DPos__m_fR - fpu_reg18;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg18; fpu_reg18 = tmp; }
 
 	fpu_reg18 = fpu_reg18 * fpu_reg14;
@@ -1849,56 +1847,56 @@ MV2DrawPolygonTBASM_PolygonType2:
 //===>                                                                <===
 //===>	RGB DeltaX Calculation }   		                         	 <===
 //===>                                                                <===
-	ebx = dwYCounter;
+	ebx1 = dwYCounter;
 
-	if (ebx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT2;
+	if (ebx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT2;
 
-	eax = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenX );
-	ebx = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_iScreenX );
-	ebp = eax;
-	ecx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenX );
+	eax1 = edx3->CMV2Dot3DPos__m_iScreenX;
+	ebx1 = esi3->CMV2Dot3DPos__m_iScreenX;
+	ebp = eax1;
+	ecx1 = edi3->CMV2Dot3DPos__m_iScreenX;
 
-	eax = eax - ebx; // p1 - p2
-	ebx = ebx - ecx; // p2 - p3
-	ecx = ecx - ebp; // p3 - p1
+	eax1 = eax1 - ebx1; // p1 - p2
+	ebx1 = ebx1 - ecx1; // p2 - p3
+	ecx1 = ecx1 - ebp; // p3 - p1
 
 
-	if ( (( (int32_t)eax ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck1PT2;
-	eax = - ( (int32_t)eax );
+	if ( (( (int32_t)eax1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck1PT2;
+	eax1 = - ( (int32_t)eax1 );
 MV2DrawPolygonTBASM_PerspCheck1PT2:
 
-	if ( (( (int32_t)ebx ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck2PT2;
-	ebx = - ( (int32_t)ebx );
+	if ( (( (int32_t)ebx1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck2PT2;
+	ebx1 = - ( (int32_t)ebx1 );
 MV2DrawPolygonTBASM_PerspCheck2PT2:
 
-	if ( (( (int32_t)ecx ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck3PT2;
-	ecx = - ( (int32_t)ecx );
+	if ( (( (int32_t)ecx1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck3PT2;
+	ecx1 = - ( (int32_t)ecx1 );
 MV2DrawPolygonTBASM_PerspCheck3PT2:
 
 
-	if (eax >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT2;
+	if (eax1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT2;
 
 
-	if (ebx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT2;
+	if (ebx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT2;
 
 
-	if (ecx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT2;
+	if (ecx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT2;
 
 	goto MV2DrawPolygonTBASM_LinearPolygonType2;
 MV2DrawPolygonTBASM_PerspPT2:
 
 
 
-	fOneDivZ1NSBC = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fZNewRZP;
-	fOneDivZ2NSBC = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fZNewRZP;
-	fOneDivZ3NSBC = ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ1NSBC = edx3->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ2NSBC = esi3->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ3NSBC = edi3->CMV2Dot3DPos__m_fZNewRZP;
 
-	fScreenYError1 = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError;
-	fScreenYError2 = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError1 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError2 = esi3->CMV2Dot3DPos__m_fScreenYError;
 
-	edx = pDot1;
-	esi = pDot2;
-	edi = pDot3;
+	edx2 = pDot1;
+	esi2 = pDot2;
+	edi2 = pDot3;
 
 
 //===>                                                                <===
@@ -1906,9 +1904,9 @@ MV2DrawPolygonTBASM_PerspPT2:
 //===>                                                                <===
 //st0 = 1/YCounter, st1 = 1/YCounter2, st2 = 1/YCounter1
 
-	fpu_reg14 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg14 = edx2->CMV2Dot3D__m_fTextureU;
 	fpu_reg14 = fpu_reg14 * fOneDivZ1NSBC;
-	fpu_reg15 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg15 = edi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg15 = fpu_reg15 * fOneDivZ3NSBC;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 //st0 = tu1/z1, st1 = tu3/z3
@@ -1917,9 +1915,9 @@ MV2DrawPolygonTBASM_PerspPT2:
 //st0 = (tu3/z3 - tu1/z1)
 //st1 = 1/YCounter, st2 = 1/YCounter2, st3 = 1/YCounter1
 
-	fpu_reg15 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg15 = edx2->CMV2Dot3D__m_fTextureV;
 	fpu_reg15 = fpu_reg15 * fOneDivZ1NSBC;
-	fpu_reg16 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg16 = edi2->CMV2Dot3D__m_fTextureV;
 	fpu_reg16 = fpu_reg16 * fOneDivZ3NSBC;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 //st0 = tv1/z1, st1 = vu3/z3
@@ -1992,10 +1990,10 @@ MV2DrawPolygonTBASM_PerspPT2:
 //===>                                                                <===
 
 	fpu_reg14 = fOneDivZ2NSBC;
-	fpu_reg15 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg15 = esi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg15 = fpu_reg15 * fpu_reg14;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg15 = fpu_reg15 * ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg15 = fpu_reg15 * esi2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 	fTextureUDivZ2NSBC = fpu_reg15;
 	fTextureVDivZ2NSBC = fpu_reg14;
@@ -2066,40 +2064,40 @@ MV2DrawPolygonTBASM_PerspPT2:
 
 
 
-	eax = dwDeltaScreenX1;
-	ebx = dwDeltaScreenX;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwXmax;
-	edi = edi + dwXmax;
-	dwAdderScreenX2 = esi;
-	dwAdderScreenX1 = edi;
-	dwAdderScreenX2f = eax;
-	dwAdderScreenX1f = ebx;
+	eax1 = dwDeltaScreenX1;
+	ebx1 = dwDeltaScreenX;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX2 = esi1;
+	dwAdderScreenX1 = edi1;
+	dwAdderScreenX2f = eax1;
+	dwAdderScreenX1f = ebx1;
 
-	eax = dwScreenX1;
-	ebx = dwScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwYOffset1;
-	edi = edi + dwYOffset1;
+	eax1 = dwScreenX1;
+	ebx1 = dwScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset1;
+	edi1 = edi1 + dwYOffset1;
 
 	ebp = dwYCounter1;
-	ecx = edi;
+	ecx1 = edi1;
 
 //mov		dwOldESP,esp
 //and		esp,0ffffffe0h
 	SPTG = (CMV2ScanlinerPerspTG *) mem_alloc_endptr(dwYCounter * sizeof(CMV2ScanlinerPerspTG));
 //mov		dwESPStartPoint,esp
-	dwESPStartPoint = (uint32_t)SPTG;
+	dwESPStartPoint = (void *)SPTG;
 
 	fpu_reg10 = fNum_2EXP_20;
 	fpu_reg11 = fNum_2EXP20;
@@ -2123,13 +2121,13 @@ MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass1:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerPerspTG__size
 	SPTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg15 = ( (int32_t)dwScreenXf );
 	fpu_reg15 = fpu_reg11 - fpu_reg15;
@@ -2179,8 +2177,8 @@ MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass1:
 
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwXCounter,ecx
-	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi;
-	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx;
+	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi1;
+	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx1;
 
 	fpu_reg14 = fpu_reg14 + fOneDivZdY;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
@@ -2190,32 +2188,32 @@ MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass1:
 	fpu_reg14 = fpu_reg14 + fTextureVDivZdY;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass1;
 
 //***> TODO: paire the instructions..
-	ebx = dwDeltaScreenX2;
-	edi = ebx;
-	ebx = ebx << ( 12 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	edi = edi + dwXmax;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX2f = ebx;
+	ebx1 = dwDeltaScreenX2;
+	edi1 = ebx1;
+	ebx1 = ebx1 << ( 12 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX2f = ebx1;
 
-	ebx = dwScreenX3;
-	edi = ebx;
-	ebx = ebx << ( 12 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	edi = edi + dwYOffset2;
+	ebx1 = dwScreenX3;
+	edi1 = ebx1;
+	ebx1 = ebx1 << ( 12 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	edi1 = edi1 + dwYOffset2;
 
 	ebp = dwYCounter2;
-	ecx = edi;
+	ecx1 = edi1;
 
 MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass2:
 // eax = x1f (20 bit fraction)
@@ -2233,13 +2231,13 @@ MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass2:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerPerspTG__size
 	SPTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg15 = ( (int32_t)dwScreenXf );
 	fpu_reg15 = fpu_reg11 - fpu_reg15;
@@ -2289,8 +2287,8 @@ MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass2:
 
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwXCounter,ecx
-	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi;
-	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx;
+	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi1;
+	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx1;
 
 	fpu_reg14 = fpu_reg14 + fOneDivZdY;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
@@ -2300,11 +2298,11 @@ MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass2:
 	fpu_reg14 = fpu_reg14 + fTextureVDivZdY;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass2;
@@ -2314,7 +2312,7 @@ MV2DrawPolygonTBASM_PerspPT2ScanlinerTGLoopPass2:
 
 
 
-	edx = dwESPStartPoint;
+	edx4 = (CMV2ScanlinerPerspTG *)dwESPStartPoint;
 	ebp = dwYCounter;
 
 	fpu_reg12 = fB1;
@@ -2336,9 +2334,9 @@ MV2DrawPolygonTBASM_PerspPT2GouraudPass1_2:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerPerspTG__size );
+	edx4--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__fScreenXError );
+	fpu_reg15 = edx4->CMV2ScanlinerPerspTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -2364,9 +2362,9 @@ MV2DrawPolygonTBASM_PerspPT2GouraudPass1_2:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx4->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx4->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx4->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY;
@@ -2400,9 +2398,9 @@ MV2DrawPolygonTBASM_PolygonType3:
 // esi = pDot2
 // edi = pDot3
 
-	fpu_reg10 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenY );
-	fpu_reg11 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenY );
-	fpu_reg12 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenY );
+	fpu_reg10 = edx3->CMV2Dot3DPos__m_fScreenY;
+	fpu_reg11 = edi3->CMV2Dot3DPos__m_fScreenY;
+	fpu_reg12 = esi3->CMV2Dot3DPos__m_fScreenY;
 //st0 = (y2), st1 = (y3), st2 = (y1)
 
 	fpu_reg12 = fpu_reg12 - fpu_reg10;
@@ -2418,28 +2416,28 @@ MV2DrawPolygonTBASM_PolygonType3:
 	fpu_reg11 = fpu_reg13 / fpu_reg11;
 //st0 = 1.0, st1 = (y2 - y1), st2 = 1/(y3 - y1)
 
-	eax = dwXmax;
-	ebx = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ebx - 1;
-	eax = ( (int32_t)eax ) * ( (int32_t)ebx );
-	eax = eax + pcBackBuffer;
-	dwYOffset1 = eax;
+	eax1 = dwXmax;
+	ebx1 = edx3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = ebx1 - 1;
+	eax1 = ( (int32_t)eax1 ) * ( (int32_t)ebx1 );
+	//eax1 = eax1 + pcBackBuffer;
+	dwYOffset1 = eax1;
 
 	fpu_reg10 = fpu_reg12 / fpu_reg10;
 //st0 = 1/(y2 - y1), st1 = 1/(y3 - y1)
 
-	eax = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY );
-	eax = eax - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
-	dwYCounter = eax;
+	eax1 = edi3->CMV2Dot3DPos__m_iScreenY;
+	eax1 = eax1 - edx3->CMV2Dot3DPos__m_iScreenY;
+	dwYCounter = eax1;
 
 //===>                                                                <===
 //===>	Screen Delta Calculation {                                   <===
 //===>                                                                <===
 //st0 = 1/YCounter2, st1 = 1/YCounter1
 
-	fpu_reg12 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg13 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg14 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg12 = edx3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg13 = edi3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg14 = esi3->CMV2Dot3DPos__m_fScreenX;
 //st0 = (x2), st1 = (x3), st2 = (x1)
 //st3 = 1/YCounter2, st4 = 1/YCounter1
 
@@ -2453,15 +2451,15 @@ MV2DrawPolygonTBASM_PolygonType3:
 //st0 = DeltaScreenX2, st1 = DeltaScreenX1
 //st2 = 1/YCounter2, st3 = 1/YCounter1
 
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg14 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg15 = fpu_reg14;
 	fpu_reg15 = fpu_reg15 * fpu_reg12;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 	fpu_reg15 = fpu_reg15 * fpu_reg13;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg15 = fpu_reg15 + edx3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg15 = fpu_reg15 + edx3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 //st0 = ScreenYError1*DeltaScreenX1 + ScreenX1
 //st1 = ScreenYError1*DeltaScreenX2 + ScreenX1
@@ -2477,8 +2475,8 @@ MV2DrawPolygonTBASM_PolygonType3:
 //===>	MaxXCounter calculation	{        	                         <===
 	fpu_reg13 = fYCounter2;
 	fpu_reg13 = fpu_reg13 * fpu_reg12;
-	fpu_reg13 = fpu_reg13 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg13 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX ) - fpu_reg13; //fp dep.
+	fpu_reg13 = fpu_reg13 + edx3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg13 = esi3->CMV2Dot3DPos__m_fScreenX - fpu_reg13; //fp dep.
 	dwMaxXCounter = (int32_t)ceilf(fpu_reg13);
 	fpu_reg14 = 1.0f;
 	fpu_reg13 = fpu_reg14 / fpu_reg13;
@@ -2498,16 +2496,16 @@ MV2DrawPolygonTBASM_PolygonType3:
 //===>	RGB DeltaY Calculation {   		                         	 <===
 //===>                                                                <===
 
-	fpu_reg12 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fR );
-	fpu_reg12 = fpu_reg12 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
-	fpu_reg13 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fG );
-	fpu_reg13 = fpu_reg13 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg12 = edi3->CMV2Dot3DPos__m_fR;
+	fpu_reg12 = fpu_reg12 - edx3->CMV2Dot3DPos__m_fR;
+	fpu_reg13 = edi3->CMV2Dot3DPos__m_fG;
+	fpu_reg13 = fpu_reg13 - edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 * fpu_reg10; // fmul stall (+1 Cycle)
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg14 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg15 = fpu_reg14;
 	fpu_reg15 = fpu_reg15 * fpu_reg13;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
@@ -2518,9 +2516,9 @@ MV2DrawPolygonTBASM_PolygonType3:
 //st2 = RdY, st3 = GdY
 //st4 = 1/YCounter2, st5 = 1/YCounter1
 
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
+	fpu_reg15 = fpu_reg15 + edx3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg15 = fpu_reg15 + edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 
 	fR1 = fpu_reg15;
@@ -2528,14 +2526,14 @@ MV2DrawPolygonTBASM_PolygonType3:
 	fRdY1 = fpu_reg13;
 	fGdY1 = fpu_reg12;
 
-	fpu_reg12 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fB );
-	fpu_reg12 = fpu_reg12 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg12 = edi3->CMV2Dot3DPos__m_fB;
+	fpu_reg12 = fpu_reg12 - edx3->CMV2Dot3DPos__m_fB;
 	fpu_reg12 = fpu_reg12 * fpu_reg10;
 //st0 = BdY, st1 = 1/YCounter2, st2 = 1/YCounter1
 
-	fpu_reg13 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg13 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg13 = fpu_reg13 * fpu_reg12;
-	fpu_reg13 = fpu_reg13 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg13 = fpu_reg13 + edx3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fBdY1 = fpu_reg13;
 	fB1 = fpu_reg12;
@@ -2565,20 +2563,20 @@ MV2DrawPolygonTBASM_PolygonType3:
 	fpu_reg16 = fpu_reg16 * fpu_reg13;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
 
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg16 = fpu_reg16 + edx3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg16 = fpu_reg16 + edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
+	fpu_reg16 = fpu_reg16 + edx3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
 
-	fpu_reg16 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fB ) - fpu_reg16;
+	fpu_reg16 = esi3->CMV2Dot3DPos__m_fB - fpu_reg16;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fG ) - fpu_reg16;
+	fpu_reg16 = esi3->CMV2Dot3DPos__m_fG - fpu_reg16;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg16 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fR ) - fpu_reg16;
+	fpu_reg16 = esi3->CMV2Dot3DPos__m_fR - fpu_reg16;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
 
 	fpu_reg16 = fpu_reg16 * fpu_reg12;
@@ -2600,56 +2598,56 @@ MV2DrawPolygonTBASM_PolygonType3:
 //===>                                                                <===
 //===>	RGB DeltaX Calculation }   		                         	 <===
 //===>                                                                <===
-	ebx = dwYCounter;
+	ebx1 = dwYCounter;
 
-	if (ebx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT3;
+	if (ebx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT3;
 
-	eax = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenX );
-	ebx = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_iScreenX );
-	ebp = eax;
-	ecx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenX );
+	eax1 = edx3->CMV2Dot3DPos__m_iScreenX;
+	ebx1 = esi3->CMV2Dot3DPos__m_iScreenX;
+	ebp = eax1;
+	ecx1 = edi3->CMV2Dot3DPos__m_iScreenX;
 
-	eax = eax - ebx; // p1 - p2
-	ebx = ebx - ecx; // p2 - p3
-	ecx = ecx - ebp; // p3 - p1
+	eax1 = eax1 - ebx1; // p1 - p2
+	ebx1 = ebx1 - ecx1; // p2 - p3
+	ecx1 = ecx1 - ebp; // p3 - p1
 
 
-	if ( (( (int32_t)eax ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck1PT3;
-	eax = - ( (int32_t)eax );
+	if ( (( (int32_t)eax1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck1PT3;
+	eax1 = - ( (int32_t)eax1 );
 MV2DrawPolygonTBASM_PerspCheck1PT3:
 
-	if ( (( (int32_t)ebx ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck2PT3;
-	ebx = - ( (int32_t)ebx );
+	if ( (( (int32_t)ebx1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck2PT3;
+	ebx1 = - ( (int32_t)ebx1 );
 MV2DrawPolygonTBASM_PerspCheck2PT3:
 
-	if ( (( (int32_t)ecx ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck3PT3;
-	ecx = - ( (int32_t)ecx );
+	if ( (( (int32_t)ecx1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck3PT3;
+	ecx1 = - ( (int32_t)ecx1 );
 MV2DrawPolygonTBASM_PerspCheck3PT3:
 
 
-	if (eax >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT3;
+	if (eax1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT3;
 
 
-	if (ebx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT3;
+	if (ebx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT3;
 
 
-	if (ecx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT3;
+	if (ecx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT3;
 
 	goto MV2DrawPolygonTBASM_LinearPolygonType3;
 MV2DrawPolygonTBASM_PerspPT3:
 
 
 
-	fOneDivZ1NSBC = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fZNewRZP;
-	fOneDivZ2NSBC = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fZNewRZP;
-	fOneDivZ3NSBC = ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ1NSBC = edx3->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ2NSBC = esi3->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ3NSBC = edi3->CMV2Dot3DPos__m_fZNewRZP;
 
-	fScreenYError1 = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError;
-	fScreenYError2 = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError1 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError2 = esi3->CMV2Dot3DPos__m_fScreenYError;
 
-	edx = pDot1;
-	esi = pDot2;
-	edi = pDot3;
+	edx2 = pDot1;
+	esi2 = pDot2;
+	edi2 = pDot3;
 
 
 //===>                                                                <===
@@ -2657,9 +2655,9 @@ MV2DrawPolygonTBASM_PerspPT3:
 //===>                                                                <===
 //st0 = 1/YCounter2, st1 = 1/YCounter1
 
-	fpu_reg12 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg12 = edx2->CMV2Dot3D__m_fTextureU;
 	fpu_reg12 = fpu_reg12 * fOneDivZ1NSBC;
-	fpu_reg13 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg13 = edi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg13 = fpu_reg13 * fOneDivZ3NSBC;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 //st0 = tu1/z1, st1 = tu3/z3
@@ -2668,9 +2666,9 @@ MV2DrawPolygonTBASM_PerspPT3:
 //st0 = (tu3/z3 - tu1/z1)
 //st1 = 1/YCounter2, st2 = 1/YCounter1
 
-	fpu_reg13 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg13 = edx2->CMV2Dot3D__m_fTextureV;
 	fpu_reg13 = fpu_reg13 * fOneDivZ1NSBC;
-	fpu_reg14 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg14 = edi2->CMV2Dot3D__m_fTextureV;
 	fpu_reg14 = fpu_reg14 * fOneDivZ3NSBC;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 //st0 = tv1/z1, st1 = tu3/z3
@@ -2748,10 +2746,10 @@ MV2DrawPolygonTBASM_PerspPT3:
 //===>	TextureU&VDivZ DeltaX Calculation {                          <===
 //===>                                                                <===
 	fpu_reg12 = fOneDivZ2NSBC;
-	fpu_reg13 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg13 = esi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg13 = fpu_reg13 * fpu_reg12;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	fpu_reg13 = fpu_reg13 * ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg13 = fpu_reg13 * esi2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fTextureUDivZ2NSBC = fpu_reg13;
 	fTextureVDivZ2NSBC = fpu_reg12;
@@ -2820,40 +2818,40 @@ MV2DrawPolygonTBASM_PerspPT3:
 
 
 
-	eax = dwDeltaScreenX1;
-	ebx = dwDeltaScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwXmax;
-	edi = edi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX1f = eax;
-	dwAdderScreenX2f = ebx;
+	eax1 = dwDeltaScreenX1;
+	ebx1 = dwDeltaScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX1f = eax1;
+	dwAdderScreenX2f = ebx1;
 
-	eax = dwScreenX1;
-	ebx = dwScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwYOffset1;
-	edi = edi + dwYOffset1;
+	eax1 = dwScreenX1;
+	ebx1 = dwScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset1;
+	edi1 = edi1 + dwYOffset1;
 
 	ebp = dwYCounter;
-	ecx = edi;
+	ecx1 = edi1;
 
 //mov		dwOldESP,esp
 //and		esp,0ffffffe0h
 	SPTG = (CMV2ScanlinerPerspTG *) mem_alloc_endptr(dwYCounter * sizeof(CMV2ScanlinerPerspTG));
 //mov		dwESPStartPoint,esp
-	dwESPStartPoint = (uint32_t)SPTG;
+	dwESPStartPoint = (void *)SPTG;
 
 	fpu_reg10 = fNum_2EXP_20;
 	fpu_reg11 = fNum_2EXP20;
@@ -2877,13 +2875,13 @@ MV2DrawPolygonTBASM_PerspPT3ScanlinerTGLoop:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerPerspTG__size
 	SPTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg15 = ( (int32_t)dwScreenXf );
 	fpu_reg15 = fpu_reg11 - fpu_reg15;
@@ -2933,8 +2931,8 @@ MV2DrawPolygonTBASM_PerspPT3ScanlinerTGLoop:
 
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwXCounter,ecx
-	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi;
-	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx;
+	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi1;
+	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx1;
 
 	fpu_reg14 = fpu_reg14 + fOneDivZdY1;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
@@ -2944,11 +2942,11 @@ MV2DrawPolygonTBASM_PerspPT3ScanlinerTGLoop:
 	fpu_reg14 = fpu_reg14 + fTextureVDivZdY1;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_PerspPT3ScanlinerTGLoop;
@@ -2958,7 +2956,7 @@ MV2DrawPolygonTBASM_PerspPT3ScanlinerTGLoop:
 
 
 
-	edx = dwESPStartPoint;
+	edx4 = (CMV2ScanlinerPerspTG *)dwESPStartPoint;
 	ebp = dwYCounter;
 
 	fpu_reg12 = fB1;
@@ -2980,9 +2978,9 @@ MV2DrawPolygonTBASM_PerspPT3Gouraud:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerPerspTG__size );
+	edx4--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__fScreenXError );
+	fpu_reg15 = edx4->CMV2ScanlinerPerspTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -3008,9 +3006,9 @@ MV2DrawPolygonTBASM_PerspPT3Gouraud:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx4->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx4->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx4->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY1;
@@ -3044,16 +3042,16 @@ MV2DrawPolygonTBASM_PolygonType4:
 // esi = pDot2
 // edi = pDot3
 
-	eax = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY );
-	eax = eax - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
+	eax1 = edi3->CMV2Dot3DPos__m_iScreenY;
+	eax1 = eax1 - edx3->CMV2Dot3DPos__m_iScreenY;
 
-	if (( (int32_t)eax ) <= 0) goto MV2DrawPolygonTBASM_PolygonNotVisible;
+	if (( (int32_t)eax1 ) <= 0) goto MV2DrawPolygonTBASM_PolygonNotVisible;
 
-	dwYCounter = eax;
+	dwYCounter = eax1;
 
-	fpu_reg10 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenY );
-	fpu_reg11 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenY );
-	fpu_reg12 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenY );
+	fpu_reg10 = edx3->CMV2Dot3DPos__m_fScreenY;
+	fpu_reg11 = esi3->CMV2Dot3DPos__m_fScreenY;
+	fpu_reg12 = edi3->CMV2Dot3DPos__m_fScreenY;
 //st0 = (y3), st1 = (y2), st2 = (y1)
 
 	fpu_reg13 = fpu_reg12;
@@ -3073,12 +3071,12 @@ MV2DrawPolygonTBASM_PolygonType4:
 	fpu_reg11 = fpu_reg13 / fpu_reg11;
 //st0 = 1/(y3 - y2), st1 = 1/(y3 - y1)
 
-	eax = dwXmax;
-	ebx = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenY );
-	ebx = ebx - 1;
-	eax = ( (int32_t)eax ) * ( (int32_t)ebx );
-	eax = eax + pcBackBuffer;
-	dwYOffset1 = eax;
+	eax1 = dwXmax;
+	ebx1 = edx3->CMV2Dot3DPos__m_iScreenY;
+	ebx1 = ebx1 - 1;
+	eax1 = ( (int32_t)eax1 ) * ( (int32_t)ebx1 );
+	//eax1 = eax1 + pcBackBuffer;
+	dwYOffset1 = eax1;
 
 	fpu_reg13 = 1.0f;
 	fpu_reg12 = fpu_reg13 / fpu_reg12;
@@ -3089,9 +3087,9 @@ MV2DrawPolygonTBASM_PolygonType4:
 //===>                                                                <===
 //st0 = 1/YCounter2, st1 = 1/YCounter1
 
-	fpu_reg13 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg14 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg15 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg13 = edx3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg14 = esi3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg15 = edi3->CMV2Dot3DPos__m_fScreenX;
 //st0 = (x3), st1 = (x2), st2 = (x1)
 //st3 = 1/YCounter2, st4 = 1/YCounter1
 
@@ -3101,8 +3099,8 @@ MV2DrawPolygonTBASM_PolygonType4:
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 	fpu_reg14 = fpu_reg14 * fpu_reg11; // fmul stall (+1 Cycle)
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
-	fpu_reg15 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenYError );
-	fpu_reg16 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg15 = esi3->CMV2Dot3DPos__m_fScreenYError;
+	fpu_reg16 = edx3->CMV2Dot3DPos__m_fScreenYError;
 //st0 = ScreenYError1, st1 = ScreenYError2
 //st2 = DeltaScreenX2, st3 = DeltaScreenX1
 //st4 = 1/YCounter2, st5 = 1/YCounter1
@@ -3111,9 +3109,9 @@ MV2DrawPolygonTBASM_PolygonType4:
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 	fpu_reg16 = fpu_reg16 * fpu_reg14;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg16 = fpu_reg16 + edx3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX );
+	fpu_reg16 = fpu_reg16 + esi3->CMV2Dot3DPos__m_fScreenX;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 //st0 = ScreenYError1*DeltaScreenX1 + ScreenX1
 //st1 = ScreenYError2*DeltaScreenX2 + ScreenX2
@@ -3132,8 +3130,8 @@ MV2DrawPolygonTBASM_PolygonType4:
 //st0 = fYCounter*DeltaScreenX1, st1 = DeltaScreenX1
 //st2 = 1/YCounter2, st3 = 1/YCounter1
 
-	fpu_reg14 = fpu_reg14 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenX );
-	fpu_reg14 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenX ) - fpu_reg14; //fp dep.
+	fpu_reg14 = fpu_reg14 + edx3->CMV2Dot3DPos__m_fScreenX;
+	fpu_reg14 = esi3->CMV2Dot3DPos__m_fScreenX - fpu_reg14; //fp dep.
 //st0 = ScreenX2 - (fYCounter12*DeltaScreenX1 + ScreenX1)
 //st1 = DeltaScreenX1, st2 = 1/YCounter2, st3 = 1/YCounter1
 	dwMaxXCounter = (int32_t)ceilf(fpu_reg14);
@@ -3154,16 +3152,16 @@ MV2DrawPolygonTBASM_PolygonType4:
 //===>                                                                <===
 //st0 = 1/YCounter2, st1 = 1/YCounter1
 
-	fpu_reg13 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fR );
-	fpu_reg13 = fpu_reg13 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fG );
-	fpu_reg14 = fpu_reg14 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg13 = edi3->CMV2Dot3DPos__m_fR;
+	fpu_reg13 = fpu_reg13 - edx3->CMV2Dot3DPos__m_fR;
+	fpu_reg14 = edi3->CMV2Dot3DPos__m_fG;
+	fpu_reg14 = fpu_reg14 - edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 	fpu_reg14 = fpu_reg14 * fpu_reg11;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 	fpu_reg14 = fpu_reg14 * fpu_reg11; // fmul stall (+1 Cycle)
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
-	fpu_reg15 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg15 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg16 = fpu_reg15;
 	fpu_reg16 = fpu_reg16 * fpu_reg14;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
@@ -3174,9 +3172,9 @@ MV2DrawPolygonTBASM_PolygonType4:
 //st2 = RdY, st3 = GdY
 //st4 = 1/YCounter2, st5 = 1/YCounter1
 
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
+	fpu_reg16 = fpu_reg16 + edx3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg16 = fpu_reg16 + edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 
 	fR1 = fpu_reg16;
@@ -3184,14 +3182,14 @@ MV2DrawPolygonTBASM_PolygonType4:
 	fRdY1 = fpu_reg14;
 	fGdY1 = fpu_reg13;
 
-	fpu_reg13 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fB );
-	fpu_reg13 = fpu_reg13 - ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg13 = edi3->CMV2Dot3DPos__m_fB;
+	fpu_reg13 = fpu_reg13 - edx3->CMV2Dot3DPos__m_fB;
 	fpu_reg13 = fpu_reg13 * fpu_reg11;
 //st0 = BdY, st1 = 1/YCounter2, st2 = 1/YCounter1
 
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError );
+	fpu_reg14 = edx3->CMV2Dot3DPos__m_fScreenYError;
 	fpu_reg14 = fpu_reg14 * fpu_reg13;
-	fpu_reg14 = fpu_reg14 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg14 = fpu_reg14 + edx3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 	fBdY1 = fpu_reg14;
 	fB1 = fpu_reg13;
@@ -3221,20 +3219,20 @@ MV2DrawPolygonTBASM_PolygonType4:
 	fpu_reg17 = fpu_reg17 * fpu_reg14;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
 
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fB );
+	fpu_reg17 = fpu_reg17 + edx3->CMV2Dot3DPos__m_fB;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fG );
+	fpu_reg17 = fpu_reg17 + edx3->CMV2Dot3DPos__m_fG;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fR );
+	fpu_reg17 = fpu_reg17 + edx3->CMV2Dot3DPos__m_fR;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
 
-	fpu_reg17 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fB ) - fpu_reg17;
+	fpu_reg17 = esi3->CMV2Dot3DPos__m_fB - fpu_reg17;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg17 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fG ) - fpu_reg17;
+	fpu_reg17 = esi3->CMV2Dot3DPos__m_fG - fpu_reg17;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg17 = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fR ) - fpu_reg17;
+	fpu_reg17 = esi3->CMV2Dot3DPos__m_fR - fpu_reg17;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg17; fpu_reg17 = tmp; }
 
 	fpu_reg17 = fpu_reg17 * fpu_reg13;
@@ -3256,55 +3254,55 @@ MV2DrawPolygonTBASM_PolygonType4:
 //===>                                                                <===
 //===>	RGB DeltaX Calculation }   		                         	 <===
 //===>                                                                <===
-	ebx = dwYCounter;
+	ebx1 = dwYCounter;
 
-	if (ebx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT4;
+	if (ebx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT4;
 
-	eax = ( ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_iScreenX );
-	ebx = ( ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_iScreenX );
-	ebp = eax;
-	ecx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenX );
+	eax1 = edx3->CMV2Dot3DPos__m_iScreenX;
+	ebx1 = esi3->CMV2Dot3DPos__m_iScreenX;
+	ebp = eax1;
+	ecx1 = edi3->CMV2Dot3DPos__m_iScreenX;
 
-	eax = eax - ebx; // p1 - p2
-	ebx = ebx - ecx; // p2 - p3
-	ecx = ecx - ebp; // p3 - p1
+	eax1 = eax1 - ebx1; // p1 - p2
+	ebx1 = ebx1 - ecx1; // p2 - p3
+	ecx1 = ecx1 - ebp; // p3 - p1
 
 
-	if ( (( (int32_t)eax ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck1PT4;
-	eax = - ( (int32_t)eax );
+	if ( (( (int32_t)eax1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck1PT4;
+	eax1 = - ( (int32_t)eax1 );
 MV2DrawPolygonTBASM_PerspCheck1PT4:
 
-	if ( (( (int32_t)ebx ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck2PT4;
-	ebx = - ( (int32_t)ebx );
+	if ( (( (int32_t)ebx1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck2PT4;
+	ebx1 = - ( (int32_t)ebx1 );
 MV2DrawPolygonTBASM_PerspCheck2PT4:
 
-	if ( (( (int32_t)ecx ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck3PT4;
-	ecx = - ( (int32_t)ecx );
+	if ( (( (int32_t)ecx1 ) - ( 0 )) >= 0) goto MV2DrawPolygonTBASM_PerspCheck3PT4;
+	ecx1 = - ( (int32_t)ecx1 );
 MV2DrawPolygonTBASM_PerspCheck3PT4:
 
 
-	if (eax >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT4;
+	if (eax1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT4;
 
 
-	if (ebx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT4;
+	if (ebx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT4;
 
 
-	if (ecx >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT4;
+	if (ecx1 >= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspPT4;
 
 	goto MV2DrawPolygonTBASM_LinearPolygonType4;
 MV2DrawPolygonTBASM_PerspPT4:
 
 
-	fOneDivZ1NSBC = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fZNewRZP;
-	fOneDivZ2NSBC = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fZNewRZP;
-	fOneDivZ3NSBC = ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ1NSBC = edx3->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ2NSBC = esi3->CMV2Dot3DPos__m_fZNewRZP;
+	fOneDivZ3NSBC = edi3->CMV2Dot3DPos__m_fZNewRZP;
 
-	fScreenYError1 = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError;
-	fScreenYError2 = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError1 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError2 = esi3->CMV2Dot3DPos__m_fScreenYError;
 
-	edx = pDot1;
-	esi = pDot2;
-	edi = pDot3;
+	edx2 = pDot1;
+	esi2 = pDot2;
+	edi2 = pDot3;
 
 
 
@@ -3314,9 +3312,9 @@ MV2DrawPolygonTBASM_PerspPT4:
 //st0 = 1/YCounter2, st1 = 1/YCounter1
 
 
-	fpu_reg13 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg13 = edx2->CMV2Dot3D__m_fTextureU;
 	fpu_reg13 = fpu_reg13 * fOneDivZ1NSBC;
-	fpu_reg14 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg14 = edi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg14 = fpu_reg14 * fOneDivZ3NSBC;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 //st0 = tu1/z1, st1 = tu3/z3
@@ -3325,9 +3323,9 @@ MV2DrawPolygonTBASM_PerspPT4:
 //st0 = (tu3/z3 - tu1/z1)
 //st1 = 1/YCounter2, st2 = 1/YCounter1
 
-	fpu_reg14 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg14 = edx2->CMV2Dot3D__m_fTextureV;
 	fpu_reg14 = fpu_reg14 * fOneDivZ1NSBC;
-	fpu_reg15 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg15 = edi2->CMV2Dot3D__m_fTextureV;
 	fpu_reg15 = fpu_reg15 * fOneDivZ3NSBC;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 //st0 = tv1/z1, st1 = tu3/z3
@@ -3403,10 +3401,10 @@ MV2DrawPolygonTBASM_PerspPT4:
 //===>                                                                <===
 
 	fpu_reg13 = fOneDivZ2NSBC;
-	fpu_reg14 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg14 = esi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg14 = fpu_reg14 * fpu_reg13;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
-	fpu_reg14 = fpu_reg14 * ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg14 = fpu_reg14 * esi2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 	fTextureUDivZ2NSBC = fpu_reg14;
 	fTextureVDivZ2NSBC = fpu_reg13;
@@ -3476,40 +3474,40 @@ MV2DrawPolygonTBASM_PerspPT4:
 
 
 
-	eax = dwDeltaScreenX1;
-	ebx = dwDeltaScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwXmax;
-	edi = edi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX1f = eax;
-	dwAdderScreenX2f = ebx;
+	eax1 = dwDeltaScreenX1;
+	ebx1 = dwDeltaScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX1f = eax1;
+	dwAdderScreenX2f = ebx1;
 
-	eax = dwScreenX1;
-	ebx = dwScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwYOffset1;
-	edi = edi + dwYOffset1;
+	eax1 = dwScreenX1;
+	ebx1 = dwScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset1;
+	edi1 = edi1 + dwYOffset1;
 
 	ebp = dwYCounter;
-	ecx = edi;
+	ecx1 = edi1;
 
 //mov		dwOldESP,esp
 //and		esp,0ffffffe0h
 	SPTG = (CMV2ScanlinerPerspTG *) mem_alloc_endptr(dwYCounter * sizeof(CMV2ScanlinerPerspTG));
 //mov		dwESPStartPoint,esp
-	dwESPStartPoint = (uint32_t)SPTG;
+	dwESPStartPoint = (void *)SPTG;
 
 	fpu_reg10 = fNum_2EXP_20;
 	fpu_reg11 = fNum_2EXP20;
@@ -3533,13 +3531,13 @@ MV2DrawPolygonTBASM_PerspPT4ScanlinerTGLoop:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerPerspTG__size
 	SPTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg15 = ( (int32_t)dwScreenXf );
 	fpu_reg15 = fpu_reg11 - fpu_reg15;
@@ -3589,8 +3587,8 @@ MV2DrawPolygonTBASM_PerspPT4ScanlinerTGLoop:
 
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerPerspTG__dwXCounter,ecx
-	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi;
-	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx;
+	SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset = esi1;
+	SPTG->CMV2ScanlinerPerspTG__dwXCounter = ecx1;
 
 	fpu_reg14 = fpu_reg14 + fOneDivZdY1;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
@@ -3600,11 +3598,11 @@ MV2DrawPolygonTBASM_PerspPT4ScanlinerTGLoop:
 	fpu_reg14 = fpu_reg14 + fTextureVDivZdY1;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_PerspPT4ScanlinerTGLoop;
@@ -3614,7 +3612,7 @@ MV2DrawPolygonTBASM_PerspPT4ScanlinerTGLoop:
 
 
 
-	edx = dwESPStartPoint;
+	edx4 = (CMV2ScanlinerPerspTG *)dwESPStartPoint;
 	ebp = dwYCounter;
 
 	fpu_reg12 = fB1;
@@ -3636,9 +3634,9 @@ MV2DrawPolygonTBASM_PerspPT4Gouraud:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerPerspTG__size );
+	edx4--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__fScreenXError );
+	fpu_reg15 = edx4->CMV2ScanlinerPerspTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -3664,9 +3662,9 @@ MV2DrawPolygonTBASM_PerspPT4Gouraud:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerPerspTG *)edx)->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx4->CMV2ScanlinerPerspTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx4->CMV2ScanlinerPerspTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx4->CMV2ScanlinerPerspTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY1;
@@ -3707,50 +3705,50 @@ MV2DrawPolygonTBASM_DoPerspTGYLoop:
 // edi = dest
 // ebp = drf
 
-	edx = dwRdX;
-	ecx = edx;
-	edx = edx << ( 8 );
-	ecx = ecx << ( 24 );
-	edx = edx & ( 0x000ff0000 );
-	dwRGBIntLoop_ebp = ecx;
-	dwRGBIntLoop_esi = edx;
+	edx1 = dwRdX;
+	ecx1 = edx1;
+	edx1 = edx1 << ( 8 );
+	ecx1 = ecx1 << ( 24 );
+	edx1 = edx1 & ( 0x000ff0000 );
+	dwRGBIntLoop_ebp = ecx1;
+	dwRGBIntLoop_esi1 = edx1;
 
-	ecx = dwGdX;
-	edx = dwBdX;
-	eax = 0;
-	ebx = 0;
-	eax = (eax & 0xffffff00) | (uint8_t)(( (uint8_t)edx ));
-	ebx = (ebx & 0xffffff00) | (uint8_t)(( (uint8_t)(edx >> 8) ));
-	eax = set_high_byte(eax, ( (uint8_t)ecx ));
-	ebx = set_high_byte(ebx, ( (uint8_t)(ecx >> 8) ));
-	dwRGBIntLoop_eax = eax;
-	dwRGBIntLoop_ecx = ebx;
+	ecx1 = dwGdX;
+	edx1 = dwBdX;
+	eax1 = 0;
+	ebx1 = 0;
+	eax1 = (eax1 & 0xffffff00) | (uint8_t)(( (uint8_t)edx1 ));
+	ebx1 = (ebx1 & 0xffffff00) | (uint8_t)(( (uint8_t)(edx1 >> 8) ));
+	eax1 = set_high_byte(eax1, ( (uint8_t)ecx1 ));
+	ebx1 = set_high_byte(ebx1, ( (uint8_t)(ecx1 >> 8) ));
+	dwRGBIntLoop_eax1 = eax1;
+	dwRGBIntLoop_ecx1 = ebx1;
 
 
 MV2DrawPolygonTBASM_PerspTGYLoop:
 //mov		ecx,ss:[esp].CMV2ScanlinerPerspTG__dwXCounter
-	ecx = SPTG->CMV2ScanlinerPerspTG__dwXCounter;
+	ecx1 = SPTG->CMV2ScanlinerPerspTG__dwXCounter;
 //	mov		edi,ss:[esp].CMV2ScanlinerPerspTG__dwScreenX1Offset
 //	mov		edi,offset pBackTextureBuffer
-	edi = 0;
+	edi1 = 0;
 
-	iPixelCounter = iPixelCounter + ecx; //***********
+	iPixelCounter = iPixelCounter + ecx1; //***********
 
 // ecx = XCounter
 
-	if (( (int32_t)ecx ) <= 0) goto MV2DrawPolygonTBASM_PerspTGNoXLoop; //***********
+	if (( (int32_t)ecx1 ) <= 0) goto MV2DrawPolygonTBASM_PerspTGNoXLoop; //***********
 //	jz		@@PerspTGNoXLoop
 
-	eax = ecx;
-	dwScanlineXCounter = ecx;
+	eax1 = ecx1;
+	dwScanlineXCounter = ecx1;
 
 
-	if (( (int32_t)ecx ) <= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspTGFirstRemnantSpan;
-	ecx = ( dwSpanLength );
+	if (( (int32_t)ecx1 ) <= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspTGFirstRemnantSpan;
+	ecx1 = ( dwSpanLength );
 MV2DrawPolygonTBASM_PerspTGFirstRemnantSpan:
 
-	eax = eax - ( dwSpanLength );
-	dwNextXCounter = ecx;
+	eax1 = eax1 - ( dwSpanLength );
+	dwNextXCounter = ecx1;
 
 //fld		ss:[esp].CMV2ScanlinerPerspTG__fOneDivZ
 //fld		ss:[esp].CMV2ScanlinerPerspTG__fTextureVDivZ
@@ -3819,10 +3817,10 @@ MV2DrawPolygonTBASM_PerspTGFirstRemnantSpan:
 //st4 = UR/ZR, st5 = VR/ZR, st6 = 1/ZR
 
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg16 = fpu_reg16 * ( fSpanLengthFactorsRZP[ecx] );
+	fpu_reg16 = fpu_reg16 * ( fSpanLengthFactorsRZP[ecx1] );
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg16 = fpu_reg16 * ( fSpanLengthFactorsRZP[ecx] );
+	fpu_reg16 = fpu_reg16 * ( fSpanLengthFactorsRZP[ecx1] );
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 
 //st0 = (VR - VL)/SpanLength, st1 = (UR - UL)/SpanLength
@@ -3838,19 +3836,19 @@ MV2DrawPolygonTBASM_PerspTGFirstRemnantSpan:
 
 
 
-	if (( (int32_t)eax ) <= 0) goto MV2DrawPolygonTBASM_PerspTGDoRemnantPixel;
-	ecx = eax;
+	if (( (int32_t)eax1 ) <= 0) goto MV2DrawPolygonTBASM_PerspTGDoRemnantPixel;
+	ecx1 = eax1;
 
 
-	if (( (int32_t)ecx ) <= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspTGSecondRemnantSpan;
-	ecx = ( dwSpanLength );
+	if (( (int32_t)ecx1 ) <= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspTGSecondRemnantSpan;
+	ecx1 = ( dwSpanLength );
 MV2DrawPolygonTBASM_PerspTGSecondRemnantSpan:
 
-	ebx = dwNextXCounter;
-	eax = eax - ( dwSpanLength );
-	dwCurXCounter = ebx;
-	dwNextXCounter = ecx;
-	dwScanlineXCounter = eax;
+	ebx1 = dwNextXCounter;
+	eax1 = eax1 - ( dwSpanLength );
+	dwCurXCounter = ebx1;
+	dwNextXCounter = ecx1;
+	dwScanlineXCounter = eax1;
 
 //st0 = UL, st1 = VL, st2 = UL/ZL, st3 = VL/ZL, st4 = 1/ZL
 //***> TODO: Optimize
@@ -3878,27 +3876,27 @@ MV2DrawPolygonTBASM_PerspTGSpanLoop:
 	fpu_reg15 = 1.0f;
 	fpu_reg15 = fpu_reg15 / fpu_reg10;
 
-	ebx = dwTextureUdX;
-	eax = dwTextureVdX;
-	ebp = ebx;
-	esi = eax;
-	ebx = ebx >> ( 16 ); // bl init.
-	eax = eax >> ( 16 );
-	esi = esi << ( 16 ); // esi init.
+	ebx1 = dwTextureUdX;
+	eax1 = dwTextureVdX;
+	ebp = ebx1;
+	esi1 = eax1;
+	ebx1 = ebx1 >> ( 16 ); // bl init.
+	eax1 = eax1 >> ( 16 );
+	esi1 = esi1 << ( 16 ); // esi init.
 	ebp = ebp << ( 16 ); // ebp init.
-	ebx = set_high_byte(ebx, ( (uint8_t)eax )); // bh init.
-	eax = dwTextureU;
-	ecx = dwTextureV;
-	edx = eax;
-	eax = eax << ( 16 );
-	edx = edx >> ( 16 ); // dl init.
-	ebx = ebx | eax; // ebx init.
-	eax = ecx;
-	ecx = ecx << ( 16 ); // hi ecx init.
-	eax = eax >> ( 16 );
-	ecx = ecx | dwCurXCounter; // ecx init.
-	edx = set_high_byte(edx, ( (uint8_t)eax )); // dh init.
-	edx = edx | pcTexture; // edx init.
+	ebx1 = set_high_byte(ebx1, ( (uint8_t)eax1 )); // bh init.
+	eax1 = dwTextureU;
+	ecx1 = dwTextureV;
+	edx1 = eax1;
+	eax1 = eax1 << ( 16 );
+	edx1 = edx1 >> ( 16 ); // dl init.
+	ebx1 = ebx1 | eax1; // ebx init.
+	eax1 = ecx1;
+	ecx1 = ecx1 << ( 16 ); // hi ecx init.
+	eax1 = eax1 >> ( 16 );
+	ecx1 = ecx1 | dwCurXCounter; // ecx init.
+	edx1 = set_high_byte(edx1, ( (uint8_t)eax1 )); // dh init.
+	//edx1 = edx1 | pcTexture; // edx init.
 
 MV2DrawPolygonTBASM_PerspTGXLoop:
 // eax = col
@@ -3909,23 +3907,23 @@ MV2DrawPolygonTBASM_PerspTGXLoop:
 // edi =	destination
 // ebp = dtxf
 
-	eax = edx;
-	edx = edx & ( 0x0ffff );
-	edx = edx + pcBumpmap;
-	*((uint32_t *)(((uint32_t)&(pBackBumpBuffer[0])) + edi)) = edx; // ->pBackBumpBuffer
-	edx = eax;
+	eax1 = edx1;
+	edx1 = edx1 & ( 0x0ffff );
+	//edx1 = edx1 + pcBumpmap;
+	pBackBumpBuffer[edi1] = edx1; // ->pBackBumpBuffer
+	edx1 = eax1;
 
-	eax = ( *((uint32_t *)(edx * 4)) );
-	*((uint32_t *)(((uint32_t)&(pBackTextureBuffer[0])) + edi)) = eax;
+	eax1 = pcTexture[edx1];
+	pBackTextureBuffer[edi1] = eax1;
 
-	{ uint32_t carry = (UINT32_MAX - ebx < ebp)?1:0; ebx = ebx + ebp;
-	  edx = (edx & 0xffffff00) | (uint8_t)(( (uint8_t)edx ) + ( (uint8_t)ebx ) + carry); }
-	{ uint32_t carry = (UINT32_MAX - ecx < esi)?1:0; ecx = ecx + esi;
-	  edx = set_high_byte(edx, ( (uint8_t)(edx >> 8) ) + ( (uint8_t)(ebx >> 8) ) + carry); }
-	edi = edi + ( 4 );
+	{ uint32_t carry = (UINT32_MAX - ebx1 < ebp)?1:0; ebx1 = ebx1 + ebp;
+	  edx1 = (edx1 & 0xffffff00) | (uint8_t)(( (uint8_t)edx1 ) + ( (uint8_t)ebx1 ) + carry); }
+	{ uint32_t carry = (UINT32_MAX - ecx1 < esi1)?1:0; ecx1 = ecx1 + esi1;
+	  edx1 = set_high_byte(edx1, ( (uint8_t)(edx1 >> 8) ) + ( (uint8_t)(ebx1 >> 8) ) + carry); }
+	edi1++;
 
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( (int8_t)ecx ) - 1);
-	if (( (int8_t)ecx ) != 0) goto MV2DrawPolygonTBASM_PerspTGXLoop;
+	ecx1 = (ecx1 & 0xffffff00) | (uint8_t)(( (int8_t)ecx1 ) - 1);
+	if (( (int8_t)ecx1 ) != 0) goto MV2DrawPolygonTBASM_PerspTGXLoop;
 
 //st0 = ZR, st1 = UL, st2 = VL, st3 = UR/ZR
 //st4 = VR/ZR, st5 = 1/ZR
@@ -3955,12 +3953,12 @@ MV2DrawPolygonTBASM_PerspTGXLoop:
 //st0 = VR, st1 = UR, st2 = UR - UL, st3 = VR - VL
 //st4 = UR/ZR, st5 = VR/ZR, st6 = 1/ZR
 
-	eax = dwNextXCounter;
+	eax1 = dwNextXCounter;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg16 = fpu_reg16 * ( fSpanLengthFactorsRZP[eax] );
+	fpu_reg16 = fpu_reg16 * ( fSpanLengthFactorsRZP[eax1] );
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg16 = fpu_reg16 * ( fSpanLengthFactorsRZP[eax] );
+	fpu_reg16 = fpu_reg16 * ( fSpanLengthFactorsRZP[eax1] );
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 //st0 = (VR - VL)/SpanLength, st1 = (UR - UL)/SpanLength
 //st2 = UR, st3 = VR, st4 = UR/ZR, st5 = VR/ZR, st6 = 1/ZR
@@ -3975,19 +3973,19 @@ MV2DrawPolygonTBASM_PerspTGXLoop:
 
 	if (( (int32_t)dwScanlineXCounter ) <= ( 0 )) goto MV2DrawPolygonTBASM_PerspTGDoRemnantPixel;
 
-	ecx = dwScanlineXCounter;
-	eax = ecx;
+	ecx1 = dwScanlineXCounter;
+	eax1 = ecx1;
 
-	if (( (int32_t)ecx ) <= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspTGRemnantSpanFollows;
-	ecx = ( dwSpanLength );
+	if (( (int32_t)ecx1 ) <= ( dwSpanLength )) goto MV2DrawPolygonTBASM_PerspTGRemnantSpanFollows;
+	ecx1 = ( dwSpanLength );
 MV2DrawPolygonTBASM_PerspTGRemnantSpanFollows:
 
-	ebx = dwNextXCounter;
-	eax = eax - ( dwSpanLength );
+	ebx1 = dwNextXCounter;
+	eax1 = eax1 - ( dwSpanLength );
 
-	dwCurXCounter = ebx;
-	dwNextXCounter = ecx;
-	dwScanlineXCounter = eax;
+	dwCurXCounter = ebx1;
+	dwNextXCounter = ecx1;
+	dwScanlineXCounter = eax1;
 
 
 //***> TODO: Optimize
@@ -4012,27 +4010,27 @@ MV2DrawPolygonTBASM_PerspTGRemnantSpanFollows:
 
 	goto MV2DrawPolygonTBASM_PerspTGSpanLoop;
 MV2DrawPolygonTBASM_PerspTGDoRemnantPixel:
-	ebx = dwTextureUdX;
-	eax = dwTextureVdX;
-	ebp = ebx;
-	esi = eax;
-	ebx = ebx >> ( 16 ); // bl init.
-	eax = eax >> ( 16 );
-	esi = esi << ( 16 ); // esi init.
+	ebx1 = dwTextureUdX;
+	eax1 = dwTextureVdX;
+	ebp = ebx1;
+	esi1 = eax1;
+	ebx1 = ebx1 >> ( 16 ); // bl init.
+	eax1 = eax1 >> ( 16 );
+	esi1 = esi1 << ( 16 ); // esi init.
 	ebp = ebp << ( 16 ); // ebp init.
-	ebx = set_high_byte(ebx, ( (uint8_t)eax )); // bh init.
-	eax = dwTextureU;
-	ecx = dwTextureV;
-	edx = eax;
-	eax = eax << ( 16 );
-	edx = edx >> ( 16 ); // dl init.
-	ebx = ebx | eax; // ebx init.
-	eax = ecx;
-	ecx = ecx << ( 16 ); // hi ecx init.
-	eax = eax >> ( 16 );
-	ecx = ecx | dwNextXCounter; // ecx init.
-	edx = set_high_byte(edx, ( (uint8_t)eax )); // dh init.
-	edx = edx | pcTexture; // edx init.
+	ebx1 = set_high_byte(ebx1, ( (uint8_t)eax1 )); // bh init.
+	eax1 = dwTextureU;
+	ecx1 = dwTextureV;
+	edx1 = eax1;
+	eax1 = eax1 << ( 16 );
+	edx1 = edx1 >> ( 16 ); // dl init.
+	ebx1 = ebx1 | eax1; // ebx init.
+	eax1 = ecx1;
+	ecx1 = ecx1 << ( 16 ); // hi ecx init.
+	eax1 = eax1 >> ( 16 );
+	ecx1 = ecx1 | dwNextXCounter; // ecx init.
+	edx1 = set_high_byte(edx1, ( (uint8_t)eax1 )); // dh init.
+	//edx1 = edx1 | pcTexture; // edx init.
 
 MV2DrawPolygonTBASM_PerspTGRemnantPixelXLoop:
 // eax = col
@@ -4043,23 +4041,23 @@ MV2DrawPolygonTBASM_PerspTGRemnantPixelXLoop:
 // edi =	destination
 // ebp = dtxf
 
-	eax = edx;
-	edx = edx & ( 0x0ffff );
-	edx = edx + pcBumpmap;
-	*((uint32_t *)(((uint32_t)&(pBackBumpBuffer[0])) + edi)) = edx; // ->pBackBumpBuffer
-	edx = eax;
+	eax1 = edx1;
+	edx1 = edx1 & ( 0x0ffff );
+	//edx1 = edx1 + pcBumpmap;
+	pBackBumpBuffer[edi1] = edx1; // ->pBackBumpBuffer
+	edx1 = eax1;
 
-	eax = ( *((uint32_t *)(edx * 4)) );
-	*((uint32_t *)(((uint32_t)&(pBackTextureBuffer[0])) + edi)) = eax;
+	eax1 = pcTexture[edx1];
+	pBackTextureBuffer[edi1] = eax1;
 
-	{ uint32_t carry = (UINT32_MAX - ebx < ebp)?1:0; ebx = ebx + ebp;
-	  edx = (edx & 0xffffff00) | (uint8_t)(( (uint8_t)edx ) + ( (uint8_t)ebx ) + carry); }
-	{ uint32_t carry = (UINT32_MAX - ecx < esi)?1:0; ecx = ecx + esi;
-	  edx = set_high_byte(edx, ( (uint8_t)(edx >> 8) ) + ( (uint8_t)(ebx >> 8) ) + carry); }
-	edi = edi + ( 4 );
+	{ uint32_t carry = (UINT32_MAX - ebx1 < ebp)?1:0; ebx1 = ebx1 + ebp;
+	  edx1 = (edx1 & 0xffffff00) | (uint8_t)(( (uint8_t)edx1 ) + ( (uint8_t)ebx1 ) + carry); }
+	{ uint32_t carry = (UINT32_MAX - ecx1 < esi1)?1:0; ecx1 = ecx1 + esi1;
+	  edx1 = set_high_byte(edx1, ( (uint8_t)(edx1 >> 8) ) + ( (uint8_t)(ebx1 >> 8) ) + carry); }
+	edi1++;
 
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( (int8_t)ecx ) - 1);
-	if (( (int8_t)ecx ) != 0) goto MV2DrawPolygonTBASM_PerspTGRemnantPixelXLoop;
+	ecx1 = (ecx1 & 0xffffff00) | (uint8_t)(( (int8_t)ecx1 ) - 1);
+	if (( (int8_t)ecx1 ) != 0) goto MV2DrawPolygonTBASM_PerspTGRemnantPixelXLoop;
 
 
 //mov		ebp,ss:[esp].CMV2ScanlinerPerspTG__dwR
@@ -4067,10 +4065,10 @@ MV2DrawPolygonTBASM_PerspTGRemnantPixelXLoop:
 //mov     esi,ss:[esp].CMV2ScanlinerPerspTG__dwB
 //mov		ebx,ss:[esp].CMV2ScanlinerPerspTG__dwXCounter
 	ebp = SPTG->CMV2ScanlinerPerspTG__dwR;
-	edx = SPTG->CMV2ScanlinerPerspTG__dwG;
-	esi = SPTG->CMV2ScanlinerPerspTG__dwB;
-	ebx = SPTG->CMV2ScanlinerPerspTG__dwXCounter;
-	edi = 0;
+	edx1 = SPTG->CMV2ScanlinerPerspTG__dwG;
+	esi1 = SPTG->CMV2ScanlinerPerspTG__dwB;
+	ebx1 = SPTG->CMV2ScanlinerPerspTG__dwXCounter;
+	edi1 = 0;
 
 MV2DrawPolygonTBASM_PerspBumpLoop:
 // eax =
@@ -4080,45 +4078,45 @@ MV2DrawPolygonTBASM_PerspBumpLoop:
 // esi = 				|VAngle	|VAnglef
 // edi = Bump-,ShadeBuffer	(Loaded with BumbBuffer)
 // ebp = 				|NAngle |NAnglef
-	stack_var00 = ebx;
+	stack_var00 = ebx1;
 
-	ebx = 0;
+	ebx1 = 0;
 
 	if (ebp > ( 0x0ffff )) goto MV2DrawPolygonTBASM_PerspAmbient;
 
-	eax = ( *((uint32_t *)(((uint32_t)&(pBackBumpBuffer[0])) + edi)) );
-	ecx = 0;
-	ebx = set_high_byte(ebx, ( (uint8_t)(ebx >> 8) ) ^ ( *((uint8_t *)(eax * 2)) )); //UBump
-	ecx = set_high_byte(ecx, ( *((uint8_t *)(eax * 2 + (1))) )); //VBump
-	ebx = ebx - ( 128 * 256 );
-	ecx = ecx - ( 128 * 256 );
-	eax = 0;
-	ebx = ebx + edx; //UAngle + UBump
-	ecx = ecx + esi; //VAngle + VBump
+	eax1 = pBackBumpBuffer[edi1];
+	ecx1 = 0;
+	ebx1 = set_high_byte(ebx1, ( (uint8_t)(ebx1 >> 8) ) ^ ( ((uint8_t *)&(pcBumpmap[eax1]))[0] )); //UBump
+	ecx1 = set_high_byte(ecx1, ( ((uint8_t *)&(pcBumpmap[eax1]))[1] )); //VBump
+	ebx1 = ebx1 - ( 128 * 256 );
+	ecx1 = ecx1 - ( 128 * 256 );
+	eax1 = 0;
+	ebx1 = ebx1 + edx1; //UAngle + UBump
+	ecx1 = ecx1 + esi1; //VAngle + VBump
 
 
-	if (ebx > ( 0x0ffff )) goto MV2DrawPolygonTBASM_PerspAmbientBump;
+	if (ebx1 > ( 0x0ffff )) goto MV2DrawPolygonTBASM_PerspAmbientBump;
 
-	if (ecx > ( 0x0ffff )) goto MV2DrawPolygonTBASM_PerspAmbientBump;
-	eax = (eax & 0xffffff00) | (uint8_t)(( (uint8_t)(ebx >> 8) ));
-	eax = set_high_byte(eax, ( (uint8_t)(ecx >> 8) ));
-	ebx = 0;
-	ebx = (ebx & 0xffffff00) | (uint8_t)(( pAngleJoinTab[eax] )); //pAngleJoin
+	if (ecx1 > ( 0x0ffff )) goto MV2DrawPolygonTBASM_PerspAmbientBump;
+	eax1 = (eax1 & 0xffffff00) | (uint8_t)(( (uint8_t)(ebx1 >> 8) ));
+	eax1 = set_high_byte(eax1, ( (uint8_t)(ecx1 >> 8) ));
+	ebx1 = 0;
+	ebx1 = (ebx1 & 0xffffff00) | (uint8_t)(( pAngleJoinTab[eax1] )); //pAngleJoin
 	goto MV2DrawPolygonTBASM_PerspAmbient;
 MV2DrawPolygonTBASM_PerspAmbientBump:
-	ebx = 0;
+	ebx1 = 0;
 MV2DrawPolygonTBASM_PerspAmbient:
-	ebx = ( pLightBrightnessTab[ebx] ); //Helligkeit
-	*((uint32_t *)(((uint32_t)&(pBackShadeBuffer[0])) + edi)) = ebx; //ShadeBuffer
+	ebx1 = ( pLightBrightnessTab[ebx1] ); //Helligkeit
+	pBackShadeBuffer[edi1] = ebx1; //ShadeBuffer
 
-	edi = edi + ( 4 );
-	ebx = stack_var00;
-	edx = edx + dwGdX;
-	esi = esi + dwBdX;
+	edi1++;
+	ebx1 = stack_var00;
+	edx1 = edx1 + dwGdX;
+	esi1 = esi1 + dwBdX;
 	ebp = ebp + dwRdX;
 
-	ebx = ( (int32_t)ebx ) - 1;
-	if (( (int32_t)ebx ) != 0) goto MV2DrawPolygonTBASM_PerspBumpLoop;
+	ebx1 = ( (int32_t)ebx1 ) - 1;
+	if (( (int32_t)ebx1 ) != 0) goto MV2DrawPolygonTBASM_PerspBumpLoop;
 
 
 
@@ -4179,14 +4177,14 @@ MV2DrawPolygonTBASM_PerspAmbient:
 
 //mov		edi,ss:[esp].CMV2ScanlinerPerspTG__dwScreenX1Offset
 //mov		ebp,ss:[esp].CMV2ScanlinerPerspTG__dwXCounter
-	edi = SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset;
+	edi1 = SPTG->CMV2ScanlinerPerspTG__dwScreenX1Offset;
 	ebp = SPTG->CMV2ScanlinerPerspTG__dwXCounter;
-	esi = 0;
-	eax = 0;
-	ebx = 0;
-	ecx = 0;
-	edx = 0;
-	edi = edi - 1;
+	esi1 = 0;
+	eax1 = 0;
+	ebx1 = 0;
+	ecx1 = 0;
+	edx1 = 0;
+	edi1 = edi1 - 1;
 
 MV2DrawPolygonTBASM_PerspShadeLoop:
 // eax = r
@@ -4197,25 +4195,25 @@ MV2DrawPolygonTBASM_PerspShadeLoop:
 // edi = dest
 // ebp = XCounter
 
-	eax = ( *((uint32_t *)(((uint32_t)&(pBackShadeBuffer[0])) + esi)) );
-	ebx = ( *((uint32_t *)(((uint32_t)&(pBackTextureBuffer[0])) + esi)) );
+	eax1 = pBackShadeBuffer[esi1];
+	ebx1 = pBackTextureBuffer[esi1];
 
-	eax = eax & ( 0x0ffffff );
-	ebx = ebx & ( 0x0ffffff );
-	edx = set_high_byte(edx, ( (uint8_t)eax ));
-	ecx = set_high_byte(ecx, ( (uint8_t)(eax >> 8) ));
-	edx = (edx & 0xffffff00) | (uint8_t)(( (uint8_t)ebx ));
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( (uint8_t)(ebx >> 8) ));
-	eax = eax >> ( 8 );
-	esi = esi + ( 4 );
-	ebx = ebx >> ( 16 );
-	edi = edi + 1;
-	eax = (eax & 0xffffff00) | (uint8_t)(( (uint8_t)ebx ));
+	eax1 = eax1 & ( 0x0ffffff );
+	ebx1 = ebx1 & ( 0x0ffffff );
+	edx1 = set_high_byte(edx1, ( (uint8_t)eax1 ));
+	ecx1 = set_high_byte(ecx1, ( (uint8_t)(eax1 >> 8) ));
+	edx1 = (edx1 & 0xffffff00) | (uint8_t)(( (uint8_t)ebx1 ));
+	ecx1 = (ecx1 & 0xffffff00) | (uint8_t)(( (uint8_t)(ebx1 >> 8) ));
+	eax1 = eax1 >> ( 8 );
+	esi1++;
+	ebx1 = ebx1 >> ( 16 );
+	edi1 = edi1 + 1;
+	eax1 = (eax1 & 0xffffff00) | (uint8_t)(( (uint8_t)ebx1 ));
 
-	ebx = (ebx & 0xffffff00) | (uint8_t)(( pBumpShadeLookup[ecx] )); // g
-	ebx = set_high_byte(ebx, ( pBumpShadeLookup[eax] )); // r
-	ebx = ebx << ( 8 );
-	ebx = (ebx & 0xffffff00) | (uint8_t)(( pBumpShadeLookup[edx] )); // b
+	ebx1 = (ebx1 & 0xffffff00) | (uint8_t)(( pBumpShadeLookup[ecx1] )); // g
+	ebx1 = set_high_byte(ebx1, ( pBumpShadeLookup[eax1] )); // r
+	ebx1 = ebx1 << ( 8 );
+	ebx1 = (ebx1 & 0xffffff00) | (uint8_t)(( pBumpShadeLookup[edx1] )); // b
 
 #if 0
 //	ror		eax,8
@@ -4239,7 +4237,7 @@ MV2DrawPolygonTBASM_PerspShadeLoop:
 //	inc		edi
 //	add		esi,4
 #endif
-	*((uint32_t *)(edi * 4)) = ebx;
+	pcBackBuffer[edi1] = ebx1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_PerspShadeLoop;
@@ -4290,19 +4288,19 @@ MV2DrawPolygonTBASM_LinearPolygonType1:
 //=============> Linear		   <==============
 //=============> Polygon Type 1 <==============
 //=============>                <==============
-	fScreenYError1 = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError;
-	fScreenYError3 = ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError1 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError3 = edi3->CMV2Dot3DPos__m_fScreenYError;
 
-	edx = pDot1;
-	esi = pDot2;
-	edi = pDot3;
+	edx2 = pDot1;
+	esi2 = pDot2;
+	edi2 = pDot3;
 
 //===>                                                                <===
 //===>	TextureU DeltaY Calculation {                            	 <===
 //===>                                                                <===
-	fpu_reg14 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
-	fpu_reg15 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureU );
-	fpu_reg16 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg14 = edx2->CMV2Dot3D__m_fTextureU;
+	fpu_reg15 = esi2->CMV2Dot3D__m_fTextureU;
+	fpu_reg16 = edi2->CMV2Dot3D__m_fTextureU;
 	fpu_reg17 = fpu_reg15;
 	fpu_reg17 = fpu_reg17 - fpu_reg16;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
@@ -4328,9 +4326,9 @@ MV2DrawPolygonTBASM_LinearPolygonType1:
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg18 = fpu_reg18 * fpu_reg14;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg18 = fpu_reg18 + edi2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg18 = fpu_reg18 + edx2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 
 	fTextureU3 = fpu_reg18;
@@ -4347,9 +4345,9 @@ MV2DrawPolygonTBASM_LinearPolygonType1:
 //===>                                                                <===
 //===>	TextureV DeltaY Calculation {                            	 <===
 //===>                                                                <===
-	fpu_reg14 = ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
-	fpu_reg15 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureV );
-	fpu_reg16 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg14 = edx2->CMV2Dot3D__m_fTextureV;
+	fpu_reg15 = esi2->CMV2Dot3D__m_fTextureV;
+	fpu_reg16 = edi2->CMV2Dot3D__m_fTextureV;
 	fpu_reg17 = fpu_reg15;
 	fpu_reg17 = fpu_reg17 - fpu_reg16;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
@@ -4375,9 +4373,9 @@ MV2DrawPolygonTBASM_LinearPolygonType1:
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 	fpu_reg18 = fpu_reg18 * fpu_reg14;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg18 = fpu_reg18 + edi2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
-	fpu_reg18 = fpu_reg18 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg18 = fpu_reg18 + edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg18; fpu_reg18 = fpu_reg17; fpu_reg17 = tmp; }
 
 	fTextureV3 = fpu_reg18;
@@ -4402,13 +4400,13 @@ MV2DrawPolygonTBASM_LinearPolygonType1:
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 	fpu_reg15 = fpu_reg15 * fpu_reg17; // fmul stall (+ 1 Cycle)
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg16 = fpu_reg16 + edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg16 = fpu_reg16 + edx2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 - ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
+	fpu_reg16 = fpu_reg16 - edi2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 - ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
+	fpu_reg16 = fpu_reg16 - edi2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 	fpu_reg16 = fpu_reg16 * fpu_reg14;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
@@ -4433,40 +4431,40 @@ MV2DrawPolygonTBASM_LinearPolygonType1:
 
 
 
-	eax = dwDeltaScreenX1;
-	ebx = dwDeltaScreenX;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwXmax;
-	edi = edi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX1f = eax;
-	dwAdderScreenX2f = ebx;
+	eax1 = dwDeltaScreenX1;
+	ebx1 = dwDeltaScreenX;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX1f = eax1;
+	dwAdderScreenX2f = ebx1;
 
-	eax = dwScreenX1;
-	ebx = dwScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwYOffset1;
-	edi = edi + dwYOffset1;
+	eax1 = dwScreenX1;
+	ebx1 = dwScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset1;
+	edi1 = edi1 + dwYOffset1;
 
 	ebp = dwYCounter1;
-	ecx = edi;
+	ecx1 = edi1;
 
 //mov		dwOldESP,esp
 //and		esp,0ffffffe0h
 	SLTG = (CMV2ScanlinerLinTG *) mem_alloc_endptr(dwYCounter * sizeof(CMV2ScanlinerLinTG));
 //mov		dwESPStartPoint,esp
-	dwESPStartPoint = (uint32_t)SLTG;
+	dwESPStartPoint = (void *)SLTG;
 
 	fpu_reg10 = fNum_2EXP_20;
 	fpu_reg11 = fNum_2EXP20;
@@ -4492,13 +4490,13 @@ MV2DrawPolygonTBASM_LinPT1TexturePass1:
 // st5 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerLinTG__size
 	SLTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg16 = ( (int32_t)dwScreenXf );
 	fpu_reg16 = fpu_reg11 - fpu_reg16;
@@ -4540,8 +4538,8 @@ MV2DrawPolygonTBASM_LinPT1TexturePass1:
 
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwXCounter,ecx
-	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi;
-	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx;
+	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi1;
+	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx1;
 // st0 = TextureU, st1 = TextureV
 // st2 = TextureUdX, st3 = TextureVdX
 // st4 = 2^20, st5 = 2^-20
@@ -4551,33 +4549,33 @@ MV2DrawPolygonTBASM_LinPT1TexturePass1:
 	fpu_reg15 = fpu_reg15 + fTextureVdY1;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_LinPT1TexturePass1;
 
 
 
-	eax = dwDeltaScreenX2;
-	esi = eax;
-	eax = eax << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	esi = esi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX1f = eax;
+	eax1 = dwDeltaScreenX2;
+	esi1 = eax1;
+	eax1 = eax1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX1f = eax1;
 
-	eax = dwScreenX3;
-	esi = eax;
-	eax = eax << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	esi = esi + dwYOffset2;
+	eax1 = dwScreenX3;
+	esi1 = eax1;
+	eax1 = eax1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset2;
 
 	ebp = dwYCounter2;
-	ecx = edi;
+	ecx1 = edi1;
 
 	fpu_reg12 = fTextureVdX;
 	fpu_reg13 = fTextureUdX;
@@ -4600,13 +4598,13 @@ MV2DrawPolygonTBASM_LinPT1TexturePass2:
 // st5 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerLinTG__size
 	SLTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg16 = ( (int32_t)dwScreenXf );
 	fpu_reg16 = fpu_reg11 - fpu_reg16;
@@ -4648,8 +4646,8 @@ MV2DrawPolygonTBASM_LinPT1TexturePass2:
 
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwXCounter,ecx
-	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi;
-	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx;
+	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi1;
+	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx1;
 // st0 = TextureU, st1 = TextureV
 // st2 = TextureUdX, st3 = TextureVdX
 // st4 = 2^20, st5 = 2^-20
@@ -4659,18 +4657,18 @@ MV2DrawPolygonTBASM_LinPT1TexturePass2:
 	fpu_reg15 = fpu_reg15 + fTextureVdY2;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_LinPT1TexturePass2;
 
 
 
-	edx = dwESPStartPoint;
+	edx5 = (CMV2ScanlinerLinTG *)dwESPStartPoint;
 	ebp = dwYCounter1;
 
 	fpu_reg12 = fB1;
@@ -4692,9 +4690,9 @@ MV2DrawPolygonTBASM_LinPT1GouraudPass1:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerLinTG__size );
+	edx5--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__fScreenXError );
+	fpu_reg15 = edx5->CMV2ScanlinerLinTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -4720,9 +4718,9 @@ MV2DrawPolygonTBASM_LinPT1GouraudPass1:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx5->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx5->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx5->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY1;
@@ -4761,9 +4759,9 @@ MV2DrawPolygonTBASM_LinPT1GouraudPass2:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerLinTG__size );
+	edx5--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__fScreenXError );
+	fpu_reg15 = edx5->CMV2ScanlinerLinTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -4789,9 +4787,9 @@ MV2DrawPolygonTBASM_LinPT1GouraudPass2:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx5->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx5->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx5->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY2;
@@ -4823,20 +4821,20 @@ MV2DrawPolygonTBASM_LinearPolygonType2:
 //=============> Polygon Type 2 <==============
 //=============>                <==============
 //st0 = 1/YCounter, st1 = 1/YCounter2, st2 = 1/YCounter1
-	fScreenYError1 = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError;
-	fScreenYError2 = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError1 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError2 = esi3->CMV2Dot3DPos__m_fScreenYError;
 
-	edx = pDot1;
-	esi = pDot2;
-	edi = pDot3;
+	edx2 = pDot1;
+	esi2 = pDot2;
+	edi2 = pDot3;
 
 //===>                                                                <===
 //===>	TextureUV DeltaY Calculation {                            	 <===
 //===>                                                                <===
-	fpu_reg14 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
-	fpu_reg14 = fpu_reg14 - ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
-	fpu_reg15 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
-	fpu_reg15 = fpu_reg15 - ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg14 = edi2->CMV2Dot3D__m_fTextureU;
+	fpu_reg14 = fpu_reg14 - edx2->CMV2Dot3D__m_fTextureU;
+	fpu_reg15 = edi2->CMV2Dot3D__m_fTextureV;
+	fpu_reg15 = fpu_reg15 - edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 	fpu_reg15 = fpu_reg15 * fpu_reg13;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
@@ -4853,9 +4851,9 @@ MV2DrawPolygonTBASM_LinearPolygonType2:
 //st2 = DeltaTextureX, st3 = DeltaTextureY
 //st4 = 1/YCounter, st5 = 1/YCounter2, st6 = 1/YCounter1
 
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg17 = fpu_reg17 + edx2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
-	fpu_reg17 = fpu_reg17 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg17 = fpu_reg17 + edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 
 	fTextureU1 = fpu_reg17;
@@ -4882,13 +4880,13 @@ MV2DrawPolygonTBASM_LinearPolygonType2:
 	fpu_reg17 = fpu_reg17 * fpu_reg15;
 	{ float tmp = fpu_reg17; fpu_reg17 = fpu_reg16; fpu_reg16 = tmp; }
 	fpu_reg15 = fpu_reg15 * fpu_reg17; // fmul stall (+ 1 Cycle)
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg16 = fpu_reg16 + edx2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg16 = fpu_reg16 + edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureU ) - fpu_reg16;
+	fpu_reg16 = esi2->CMV2Dot3D__m_fTextureU - fpu_reg16;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureV ) - fpu_reg16;
+	fpu_reg16 = esi2->CMV2Dot3D__m_fTextureV - fpu_reg16;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 	fpu_reg16 = fpu_reg16 * fpu_reg14;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
@@ -4917,40 +4915,40 @@ MV2DrawPolygonTBASM_LinearPolygonType2:
 
 
 
-	eax = dwDeltaScreenX;
-	ebx = dwDeltaScreenX1;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwXmax;
-	edi = edi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX1f = eax;
-	dwAdderScreenX2f = ebx;
+	eax1 = dwDeltaScreenX;
+	ebx1 = dwDeltaScreenX1;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX1f = eax1;
+	dwAdderScreenX2f = ebx1;
 
-	eax = dwScreenX1;
-	ebx = dwScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwYOffset1;
-	edi = edi + dwYOffset1;
+	eax1 = dwScreenX1;
+	ebx1 = dwScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset1;
+	edi1 = edi1 + dwYOffset1;
 
 	ebp = dwYCounter1;
-	ecx = edi;
+	ecx1 = edi1;
 
 //mov		dwOldESP,esp
 //and		esp,0ffffffe0h
 	SLTG = (CMV2ScanlinerLinTG *) mem_alloc_endptr(dwYCounter * sizeof(CMV2ScanlinerLinTG));
 //mov		dwESPStartPoint,esp
-	dwESPStartPoint = (uint32_t)SLTG;
+	dwESPStartPoint = (void *)SLTG;
 
 	fpu_reg10 = fNum_2EXP_20;
 	fpu_reg11 = fNum_2EXP20;
@@ -4976,13 +4974,13 @@ MV2DrawPolygonTBASM_LinPT2TexturePass1:
 // st5 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerLinTG__size
 	SLTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg16 = ( (int32_t)dwScreenXf );
 	fpu_reg16 = fpu_reg11 - fpu_reg16;
@@ -5024,8 +5022,8 @@ MV2DrawPolygonTBASM_LinPT2TexturePass1:
 
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwXCounter,ecx
-	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi;
-	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx;
+	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi1;
+	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx1;
 // st0 = TextureU, st1 = TextureV
 // st2 = TextureUdX, st3 = TextureVdX
 // st4 = 2^20, st5 = 2^-20
@@ -5035,31 +5033,31 @@ MV2DrawPolygonTBASM_LinPT2TexturePass1:
 	fpu_reg15 = fpu_reg15 + fTextureVdY;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_LinPT2TexturePass1;
 
-	ebx = dwDeltaScreenX2;
-	edi = ebx;
-	ebx = ebx << ( 12 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	edi = edi + dwXmax;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX2f = ebx;
+	ebx1 = dwDeltaScreenX2;
+	edi1 = ebx1;
+	ebx1 = ebx1 << ( 12 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX2f = ebx1;
 
-	ebx = dwScreenX3;
-	edi = ebx;
-	ebx = ebx << ( 12 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	edi = edi + dwYOffset2;
+	ebx1 = dwScreenX3;
+	edi1 = ebx1;
+	ebx1 = ebx1 << ( 12 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	edi1 = edi1 + dwYOffset2;
 
 	ebp = dwYCounter2;
-	ecx = edi;
+	ecx1 = edi1;
 
 MV2DrawPolygonTBASM_LinPT2TexturePass2:
 // eax = x1f (20 bit fraction)
@@ -5078,13 +5076,13 @@ MV2DrawPolygonTBASM_LinPT2TexturePass2:
 // st5 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerLinTG__size
 	SLTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg16 = ( (int32_t)dwScreenXf );
 	fpu_reg16 = fpu_reg11 - fpu_reg16;
@@ -5126,8 +5124,8 @@ MV2DrawPolygonTBASM_LinPT2TexturePass2:
 
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwXCounter,ecx
-	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi;
-	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx;
+	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi1;
+	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx1;
 // st0 = TextureU, st1 = TextureV
 // st2 = TextureUdX, st3 = TextureVdX
 // st4 = 2^20, st5 = 2^-20
@@ -5137,18 +5135,18 @@ MV2DrawPolygonTBASM_LinPT2TexturePass2:
 	fpu_reg15 = fpu_reg15 + fTextureVdY;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_LinPT2TexturePass2;
 
 
 
-	edx = dwESPStartPoint;
+	edx5 = (CMV2ScanlinerLinTG *)dwESPStartPoint;
 	ebp = dwYCounter;
 
 	fpu_reg12 = fB1;
@@ -5170,9 +5168,9 @@ MV2DrawPolygonTBASM_LinPT2GouraudPass1_2:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerLinTG__size );
+	edx5--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__fScreenXError );
+	fpu_reg15 = edx5->CMV2ScanlinerLinTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -5198,9 +5196,9 @@ MV2DrawPolygonTBASM_LinPT2GouraudPass1_2:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx5->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx5->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx5->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY;
@@ -5231,20 +5229,20 @@ MV2DrawPolygonTBASM_LinearPolygonType3:
 //=============> Linear		   <==============
 //=============> Polygon Type 3 <==============
 //=============>                <==============
-	fScreenYError1 = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError;
-	fScreenYError2 = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError1 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError2 = esi3->CMV2Dot3DPos__m_fScreenYError;
 
-	edx = pDot1;
-	esi = pDot2;
-	edi = pDot3;
+	edx2 = pDot1;
+	esi2 = pDot2;
+	edi2 = pDot3;
 
 //===>                                                                <===
 //===>	TextureUV DeltaY Calculation {                            	 <===
 //===>                                                                <===
-	fpu_reg12 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
-	fpu_reg12 = fpu_reg12 - ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
-	fpu_reg13 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
-	fpu_reg13 = fpu_reg13 - ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg12 = edi2->CMV2Dot3D__m_fTextureU;
+	fpu_reg12 = fpu_reg12 - edx2->CMV2Dot3D__m_fTextureU;
+	fpu_reg13 = edi2->CMV2Dot3D__m_fTextureV;
+	fpu_reg13 = fpu_reg13 - edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
@@ -5261,9 +5259,9 @@ MV2DrawPolygonTBASM_LinearPolygonType3:
 //st2 = TextureUdY1, st3 = TextureVdY1
 //st4 = 1/YCounter2, st5 = 1/YCounter1
 
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg15 = fpu_reg15 + edx2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg15 = fpu_reg15 + edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 
 	fTextureU1 = fpu_reg15;
@@ -5287,13 +5285,13 @@ MV2DrawPolygonTBASM_LinearPolygonType3:
 	fpu_reg15 = fpu_reg15 * fpu_reg13;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 	fpu_reg13 = fpu_reg13 * fpu_reg15; // fmul stall (+ 1 Cycle)
-	fpu_reg14 = fpu_reg14 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg14 = fpu_reg14 + edx2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
-	fpu_reg14 = fpu_reg14 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg14 = fpu_reg14 + edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
-	fpu_reg14 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureU ) - fpu_reg14;
+	fpu_reg14 = esi2->CMV2Dot3D__m_fTextureU - fpu_reg14;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
-	fpu_reg14 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureV ) - fpu_reg14;
+	fpu_reg14 = esi2->CMV2Dot3D__m_fTextureV - fpu_reg14;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 //st0 = TextureU2 - (YCounter2*TextureUdY1 + TextureU1)
 //st1 = TextureV2 - (YCounter2*TextureVdY1 + TextureV1)
@@ -5320,40 +5318,40 @@ MV2DrawPolygonTBASM_LinearPolygonType3:
 
 
 
-	eax = dwDeltaScreenX1;
-	ebx = dwDeltaScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwXmax;
-	edi = edi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX1f = eax;
-	dwAdderScreenX2f = ebx;
+	eax1 = dwDeltaScreenX1;
+	ebx1 = dwDeltaScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX1f = eax1;
+	dwAdderScreenX2f = ebx1;
 
-	eax = dwScreenX1;
-	ebx = dwScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwYOffset1;
-	edi = edi + dwYOffset1;
+	eax1 = dwScreenX1;
+	ebx1 = dwScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset1;
+	edi1 = edi1 + dwYOffset1;
 
 //mov		dwOldESP,esp
 //and		esp,0ffffffe0h
 	SLTG = (CMV2ScanlinerLinTG *) mem_alloc_endptr(dwYCounter * sizeof(CMV2ScanlinerLinTG));
 //mov		dwESPStartPoint,esp
-	dwESPStartPoint = (uint32_t)SLTG;
+	dwESPStartPoint = (void *)SLTG;
 
 	ebp = dwYCounter;
-	ecx = edi;
+	ecx1 = edi1;
 
 	fpu_reg10 = fNum_2EXP_20;
 	fpu_reg11 = fNum_2EXP20;
@@ -5379,13 +5377,13 @@ MV2DrawPolygonTBASM_LinPT3Texture:
 // st5 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerLinTG__size
 	SLTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg16 = ( (int32_t)dwScreenXf );
 	fpu_reg16 = fpu_reg11 - fpu_reg16;
@@ -5427,8 +5425,8 @@ MV2DrawPolygonTBASM_LinPT3Texture:
 
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwXCounter,ecx
-	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi;
-	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx;
+	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi1;
+	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx1;
 // st0 = TextureU, st1 = TextureV
 // st2 = TextureUdX, st3 = TextureVdX
 // st4 = 2^20, st5 = 2^-20
@@ -5438,18 +5436,18 @@ MV2DrawPolygonTBASM_LinPT3Texture:
 	fpu_reg15 = fpu_reg15 + fTextureVdY1;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_LinPT3Texture;
 
 
 
-	edx = dwESPStartPoint;
+	edx5 = (CMV2ScanlinerLinTG *)dwESPStartPoint;
 	ebp = dwYCounter;
 
 	fpu_reg12 = fB1;
@@ -5471,9 +5469,9 @@ MV2DrawPolygonTBASM_LinPT3Gouraud:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerLinTG__size );
+	edx5--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__fScreenXError );
+	fpu_reg15 = edx5->CMV2ScanlinerLinTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -5499,9 +5497,9 @@ MV2DrawPolygonTBASM_LinPT3Gouraud:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx5->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx5->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx5->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY1;
@@ -5532,20 +5530,20 @@ MV2DrawPolygonTBASM_LinearPolygonType4:
 //=============> Linear		   <==============
 //=============> Polygon Type 4 <==============
 //=============>                <==============
-	fScreenYError1 = ((CMV2Dot3DPos *)edx)->CMV2Dot3DPos__m_fScreenYError;
-	fScreenYError2 = ((CMV2Dot3DPos *)esi)->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError1 = edx3->CMV2Dot3DPos__m_fScreenYError;
+	fScreenYError2 = esi3->CMV2Dot3DPos__m_fScreenYError;
 
-	edx = pDot1;
-	esi = pDot2;
-	edi = pDot3;
+	edx2 = pDot1;
+	esi2 = pDot2;
+	edi2 = pDot3;
 
 //===>                                                                <===
 //===>	TextureUV DeltaY Calculation {                            	 <===
 //===>                                                                <===
-	fpu_reg13 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureU );
-	fpu_reg13 = fpu_reg13 - ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
-	fpu_reg14 = ( ((CMV2Dot3D *)edi)->CMV2Dot3D__m_fTextureV );
-	fpu_reg14 = fpu_reg14 - ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg13 = edi2->CMV2Dot3D__m_fTextureU;
+	fpu_reg13 = fpu_reg13 - edx2->CMV2Dot3D__m_fTextureU;
+	fpu_reg14 = edi2->CMV2Dot3D__m_fTextureV;
+	fpu_reg14 = fpu_reg14 - edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 	fpu_reg14 = fpu_reg14 * fpu_reg11;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
@@ -5562,9 +5560,9 @@ MV2DrawPolygonTBASM_LinearPolygonType4:
 //st2 = TextureUdY1, st3 = TextureVdY1
 //st4 = 1/YCounter2, st5 = 1/YCounter1
 
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg16 = fpu_reg16 + edx2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
-	fpu_reg16 = fpu_reg16 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg16 = fpu_reg16 + edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 
 	fTextureU1 = fpu_reg16;
@@ -5587,13 +5585,13 @@ MV2DrawPolygonTBASM_LinearPolygonType4:
 	fpu_reg16 = fpu_reg16 * fpu_reg14;
 	{ float tmp = fpu_reg16; fpu_reg16 = fpu_reg15; fpu_reg15 = tmp; }
 	fpu_reg14 = fpu_reg14 * fpu_reg16; // fmul stall (+ 1 Cycle)
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureU );
+	fpu_reg15 = fpu_reg15 + edx2->CMV2Dot3D__m_fTextureU;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg15 = fpu_reg15 + ( ((CMV2Dot3D *)edx)->CMV2Dot3D__m_fTextureV );
+	fpu_reg15 = fpu_reg15 + edx2->CMV2Dot3D__m_fTextureV;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg15 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureU ) - fpu_reg15;
+	fpu_reg15 = esi2->CMV2Dot3D__m_fTextureU - fpu_reg15;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
-	fpu_reg15 = ( ((CMV2Dot3D *)esi)->CMV2Dot3D__m_fTextureV ) - fpu_reg15;
+	fpu_reg15 = esi2->CMV2Dot3D__m_fTextureV - fpu_reg15;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 //st0 = TextureU2 - (YCounter*TextureUdY1 + TextureU1)
 //st1 = TextureV2 - (YCounter*TextureVdY1 + TextureV1)
@@ -5622,40 +5620,40 @@ MV2DrawPolygonTBASM_LinearPolygonType4:
 
 
 
-	eax = dwDeltaScreenX1;
-	ebx = dwDeltaScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwXmax;
-	edi = edi + dwXmax;
-	dwAdderScreenX1 = esi;
-	dwAdderScreenX2 = edi;
-	dwAdderScreenX1f = eax;
-	dwAdderScreenX2f = ebx;
+	eax1 = dwDeltaScreenX1;
+	ebx1 = dwDeltaScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwXmax;
+	edi1 = edi1 + dwXmax;
+	dwAdderScreenX1 = esi1;
+	dwAdderScreenX2 = edi1;
+	dwAdderScreenX1f = eax1;
+	dwAdderScreenX2f = ebx1;
 
-	eax = dwScreenX1;
-	ebx = dwScreenX2;
-	esi = eax;
-	edi = ebx;
-	eax = eax << ( 12 );
-	ebx = ebx << ( 12 );
-	esi = ( (int32_t)esi ) >> ( 20 );
-	edi = ( (int32_t)edi ) >> ( 20 );
-	esi = esi + dwYOffset1;
-	edi = edi + dwYOffset1;
+	eax1 = dwScreenX1;
+	ebx1 = dwScreenX2;
+	esi1 = eax1;
+	edi1 = ebx1;
+	eax1 = eax1 << ( 12 );
+	ebx1 = ebx1 << ( 12 );
+	esi1 = ( (int32_t)esi1 ) >> ( 20 );
+	edi1 = ( (int32_t)edi1 ) >> ( 20 );
+	esi1 = esi1 + dwYOffset1;
+	edi1 = edi1 + dwYOffset1;
 
 //mov		dwOldESP,esp
 //and		esp,0ffffffe0h
 	SLTG = (CMV2ScanlinerLinTG *) mem_alloc_endptr(dwYCounter * sizeof(CMV2ScanlinerLinTG));
 //mov		dwESPStartPoint,esp
-	dwESPStartPoint = (uint32_t)SLTG;
+	dwESPStartPoint = (void *)SLTG;
 
 	ebp = dwYCounter;
-	ecx = edi;
+	ecx1 = edi1;
 
 	fpu_reg10 = fNum_2EXP_20;
 	fpu_reg11 = fNum_2EXP20;
@@ -5681,13 +5679,13 @@ MV2DrawPolygonTBASM_LinPT4Texture:
 // st5 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	eax = eax >> ( 12 );
+	eax1 = eax1 >> ( 12 );
 //sub		esp,CMV2ScanlinerLinTG__size
 	SLTG--;
 
-	dwScreenXf = eax;
-	ecx = ecx - esi; // XCounter
-	eax = eax << ( 12 );
+	dwScreenXf = eax1;
+	ecx1 = ecx1 - esi1; // XCounter
+	eax1 = eax1 << ( 12 );
 
 	fpu_reg16 = ( (int32_t)dwScreenXf );
 	fpu_reg16 = fpu_reg11 - fpu_reg16;
@@ -5729,8 +5727,8 @@ MV2DrawPolygonTBASM_LinPT4Texture:
 
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwScreenX1Offset,esi
 //mov		ss:[esp].CMV2ScanlinerLinTG__dwXCounter,ecx
-	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi;
-	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx;
+	SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset = esi1;
+	SLTG->CMV2ScanlinerLinTG__dwXCounter = ecx1;
 // st0 = TextureU, st1 = TextureV
 // st2 = TextureUdX, st3 = TextureVdX
 // st4 = 2^20, st5 = 2^-20
@@ -5740,18 +5738,18 @@ MV2DrawPolygonTBASM_LinPT4Texture:
 	fpu_reg15 = fpu_reg15 + fTextureVdY1;
 	{ float tmp = fpu_reg15; fpu_reg15 = fpu_reg14; fpu_reg14 = tmp; }
 
-	{ uint32_t carry = (UINT32_MAX - ebx < dwAdderScreenX2f)?1:0; ebx = ebx + dwAdderScreenX2f;
-	  edi = edi + dwAdderScreenX2 + carry; }
-	{ uint32_t carry = (UINT32_MAX - eax < dwAdderScreenX1f)?1:0; eax = eax + dwAdderScreenX1f;
-	  esi = esi + dwAdderScreenX1 + carry; }
-	ecx = edi;
+	{ uint32_t carry = (UINT32_MAX - ebx1 < dwAdderScreenX2f)?1:0; ebx1 = ebx1 + dwAdderScreenX2f;
+	  edi1 = edi1 + dwAdderScreenX2 + carry; }
+	{ uint32_t carry = (UINT32_MAX - eax1 < dwAdderScreenX1f)?1:0; eax1 = eax1 + dwAdderScreenX1f;
+	  esi1 = esi1 + dwAdderScreenX1 + carry; }
+	ecx1 = edi1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_LinPT4Texture;
 
 
 
-	edx = dwESPStartPoint;
+	edx5 = (CMV2ScanlinerLinTG *)dwESPStartPoint;
 	ebp = dwYCounter;
 
 	fpu_reg12 = fB1;
@@ -5773,9 +5771,9 @@ MV2DrawPolygonTBASM_LinPT4Gouraud:
 // st4 = 2^-20
 
 //***> TODO: Pipeline the fpu better
-	edx = edx - ( CMV2ScanlinerLinTG__size );
+	edx5--;
 
-	fpu_reg15 = ( ((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__fScreenXError );
+	fpu_reg15 = edx5->CMV2ScanlinerLinTG__fScreenXError;
 // st0 = ScreenXError, st0 = R, st1 = G, st2 = B
 // st3 = 2^20, st4 = 2^-20
 
@@ -5801,9 +5799,9 @@ MV2DrawPolygonTBASM_LinPT4Gouraud:
 // st2 = BdX*ScreenXError + B, st3 = R, st4 = G, st5 = B
 // st6 = 2^20, st7 = 2^-20
 
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
-	((CMV2ScanlinerLinTG *)edx)->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
+	edx5->CMV2ScanlinerLinTG__dwR = (int32_t)ceilf(fpu_reg17);
+	edx5->CMV2ScanlinerLinTG__dwG = (int32_t)ceilf(fpu_reg16);
+	edx5->CMV2ScanlinerLinTG__dwB = (int32_t)ceilf(fpu_reg15);
 // st0 = R, st1 = G, st2 = B, st3 = 2^20, st4 = 2^-20
 
 	fpu_reg14 = fpu_reg14 + fRdY1;
@@ -5837,34 +5835,34 @@ MV2DrawPolygonTBASM_DoLinTGYLoop:
 //================> 								<=====================
 //================> 								<=====================
 MV2DrawPolygonTBASM_LinTGYLoop:
-	edi = 0;
-	ebx = dwTextureUdX;
-	eax = dwTextureVdX;
-	ebp = ebx;
-	esi = eax;
-	ebx = ebx >> ( 16 ); // bl init.
-	eax = eax >> ( 16 );
-	esi = esi << ( 16 ); // esi init.
+	edi1 = 0;
+	ebx1 = dwTextureUdX;
+	eax1 = dwTextureVdX;
+	ebp = ebx1;
+	esi1 = eax1;
+	ebx1 = ebx1 >> ( 16 ); // bl init.
+	eax1 = eax1 >> ( 16 );
+	esi1 = esi1 << ( 16 ); // esi init.
 	ebp = ebp << ( 16 ); // ebp init.
-	ebx = set_high_byte(ebx, ( (uint8_t)eax )); // bh init.
+	ebx1 = set_high_byte(ebx1, ( (uint8_t)eax1 )); // bh init.
 //mov		eax,ss:[esp].CMV2ScanlinerLinTG__dwTextureU
 //mov		ecx,ss:[esp].CMV2ScanlinerLinTG__dwTextureV
-	eax = SLTG->CMV2ScanlinerLinTG__dwTextureU;
-	ecx = SLTG->CMV2ScanlinerLinTG__dwTextureV;
-	edx = eax;
-	eax = eax << ( 16 );
-	edx = edx >> ( 16 ); // dl init.
-	ebx = ebx | eax; // ebx init.
-	eax = ecx;
-	ecx = ecx << ( 16 ); // hi ecx init.
-	eax = eax >> ( 16 );
+	eax1 = SLTG->CMV2ScanlinerLinTG__dwTextureU;
+	ecx1 = SLTG->CMV2ScanlinerLinTG__dwTextureV;
+	edx1 = eax1;
+	eax1 = eax1 << ( 16 );
+	edx1 = edx1 >> ( 16 ); // dl init.
+	ebx1 = ebx1 | eax1; // ebx init.
+	eax1 = ecx1;
+	ecx1 = ecx1 << ( 16 ); // hi ecx init.
+	eax1 = eax1 >> ( 16 );
 //or		ecx,ss:[esp].CMV2ScanlinerLinTG__dwXCounter	; ecx init.
-	ecx = ecx | SLTG->CMV2ScanlinerLinTG__dwXCounter; // ecx init.
-	edx = set_high_byte(edx, ( (uint8_t)eax )); // dh init.
-	edx = edx | pcTexture; // edx init.
+	ecx1 = ecx1 | SLTG->CMV2ScanlinerLinTG__dwXCounter; // ecx init.
+	edx1 = set_high_byte(edx1, ( (uint8_t)eax1 )); // dh init.
+	//edx1 = edx1 | pcTexture; // edx init.
 
 
-	if ((( (uint16_t)ecx ) & ( (uint16_t)ecx )) == 0) goto MV2DrawPolygonTBASM_LinTGNoXLoop;
+	if ((( (uint16_t)ecx1 ) & ( (uint16_t)ecx1 )) == 0) goto MV2DrawPolygonTBASM_LinTGNoXLoop;
 
 MV2DrawPolygonTBASM_LinTXLoop:
 //*eax = counter
@@ -5874,34 +5872,34 @@ MV2DrawPolygonTBASM_LinTXLoop:
 //*esi = dtyf
 //*edi = destination
 //*ebp = dtxf
-	eax = edx;
-	edx = edx & ( 0x0ffff );
-	edx = edx + pcBumpmap;
-	*((uint32_t *)(((uint32_t)&(pBackBumpBuffer[0])) + edi)) = edx; // ->pBackBumpBuffer
-	edx = eax;
+	eax1 = edx1;
+	edx1 = edx1 & ( 0x0ffff );
+	//edx1 = edx1 + pcBumpmap;
+	pBackBumpBuffer[edi1] = edx1; // ->pBackBumpBuffer
+	edx1 = eax1;
 
-	eax = ( *((uint32_t *)(edx * 4)) );
-	*((uint32_t *)(((uint32_t)&(pBackTextureBuffer[0])) + edi)) = eax;
+	eax1 = pcTexture[edx1];
+	pBackTextureBuffer[edi1] = eax1;
 
-	{ uint32_t carry = (UINT32_MAX - ebx < ebp)?1:0; ebx = ebx + ebp;
-	  edx = (edx & 0xffffff00) | (uint8_t)(( (uint8_t)edx ) + ( (uint8_t)ebx ) + carry); }
-	{ uint32_t carry = (UINT32_MAX - ecx < esi)?1:0; ecx = ecx + esi;
-	  edx = set_high_byte(edx, ( (uint8_t)(edx >> 8) ) + ( (uint8_t)(ebx >> 8) ) + carry); }
+	{ uint32_t carry = (UINT32_MAX - ebx1 < ebp)?1:0; ebx1 = ebx1 + ebp;
+	  edx1 = (edx1 & 0xffffff00) | (uint8_t)(( (uint8_t)edx1 ) + ( (uint8_t)ebx1 ) + carry); }
+	{ uint32_t carry = (UINT32_MAX - ecx1 < esi1)?1:0; ecx1 = ecx1 + esi1;
+	  edx1 = set_high_byte(edx1, ( (uint8_t)(edx1 >> 8) ) + ( (uint8_t)(ebx1 >> 8) ) + carry); }
 
-	edi = edi + ( 4 );
+	edi1++;
 
-	ecx = (ecx & 0xffff0000) | (uint16_t)(( (int16_t)ecx ) - 1);
-	if (( (int16_t)ecx ) != 0) goto MV2DrawPolygonTBASM_LinTXLoop;
+	ecx1 = (ecx1 & 0xffff0000) | (uint16_t)(( (int16_t)ecx1 ) - 1);
+	if (( (int16_t)ecx1 ) != 0) goto MV2DrawPolygonTBASM_LinTXLoop;
 
 //mov		ebp,ss:[esp].CMV2ScanlinerLinTG__dwR
 //mov		edx,ss:[esp].CMV2ScanlinerLinTG__dwG
 //mov     esi,ss:[esp].CMV2ScanlinerLinTG__dwB
 //mov		ebx,ss:[esp].CMV2ScanlinerLinTG__dwXCounter
 	ebp = SLTG->CMV2ScanlinerLinTG__dwR;
-	edx = SLTG->CMV2ScanlinerLinTG__dwG;
-	esi = SLTG->CMV2ScanlinerLinTG__dwB;
-	ebx = SLTG->CMV2ScanlinerLinTG__dwXCounter;
-	edi = 0;
+	edx1 = SLTG->CMV2ScanlinerLinTG__dwG;
+	esi1 = SLTG->CMV2ScanlinerLinTG__dwB;
+	ebx1 = SLTG->CMV2ScanlinerLinTG__dwXCounter;
+	edi1 = 0;
 
 MV2DrawPolygonTBASM_LinBumpLoop:
 // eax =
@@ -5911,56 +5909,56 @@ MV2DrawPolygonTBASM_LinBumpLoop:
 // esi = 				|VAngle	|VAnglef
 // edi = Bump-,ShadeBuffer	(Loaded with BumbBuffer)
 // ebp = 				|NAngle |NAnglef
-	stack_var00 = ebx;
+	stack_var00 = ebx1;
 
-	ebx = 0;
+	ebx1 = 0;
 
 	if (ebp > ( 0x0ffff )) goto MV2DrawPolygonTBASM_LinAmbient;
 
-	eax = ( *((uint32_t *)(((uint32_t)&(pBackBumpBuffer[0])) + edi)) );
-	ecx = 0;
-	ebx = set_high_byte(ebx, ( (uint8_t)(ebx >> 8) ) ^ ( *((uint8_t *)(eax * 2)) )); //UBump
-	ecx = set_high_byte(ecx, ( *((uint8_t *)(eax * 2 + (1))) )); //VBump
-	ebx = ebx - ( 128 * 256 );
-	ecx = ecx - ( 128 * 256 );
-	eax = 0;
-	ebx = ebx + edx; //UAngle + UBump
-	ecx = ecx + esi; //VAngle + VBump
+	eax1 = pBackBumpBuffer[edi1];
+	ecx1 = 0;
+	ebx1 = set_high_byte(ebx1, ( (uint8_t)(ebx1 >> 8) ) ^ ( ((uint8_t *)&(pcBumpmap[eax1]))[0] )); //UBump
+	ecx1 = set_high_byte(ecx1, ( ((uint8_t *)&(pcBumpmap[eax1]))[1] )); //VBump
+	ebx1 = ebx1 - ( 128 * 256 );
+	ecx1 = ecx1 - ( 128 * 256 );
+	eax1 = 0;
+	ebx1 = ebx1 + edx1; //UAngle + UBump
+	ecx1 = ecx1 + esi1; //VAngle + VBump
 
 
-	if (ebx > ( 0x0ffff )) goto MV2DrawPolygonTBASM_LinAmbientBump;
+	if (ebx1 > ( 0x0ffff )) goto MV2DrawPolygonTBASM_LinAmbientBump;
 
-	if (ecx > ( 0x0ffff )) goto MV2DrawPolygonTBASM_LinAmbientBump;
-	eax = (eax & 0xffffff00) | (uint8_t)(( (uint8_t)(ebx >> 8) ));
-	eax = set_high_byte(eax, ( (uint8_t)(ecx >> 8) ));
-	ebx = 0;
-	ebx = (ebx & 0xffffff00) | (uint8_t)(( pAngleJoinTab[eax] )); //pAngleJoin
+	if (ecx1 > ( 0x0ffff )) goto MV2DrawPolygonTBASM_LinAmbientBump;
+	eax1 = (eax1 & 0xffffff00) | (uint8_t)(( (uint8_t)(ebx1 >> 8) ));
+	eax1 = set_high_byte(eax1, ( (uint8_t)(ecx1 >> 8) ));
+	ebx1 = 0;
+	ebx1 = (ebx1 & 0xffffff00) | (uint8_t)(( pAngleJoinTab[eax1] )); //pAngleJoin
 	goto MV2DrawPolygonTBASM_LinAmbient;
 MV2DrawPolygonTBASM_LinAmbientBump:
-	ebx = 0;
+	ebx1 = 0;
 MV2DrawPolygonTBASM_LinAmbient:
-	ebx = ( pLightBrightnessTab[ebx] ); //Helligkeit
-	*((uint32_t *)(((uint32_t)&(pBackShadeBuffer[0])) + edi)) = ebx; //ShadeBuffer
+	ebx1 = ( pLightBrightnessTab[ebx1] ); //Helligkeit
+	pBackShadeBuffer[edi1] = ebx1; //ShadeBuffer
 
-	edi = edi + ( 4 );
-	ebx = stack_var00;
-	edx = edx + dwGdX;
-	esi = esi + dwBdX;
+	edi1++;
+	ebx1 = stack_var00;
+	edx1 = edx1 + dwGdX;
+	esi1 = esi1 + dwBdX;
 	ebp = ebp + dwRdX;
 
-	ebx = ( (int32_t)ebx ) - 1;
-	if (( (int32_t)ebx ) != 0) goto MV2DrawPolygonTBASM_LinBumpLoop;
+	ebx1 = ( (int32_t)ebx1 ) - 1;
+	if (( (int32_t)ebx1 ) != 0) goto MV2DrawPolygonTBASM_LinBumpLoop;
 
 //mov		edi,ss:[esp].CMV2ScanlinerLinTG__dwScreenX1Offset
 //mov		ebp,ss:[esp].CMV2ScanlinerLinTG__dwXCounter
-	edi = SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset;
+	edi1 = SLTG->CMV2ScanlinerLinTG__dwScreenX1Offset;
 	ebp = SLTG->CMV2ScanlinerLinTG__dwXCounter;
-	esi = 0;
-	eax = 0;
-	ebx = 0;
-	ecx = 0;
-	edx = 0;
-	edi = edi - 1;
+	esi1 = 0;
+	eax1 = 0;
+	ebx1 = 0;
+	ecx1 = 0;
+	edx1 = 0;
+	edi1 = edi1 - 1;
 
 MV2DrawPolygonTBASM_LinShadeLoop:
 // eax = r
@@ -5971,26 +5969,26 @@ MV2DrawPolygonTBASM_LinShadeLoop:
 // edi = dest
 // ebp = XCounter
 
-	eax = ( *((uint32_t *)(((uint32_t)&(pBackShadeBuffer[0])) + esi)) );
-	ebx = ( *((uint32_t *)(((uint32_t)&(pBackTextureBuffer[0])) + esi)) );
-	eax = eax & ( 0x0ffffff );
-	ebx = ebx & ( 0x0ffffff );
-	edx = set_high_byte(edx, ( (uint8_t)eax ));
-	ecx = set_high_byte(ecx, ( (uint8_t)(eax >> 8) ));
-	edx = (edx & 0xffffff00) | (uint8_t)(( (uint8_t)ebx ));
-	ecx = (ecx & 0xffffff00) | (uint8_t)(( (uint8_t)(ebx >> 8) ));
-	eax = eax >> ( 8 );
-	esi = esi + ( 4 );
-	ebx = ebx >> ( 16 );
-	edi = edi + 1;
-	eax = (eax & 0xffffff00) | (uint8_t)(( (uint8_t)ebx ));
+	eax1 = pBackShadeBuffer[esi1];
+	ebx1 = pBackTextureBuffer[esi1];
+	eax1 = eax1 & ( 0x0ffffff );
+	ebx1 = ebx1 & ( 0x0ffffff );
+	edx1 = set_high_byte(edx1, ( (uint8_t)eax1 ));
+	ecx1 = set_high_byte(ecx1, ( (uint8_t)(eax1 >> 8) ));
+	edx1 = (edx1 & 0xffffff00) | (uint8_t)(( (uint8_t)ebx1 ));
+	ecx1 = (ecx1 & 0xffffff00) | (uint8_t)(( (uint8_t)(ebx1 >> 8) ));
+	eax1 = eax1 >> ( 8 );
+	esi1++;
+	ebx1 = ebx1 >> ( 16 );
+	edi1 = edi1 + 1;
+	eax1 = (eax1 & 0xffffff00) | (uint8_t)(( (uint8_t)ebx1 ));
 
-	ebx = (ebx & 0xffffff00) | (uint8_t)(( pBumpShadeLookup[ecx] )); // g
-	ebx = set_high_byte(ebx, ( pBumpShadeLookup[eax] )); // r
-	ebx = ebx << ( 8 );
-	ebx = (ebx & 0xffffff00) | (uint8_t)(( pBumpShadeLookup[edx] )); // b
+	ebx1 = (ebx1 & 0xffffff00) | (uint8_t)(( pBumpShadeLookup[ecx1] )); // g
+	ebx1 = set_high_byte(ebx1, ( pBumpShadeLookup[eax1] )); // r
+	ebx1 = ebx1 << ( 8 );
+	ebx1 = (ebx1 & 0xffffff00) | (uint8_t)(( pBumpShadeLookup[edx1] )); // b
 //	or		ebx,0ffh
-	*((uint32_t *)(edi * 4)) = ebx;
+	pcBackBuffer[edi1] = ebx1;
 
 	ebp = ( (int32_t)ebp ) - 1;
 	if (( (int32_t)ebp ) != 0) goto MV2DrawPolygonTBASM_LinShadeLoop;

@@ -7,10 +7,6 @@
 //LOCALS
 
 //.data
-static uint32_t piNumSrcCList;
-static uint32_t piNumDestList;
-static uint32_t iNumSrcCList;
-static uint32_t iNumDestList;
 
 //.code
 
@@ -19,44 +15,22 @@ static uint32_t iNumDestList;
 
 
 
-extern "C" void MV2SelectClipPolygonsASM(uint32_t _ppSrcList, uint32_t _ppSrcCList, uint32_t _ppDestList, uint32_t _iNumSrcList, uint32_t _piNumSrcCList, uint32_t _piNumDestList) {
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
-	uint32_t stack_var00;
+extern "C" void MV2SelectClipPolygonsASM(CMV2Polygon **_ppSrcList, CMV2Polygon **_ppSrcCList, CMV2Polygon **_ppDestList, uint32_t _iNumSrcList, uint32_t *_piNumSrcCList, uint32_t *_piNumDestList) {
+	uint32_t eax, ecx, ebx, ebp;
+	uint32_t iNumSrcCList, iNumDestList;
 
 
 
 
-	eax = _piNumSrcCList;
-	ebx = _piNumDestList;
-	piNumSrcCList = eax;
-	piNumDestList = ebx;
+	iNumSrcCList = *_piNumSrcCList;
+	iNumDestList = *_piNumDestList;
 
-	eax = ( *((uint32_t *)(eax)) );
-	ebx = ( *((uint32_t *)(ebx)) );
-	iNumSrcCList = eax;
-	iNumDestList = ebx;
-
-	edi = _ppDestList;
-	esi = _ppSrcCList;
-	edx = _ppSrcList;
-	ebp = _iNumSrcList;
-
-	if ((ebp & ebp) == 0) goto MV2SelectClipPolygonsASM_NoClippingCheck;
+	if (_iNumSrcList == 0) goto MV2SelectClipPolygonsASM_NoClippingCheck;
 
 MV2SelectClipPolygonsASM_ClippingCheckLoop:
-	stack_var00 = ebp;
-	ebp = ( *((uint32_t *)(edx)) );
-	eax = ( ((CMV2Polygon *)ebp)->CMV2Polygon__m_pDot1 );
-	ebx = ( ((CMV2Polygon *)ebp)->CMV2Polygon__m_pDot2 );
-	ecx = ( ((CMV2Polygon *)ebp)->CMV2Polygon__m_pDot3 );
-
-	eax = ( ((CMV2Dot3D *)eax)->CMV2Dot3D__m_pPos );
-	ebx = ( ((CMV2Dot3D *)ebx)->CMV2Dot3D__m_pPos );
-	ecx = ( ((CMV2Dot3D *)ecx)->CMV2Dot3D__m_pPos );
-
-	eax = ( ((CMV2Dot3DPos *)eax)->CMV2Dot3DPos__m_iClipFlag );
-	ebx = ( ((CMV2Dot3DPos *)ebx)->CMV2Dot3DPos__m_iClipFlag );
-	ecx = ( ((CMV2Dot3DPos *)ecx)->CMV2Dot3DPos__m_iClipFlag );
+	eax = ( (*_ppSrcList)->CMV2Polygon__m_pDot1->CMV2Dot3D__m_pPos->CMV2Dot3DPos__m_iClipFlag );
+	ebx = ( (*_ppSrcList)->CMV2Polygon__m_pDot2->CMV2Dot3D__m_pPos->CMV2Dot3DPos__m_iClipFlag );
+	ecx = ( (*_ppSrcList)->CMV2Polygon__m_pDot3->CMV2Dot3D__m_pPos->CMV2Dot3DPos__m_iClipFlag );
 
 	ebp = eax;
 	ebp = ebp & ebx;
@@ -68,31 +42,24 @@ MV2SelectClipPolygonsASM_ClippingCheckLoop:
 	ebp = ebp | ecx;
 	if (( (int32_t)ebp ) == 0) goto MV2SelectClipPolygonsASM_InViewSpace;
 // To be clipped
-	ebp = ( *((uint32_t *)(edx)) );
-	*((uint32_t *)(esi)) = ebp;
-	esi = esi + ( 4 );
+	*_ppSrcCList = *_ppSrcList;
+	_ppSrcCList++;
 	iNumSrcCList = iNumSrcCList + 1;
 	goto MV2SelectClipPolygonsASM_ToBeClipped;
 MV2SelectClipPolygonsASM_InViewSpace:
-	ebp = ( *((uint32_t *)(edx)) );
-	*((uint32_t *)(edi)) = ebp;
-	edi = edi + ( 4 );
+	*_ppDestList = *_ppSrcList;
+	_ppDestList++;
 	iNumDestList = iNumDestList + 1;
 MV2SelectClipPolygonsASM_ToBeClipped:
 MV2SelectClipPolygonsASM_NotVisible:
-	ebp = stack_var00;
-	edx = edx + ( 4 );
+	_ppSrcList++;
 
-	ebp = ( (int32_t)ebp ) - 1;
-	if (( (int32_t)ebp ) != 0) goto MV2SelectClipPolygonsASM_ClippingCheckLoop;
+	_iNumSrcList--;
+	if (_iNumSrcList != 0) goto MV2SelectClipPolygonsASM_ClippingCheckLoop;
 MV2SelectClipPolygonsASM_NoClippingCheck:
 
-	eax = piNumSrcCList;
-	ebx = piNumDestList;
-	ecx = iNumSrcCList;
-	edx = iNumDestList;
-	*((uint32_t *)(eax)) = ecx;
-	*((uint32_t *)(ebx)) = edx;
+	*_piNumSrcCList = iNumSrcCList;
+	*_piNumDestList = iNumDestList;
 
 
 
@@ -105,8 +72,7 @@ MV2SelectClipPolygonsASM_NoClippingCheck:
 
 
 
-extern "C" void CMV2CopyPolygonListASM(uint32_t _ppDest, uint32_t _ppSrc, uint32_t _iNumPolygons) {
-	uint32_t ecx, edi, esi;
+extern "C" void CMV2CopyPolygonListASM(CMV2Polygon **_ppDest, CMV2Polygon **_ppSrc, uint32_t _iNumPolygons) {
 
 
 
@@ -115,11 +81,8 @@ extern "C" void CMV2CopyPolygonListASM(uint32_t _ppDest, uint32_t _ppSrc, uint32
 //push	ds
 //pop		es
 
-	ecx = _iNumPolygons;
-	edi = _ppDest;
-	esi = _ppSrc;
 //cld
-	for (; ecx != 0; ecx--, esi+=4, edi+=4) *(uint32_t *)edi = *(uint32_t *)esi;
+	for (; _iNumPolygons != 0; _iNumPolygons--, _ppSrc++, _ppDest++) *_ppDest = *_ppSrc;
 
 
 //pop		es
@@ -133,18 +96,16 @@ extern "C" void CMV2CopyPolygonListASM(uint32_t _ppDest, uint32_t _ppSrc, uint32
 
 
 
-extern "C" void Calc32BitLookupASM(uint32_t _pcPalette, uint32_t _pcSparklesLookup) {
-	uint32_t eax, edx, ecx, edi, ebx, esi;
+extern "C" void Calc32BitLookupASM(uint8_t *_pcPalette, uint8_t *_pcSparklesLookup) {
+	uint32_t eax, edx, ecx, ebx;
 
 
 
 
-	esi = _pcPalette;
-	edi = _pcSparklesLookup;
 	edx = ( 256 );
 
 Calc32BitLookupASM_Loop:
-	eax = ( *((uint32_t *)(esi)) );
+	eax = ( *((uint32_t *)_pcPalette) );
 	ebx = eax;
 	ecx = eax;
 	eax = eax & ( 0x00000ff );
@@ -155,9 +116,9 @@ Calc32BitLookupASM_Loop:
 	eax = eax | ebx;
 	eax = eax | ecx;
 
-	*((uint32_t *)(edi)) = eax;
-	esi = esi + ( 3 );
-	edi = edi + ( 4 );
+	*((uint32_t *)_pcSparklesLookup) = eax;
+	_pcPalette += 3;
+	_pcSparklesLookup += 4;
 
 	edx = ( (int32_t)edx ) - 1;
 	if (( (int32_t)edx ) != 0) goto Calc32BitLookupASM_Loop;

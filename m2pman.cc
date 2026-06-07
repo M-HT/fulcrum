@@ -2,6 +2,7 @@
 #include <fpu_control.h>
 #endif
 #include "cc.h"
+#include "m2struct.inc.h"
 //;/*
 //.486
 
@@ -11,12 +12,12 @@
 
 //.data
 
-extern "C" void MV2DrawPolygonTASM(uint32_t _edi);
-extern "C" void MV2DrawPolygonTfASM(uint32_t _edi);
-extern "C" void MV2DrawPolygonTTrASM(uint32_t _edi);
-extern "C" void MV2DrawPolygonTfTrASM(uint32_t _edi);
-extern "C" void MV2DrawPolygonTGASM(uint32_t _edi);
-extern "C" void MV2DrawPolygonTBASM(uint32_t _edi);
+extern "C" void MV2DrawPolygonTASM(CMV2Polygon *_edi);
+extern "C" void MV2DrawPolygonTfASM(CMV2Polygon *_edi);
+extern "C" void MV2DrawPolygonTTrASM(CMV2Polygon *_edi);
+extern "C" void MV2DrawPolygonTfTrASM(CMV2Polygon *_edi);
+extern "C" void MV2DrawPolygonTGASM(CMV2Polygon *_edi);
+extern "C" void MV2DrawPolygonTBASM(CMV2Polygon *_edi);
 
 
 //public ppPolygons
@@ -25,8 +26,8 @@ extern "C" void MV2DrawPolygonTBASM(uint32_t _edi);
 
 extern "C"
 {
-uint32_t ppPolygons;
-uint32_t pcBackBuffer;
+//uint32_t ppPolygons;
+uint32_t *pcBackBuffer;
 uint32_t dwXmax;
 
 
@@ -34,8 +35,6 @@ uint32_t dwXmax;
 //public iPixelCounter
 uint32_t iPixelCounter;
 }
-
-static uint32_t iNumPolygons;
 
 
 
@@ -54,11 +53,9 @@ static uint32_t iNumPolygons;
 //align 4
 
 
-static void (*PolygonCallTable[8])(uint32_t _edi);
+static void (*PolygonCallTable[8])(CMV2Polygon *_edi);
 
 //.code
-
-#include "m2struct.inc.h"
 
 
 
@@ -80,9 +77,8 @@ extern "C" void InitPolygonCallTableASM(void) {
 
 
 
-extern "C" void MV2DrawPolygonsASM(uint32_t _ppPolygons, uint32_t _iNumPolygons, uint32_t _pcBackBuffer, uint32_t _dwXmax) {
-	uint32_t eax, edx, ecx, edi, ebx;
-	uint32_t stack_var00, stack_var01;
+extern "C" void MV2DrawPolygonsASM(CMV2PolygonDistance *_pPolygonDistance, uint32_t _iNumPolygons, uint8_t *_pcBackBuffer, uint32_t _dwXmax) {
+	CMV2Polygon *edi;
 
 
 
@@ -122,33 +118,16 @@ extern "C" void MV2DrawPolygonsASM(uint32_t _ppPolygons, uint32_t _iNumPolygons,
 //	fldcw   fpucw
 #endif
 
-	eax = _ppPolygons;
-	eax = eax + ( 4 );
-	ebx = _iNumPolygons;
-	ecx = _pcBackBuffer;
-	ecx = ecx >> ( 2 );
-	edx = _dwXmax;
+	pcBackBuffer = (uint32_t *)_pcBackBuffer;
+	dwXmax = _dwXmax;
 
-	ppPolygons = eax;
-	iNumPolygons = ebx;
-	pcBackBuffer = ecx;
-	dwXmax = edx;
-
-	edx = ppPolygons;
-	ecx = iNumPolygons;
 MV2DrawPolygonsASM_PolygonLoop:
-	edi = ( *((uint32_t *)(edx)) );
-	eax = ( ((CMV2Polygon *)edi)->CMV2Polygon__m_iType );
+	edi = _pPolygonDistance->CMV2PolygonDistance__m_pPolygon;
+	PolygonCallTable[edi->CMV2Polygon__m_iType](edi);
 
-	stack_var00 = ecx;
-	stack_var01 = edx;
-	PolygonCallTable[eax](edi);
-	edx = stack_var01;
-	ecx = stack_var00;
-
-	edx = edx + ( 8 );
-	ecx = ( (int32_t)ecx ) - 1;
-	if (( (int32_t)ecx ) != 0) goto MV2DrawPolygonsASM_PolygonLoop;
+	_pPolygonDistance++;
+	_iNumPolygons--;
+	if (_iNumPolygons != 0) goto MV2DrawPolygonsASM_PolygonLoop;
 
 #if !defined(NO_FPU_CONTROL)
 	{

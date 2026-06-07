@@ -1,8 +1,13 @@
 //;/*
 typedef struct {
-	float CMV2Camera__m_Pos__m_fX;
-	float CMV2Camera__m_Pos__m_fY;
-	float CMV2Camera__m_Pos__m_fZ;
+	union {
+		float CMV2Camera__m_Pos__m_fX_data[3];
+		struct {
+			float CMV2Camera__m_Pos__m_fX;
+			float CMV2Camera__m_Pos__m_fY;
+			float CMV2Camera__m_Pos__m_fZ;
+		};
+	};
 
 	union {
 		float CMV2Camera__LabelFirstVector_data[3*3];
@@ -21,6 +26,11 @@ typedef struct {
 			float CMV2Camera__m_Front__m_fX;
 			float CMV2Camera__m_Front__m_fY;
 			float CMV2Camera__m_Front__m_fZ;
+		};
+		struct {
+			float CMV2Camera__m_Right__m_fX_data[3];
+			float CMV2Camera__m_Down__m_fX_data[3];
+			float CMV2Camera__m_Front__m_fX_data[3];
 		};
 	};
 
@@ -106,24 +116,24 @@ typedef struct {
 
 
 typedef struct {
-	uint32_t CMV2Dot3D__m_pPos;
+	CMV2Dot3DPos *CMV2Dot3D__m_pPos;
 	float CMV2Dot3D__m_fTextureU;
 	float CMV2Dot3D__m_fTextureV;
 } CMV2Dot3D;
-#define CMV2Dot3D__Size                             (3*4)
+#define CMV2Dot3D__Size                             (2*4+1*sizeof(void*))
 
 
 typedef struct {
-	uint32_t CMV2Polygon__m_pDot1;
-	uint32_t CMV2Polygon__m_pDot2;
-	uint32_t CMV2Polygon__m_pDot3;
-	uint32_t CMV2Polygon__m_pcTexture;
+	CMV2Dot3D *CMV2Polygon__m_pDot1;
+	CMV2Dot3D *CMV2Polygon__m_pDot2;
+	CMV2Dot3D *CMV2Polygon__m_pDot3;
+	uint8_t *CMV2Polygon__m_pcTexture;
 	uint32_t CMV2Polygon__m_iType;
 	uint32_t CMV2Polygon__m_iFlag;
-	uint32_t CMV2Polygon__m_pcBumpmap;
+	uint8_t *CMV2Polygon__m_pcBumpmap;
 	float CMV2Polygon__m_fAddDistance;
 } CMV2Polygon;
-#define CMV2Polygon__Size                           (8*4)
+#define CMV2Polygon__Size                           (3*4+5*sizeof(void*))
 
 
 
@@ -213,22 +223,22 @@ typedef struct {
 
 typedef struct {
 	float CMV2PolygonDistance__m_fAverageDistance;
-	uint32_t CMV2PolygonDistance__m_pPolygon;
+	CMV2Polygon *CMV2PolygonDistance__m_pPolygon;
 } CMV2PolygonDistance;
 
 
 
 typedef struct {
-	uint32_t CMV2PolygonObject__m_pPolygons;
-	uint32_t CMV2PolygonObject__m_ppPolygons;
+	CMV2Polygon *CMV2PolygonObject__m_pPolygons;
+	CMV2Polygon **CMV2PolygonObject__m_ppPolygons;
 	uint32_t CMV2PolygonObject__m_iNumPolygons;
-	uint32_t CMV2PolygonObject__m_pDot3DPos;
-	uint32_t CMV2PolygonObject__m_ppDot3DPos;
+	CMV2Dot3DPos *CMV2PolygonObject__m_pDot3DPos;
+	CMV2Dot3DPos **CMV2PolygonObject__m_ppDot3DPos;
 	uint32_t CMV2PolygonObject__m_iNumDot3DPos;
-	uint32_t CMV2PolygonObject__m_pDot3D;
+	CMV2Dot3D *CMV2PolygonObject__m_pDot3D;
 	uint32_t CMV2PolygonObject__m_iNumDot3D;
 	uint32_t CMV2PolygonObject__m_iFlagNormCalc;
 } CMV2PolygonObject;
-#define CMV2PolygonObject__size                     (10*4)
+#define CMV2PolygonObject__size                     (4*4+5*sizeof(void*))
 
 

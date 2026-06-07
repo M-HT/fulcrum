@@ -18,10 +18,6 @@
 //co_hi						dd ?
 
 //align 32
-static uint32_t pMV2Camera;
-static uint32_t ppMV2Dot3DPos;
-static uint32_t dwNumDots;
-
 static float fCameraX;
 static float fCameraY;
 static float fCameraZ;
@@ -77,9 +73,10 @@ static uint32_t lTemp;
 
 
 
-extern "C" void MESEtoMV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _ppMV2Dot3DPos, uint32_t _dwNumDots) {
+extern "C" void MESEtoMV2Dot3DPosProjectionASM(CMV2Camera *_pMV2Camera, CMV2Dot3DPos **_ppMV2Dot3DPos, uint32_t _dwNumDots) {
 	float fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17, fpu_reg18;
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+	uint32_t eax, edx, ecx, ebx;
+	CMV2Dot3DPos *edi;
 
 
 
@@ -120,17 +117,8 @@ extern "C" void MESEtoMV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _p
 //;****
 #endif
 
-	eax = _pMV2Camera;
-	ebx = _ppMV2Dot3DPos;
-	ecx = _dwNumDots;
-
-	pMV2Camera = eax;
-	ppMV2Dot3DPos = ebx;
-	dwNumDots = ecx;
-
-	esi = pMV2Camera;
-	eax = ( ((CMV2Camera *)esi)->CMV2Camera__m_iXmax );
-	ebx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iYmax );
+	eax = ( _pMV2Camera->CMV2Camera__m_iXmax );
+	ebx = ( _pMV2Camera->CMV2Camera__m_iYmax );
 
 	dwXmax = eax;
 	dwYmax = ebx;
@@ -150,10 +138,10 @@ extern "C" void MESEtoMV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _p
 	fpu_reg10 = ( (int32_t)lTemp );
 	fYmaxDiv2 = fpu_reg10;
 
-	eax = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipXmin );
-	ebx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipXmax );
-	ecx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipYmin );
-	edx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipYmax );
+	eax = ( _pMV2Camera->CMV2Camera__m_iClipXmin );
+	ebx = ( _pMV2Camera->CMV2Camera__m_iClipXmax );
+	ecx = ( _pMV2Camera->CMV2Camera__m_iClipYmin );
+	edx = ( _pMV2Camera->CMV2Camera__m_iClipYmax );
 
 	eax = eax + 1; // wegen des clippings
 	ecx = ecx + 1;
@@ -163,13 +151,13 @@ extern "C" void MESEtoMV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _p
 	dwClipYmin = ecx;
 	dwClipYmax = edx;
 
-	fCameraX = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fX;
-	fCameraY = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fY;
-	fCameraZ = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fZ;
+	fCameraX = _pMV2Camera->CMV2Camera__m_Pos__m_fX;
+	fCameraY = _pMV2Camera->CMV2Camera__m_Pos__m_fY;
+	fCameraZ = _pMV2Camera->CMV2Camera__m_Pos__m_fZ;
 
-	fCameraFX = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fX;
-	fCameraFY = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fY;
-	fCameraFZ = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fZ;
+	fCameraFX = _pMV2Camera->CMV2Camera__m_Front__m_fX;
+	fCameraFY = _pMV2Camera->CMV2Camera__m_Front__m_fY;
+	fCameraFZ = _pMV2Camera->CMV2Camera__m_Front__m_fZ;
 
 	fpu_reg10 = 1.0f;
 	fScreenFactor = fpu_reg10;
@@ -177,22 +165,22 @@ extern "C" void MESEtoMV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _p
 //	fld     ds:[esi].CMV2Camera__m_fScreenFactor
 
 	fpu_reg10 = fScreenFactor;
-	fpu_reg11 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fX );
+	fpu_reg11 = ( _pMV2Camera->CMV2Camera__m_Right__m_fX );
 	fpu_reg11 = fpu_reg11 * fpu_reg10;
 //st0 = CameraRX*ScreenFactor, st1 = ScreenFactor
 
-	fpu_reg12 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fY );
+	fpu_reg12 = ( _pMV2Camera->CMV2Camera__m_Right__m_fY );
 	fpu_reg12 = fpu_reg12 * fpu_reg10;
-	fpu_reg13 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fZ );
+	fpu_reg13 = ( _pMV2Camera->CMV2Camera__m_Right__m_fZ );
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
 //st0 = CameraRZ*ScreenFactor, st1 = CameraRY*ScreenFactor
 //st2 = CameraRX*ScreenFactor, st3 = ScreenFactor
 
-	fpu_reg14 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fX );
+	fpu_reg14 = ( _pMV2Camera->CMV2Camera__m_Down__m_fX );
 	fpu_reg14 = fpu_reg14 * fpu_reg10;
-	fpu_reg15 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fY );
+	fpu_reg15 = ( _pMV2Camera->CMV2Camera__m_Down__m_fY );
 	fpu_reg15 = fpu_reg15 * fpu_reg10;
-	fpu_reg16 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fZ );
+	fpu_reg16 = ( _pMV2Camera->CMV2Camera__m_Down__m_fZ );
 	fpu_reg16 = fpu_reg16 * fpu_reg10;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
 //st0 = CameraDX*ScreenFactor, st1 = CameraDY*ScreenFactor
@@ -209,12 +197,10 @@ extern "C" void MESEtoMV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _p
 //ffree	st(0)
 
 
-	edx = ppMV2Dot3DPos;
-	ebp = dwNumDots;
-	edi = ( *((uint32_t *)(edx)) );
+	edi = *_ppMV2Dot3DPos;
 
 MESEtoMV2Dot3DPosProjectionASM_DotLoop:
-	fpu_reg10 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_Pos__m_fX );
+	fpu_reg10 = ( edi->CMV2Dot3DPos__m_Pos__m_fX );
 //	fsub	fCameraX
 //st0 = VectorX
 
@@ -233,7 +219,7 @@ MESEtoMV2Dot3DPosProjectionASM_DotLoop:
 //st0 = fCameraDX*VectorX, st1 = fCameraRX*VectorX
 //st2 = fCameraFX*VectorX
 
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_Pos__m_fY );
+	fpu_reg14 = ( edi->CMV2Dot3DPos__m_Pos__m_fY );
 //	fsub	fCameraY
 //st0 = VectorY, st1 = fCameraDX*VectorX
 //st2 = fCameraRX*VectorX, st3 = fCameraFX*VectorX
@@ -277,7 +263,7 @@ MESEtoMV2Dot3DPosProjectionASM_DotLoop:
 //st1 = fCameraDX*VectorX + fCameraDY*VectorY
 //st2 = fCameraRX*VectorX + fCameraRY*VectorY
 
-	fpu_reg15 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_Pos__m_fZ );
+	fpu_reg15 = ( edi->CMV2Dot3DPos__m_Pos__m_fZ );
 //	fsub	fCameraZ
 //st0 = VectorZ
 //st1 = fCameraFX*VectorX + fCameraFY*VectorY
@@ -341,10 +327,10 @@ MESEtoMV2Dot3DPosProjectionASM_DotLoop:
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_TransfPos__m_fY = fpu_reg14;
+	edi->CMV2Dot3DPos__m_TransfPos__m_fY = fpu_reg14;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_TransfPos__m_fX = fpu_reg14;
+	edi->CMV2Dot3DPos__m_TransfPos__m_fX = fpu_reg14;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
 
@@ -357,7 +343,7 @@ MESEtoMV2Dot3DPosProjectionASM_DotLoop:
 // Bit8 = zmin, (Bit9 = zmax)
 // zmin, zmax, ymin, ymax, xmin, xmax
 
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_TransfPos__m_fZ = fpu_reg14;
+	edi->CMV2Dot3DPos__m_TransfPos__m_fZ = fpu_reg14;
 
 	fpu_reg14 = fabsf(fpu_reg14);
 
@@ -369,7 +355,7 @@ MESEtoMV2Dot3DPosProjectionASM_DotLoop:
 
 	ecx = eax;
 
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fZNewRZP = fpu_reg14;
+	edi->CMV2Dot3DPos__m_fZNewRZP = fpu_reg14;
 
 	fpu_reg12 = fpu_reg12 * fpu_reg14;
 	fpu_reg13 = fpu_reg13 * fpu_reg14;
@@ -390,25 +376,25 @@ MESEtoMV2Dot3DPosProjectionASM_DotLoop:
 	fpu_reg13 = fpu_reg13 * fYmaxDiv2;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenX = (int32_t)ceilf(fpu_reg13);
-	edx = edx + ( 4 );
+	edi->CMV2Dot3DPos__m_iScreenX = (int32_t)ceilf(fpu_reg13);
+	_ppMV2Dot3DPos++;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY = (int32_t)ceilf(fpu_reg13);
+	edi->CMV2Dot3DPos__m_iScreenY = (int32_t)ceilf(fpu_reg13);
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 * fNum_2Exp20;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg14 = fpu_reg13;
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenY = fpu_reg14;
+	edi->CMV2Dot3DPos__m_fScreenY = fpu_reg14;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenX = fpu_reg14;
+	edi->CMV2Dot3DPos__m_fScreenX = fpu_reg14;
 	fpu_reg13 = ceilf(fpu_reg13);
 
-	eax = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenX );
-	ebx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY );
+	eax = ( edi->CMV2Dot3DPos__m_iScreenX );
+	ebx = ( edi->CMV2Dot3DPos__m_iScreenY );
 
 	fpu_reg13 = fpu_reg13 - fpu_reg12; // muss noch ueberprueft werden
 // (optimierung)
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenYError = fpu_reg13;
+	edi->CMV2Dot3DPos__m_fScreenYError = fpu_reg13;
 //ffree	st(0)
 
 
@@ -434,11 +420,11 @@ MESEtoMV2Dot3DPosProjectionASM_NotUnderYmin:
 	ecx = ecx | ( 8 );
 
 MESEtoMV2Dot3DPosProjectionASM_NotAboveYmax:
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iClipFlag = ecx;
-	edi = ( *((uint32_t *)(edx)) );
+	edi->CMV2Dot3DPos__m_iClipFlag = ecx;
+	edi = *_ppMV2Dot3DPos;
 
-	ebp = ( (int32_t)ebp ) - 1;
-	if (( (int32_t)ebp ) != 0) goto MESEtoMV2Dot3DPosProjectionASM_DotLoop;
+	_dwNumDots--;
+	if (_dwNumDots != 0) goto MESEtoMV2Dot3DPosProjectionASM_DotLoop;
 
 #if !defined(NO_FPU_CONTROL)
 	{
@@ -462,9 +448,10 @@ MESEtoMV2Dot3DPosProjectionASM_NotAboveYmax:
 
 
 
-extern "C" void MV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _ppMV2Dot3DPos, uint32_t _dwNumDots) {
+extern "C" void MV2Dot3DPosProjectionASM(CMV2Camera *_pMV2Camera, CMV2Dot3DPos **_ppMV2Dot3DPos, uint32_t _dwNumDots) {
 	float fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17, fpu_reg18;
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+	uint32_t eax, edx, ecx, ebx;
+	CMV2Dot3DPos *edi;
 
 
 
@@ -505,17 +492,8 @@ extern "C" void MV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _ppMV2Do
 //;****
 #endif
 
-	eax = _pMV2Camera;
-	ebx = _ppMV2Dot3DPos;
-	ecx = _dwNumDots;
-
-	pMV2Camera = eax;
-	ppMV2Dot3DPos = ebx;
-	dwNumDots = ecx;
-
-	esi = pMV2Camera;
-	eax = ( ((CMV2Camera *)esi)->CMV2Camera__m_iXmax );
-	ebx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iYmax );
+	eax = ( _pMV2Camera->CMV2Camera__m_iXmax );
+	ebx = ( _pMV2Camera->CMV2Camera__m_iYmax );
 
 	dwXmax = eax;
 	dwYmax = ebx;
@@ -535,10 +513,10 @@ extern "C" void MV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _ppMV2Do
 	fpu_reg10 = ( (int32_t)lTemp );
 	fYmaxDiv2 = fpu_reg10;
 
-	eax = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipXmin );
-	ebx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipXmax );
-	ecx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipYmin );
-	edx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipYmax );
+	eax = ( _pMV2Camera->CMV2Camera__m_iClipXmin );
+	ebx = ( _pMV2Camera->CMV2Camera__m_iClipXmax );
+	ecx = ( _pMV2Camera->CMV2Camera__m_iClipYmin );
+	edx = ( _pMV2Camera->CMV2Camera__m_iClipYmax );
 
 	eax = eax + 1; // wegen des clippings
 	ecx = ecx + 1;
@@ -548,27 +526,27 @@ extern "C" void MV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _ppMV2Do
 	dwClipYmin = ecx;
 	dwClipYmax = edx;
 
-	fCameraX = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fX;
-	fCameraY = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fY;
-	fCameraZ = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fZ;
+	fCameraX = _pMV2Camera->CMV2Camera__m_Pos__m_fX;
+	fCameraY = _pMV2Camera->CMV2Camera__m_Pos__m_fY;
+	fCameraZ = _pMV2Camera->CMV2Camera__m_Pos__m_fZ;
 
-	fCameraFX = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fX;
-	fCameraFY = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fY;
-	fCameraFZ = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fZ;
+	fCameraFX = _pMV2Camera->CMV2Camera__m_Front__m_fX;
+	fCameraFY = _pMV2Camera->CMV2Camera__m_Front__m_fY;
+	fCameraFZ = _pMV2Camera->CMV2Camera__m_Front__m_fZ;
 
 	fpu_reg10 = fAspectRatio;
-	fpu_reg11 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fX );
+	fpu_reg11 = ( _pMV2Camera->CMV2Camera__m_Right__m_fX );
 //st0 = CameraRX, st1 = AspectRatio
-	fpu_reg12 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fY );
-	fpu_reg13 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fZ );
+	fpu_reg12 = ( _pMV2Camera->CMV2Camera__m_Right__m_fY );
+	fpu_reg13 = ( _pMV2Camera->CMV2Camera__m_Right__m_fZ );
 //st0 = CameraRZ, st1 = CameraRY
 //st2 = CameraRX, st3 = AspectRatio
 
-	fpu_reg14 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fX );
+	fpu_reg14 = ( _pMV2Camera->CMV2Camera__m_Down__m_fX );
 	fpu_reg14 = fpu_reg14 * fpu_reg10;
-	fpu_reg15 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fY );
+	fpu_reg15 = ( _pMV2Camera->CMV2Camera__m_Down__m_fY );
 	fpu_reg15 = fpu_reg15 * fpu_reg10;
-	fpu_reg16 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fZ );
+	fpu_reg16 = ( _pMV2Camera->CMV2Camera__m_Down__m_fZ );
 	fpu_reg16 = fpu_reg16 * fpu_reg10;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
 //st0 = CameraDX*AspectRatio, st1 = CameraDY
@@ -585,12 +563,10 @@ extern "C" void MV2Dot3DPosProjectionASM(uint32_t _pMV2Camera, uint32_t _ppMV2Do
 //ffree	st(0)
 
 
-	edx = ppMV2Dot3DPos;
-	ebp = dwNumDots;
-	edi = ( *((uint32_t *)(edx)) );
+	edi = *_ppMV2Dot3DPos;
 
 MV2Dot3DPosProjectionASM_DotLoop:
-	fpu_reg10 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_Pos__m_fX );
+	fpu_reg10 = ( edi->CMV2Dot3DPos__m_Pos__m_fX );
 	fpu_reg10 = fpu_reg10 - fCameraX;
 //st0 = VectorX
 
@@ -609,7 +585,7 @@ MV2Dot3DPosProjectionASM_DotLoop:
 //st0 = fCameraDX*VectorX, st1 = fCameraRX*VectorX
 //st2 = fCameraFX*VectorX
 
-	fpu_reg14 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_Pos__m_fY );
+	fpu_reg14 = ( edi->CMV2Dot3DPos__m_Pos__m_fY );
 	fpu_reg14 = fpu_reg14 - fCameraY;
 //st0 = VectorY, st1 = fCameraDX*VectorX
 //st2 = fCameraRX*VectorX, st3 = fCameraFX*VectorX
@@ -653,7 +629,7 @@ MV2Dot3DPosProjectionASM_DotLoop:
 //st1 = fCameraDX*VectorX + fCameraDY*VectorY
 //st2 = fCameraRX*VectorX + fCameraRY*VectorY
 
-	fpu_reg15 = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_Pos__m_fZ );
+	fpu_reg15 = ( edi->CMV2Dot3DPos__m_Pos__m_fZ );
 	fpu_reg15 = fpu_reg15 - fCameraZ;
 //st0 = VectorZ
 //st1 = fCameraFX*VectorX + fCameraFY*VectorY
@@ -708,10 +684,10 @@ MV2Dot3DPosProjectionASM_DotLoop:
 //st2 = fProjectionR = XNew
 
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_TransfPos__m_fY = fpu_reg14;
+	edi->CMV2Dot3DPos__m_TransfPos__m_fY = fpu_reg14;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg13; fpu_reg13 = tmp; }
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_TransfPos__m_fX = fpu_reg14;
+	edi->CMV2Dot3DPos__m_TransfPos__m_fX = fpu_reg14;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
 
 
@@ -724,7 +700,7 @@ MV2Dot3DPosProjectionASM_DotLoop:
 // Bit8 = zmin, (Bit9 = zmax)
 // zmin, zmax, ymin, ymax, xmin, xmax
 
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_TransfPos__m_fZ = fpu_reg14;
+	edi->CMV2Dot3DPos__m_TransfPos__m_fZ = fpu_reg14;
 
 	fpu_reg14 = fabsf(fpu_reg14);
 
@@ -735,7 +711,7 @@ MV2Dot3DPosProjectionASM_DotLoop:
 
 	ecx = eax;
 
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fZNewRZP = fpu_reg14;
+	edi->CMV2Dot3DPos__m_fZNewRZP = fpu_reg14;
 
 	fpu_reg12 = fpu_reg12 * fpu_reg14;
 	fpu_reg13 = fpu_reg13 * fpu_reg14;
@@ -756,25 +732,25 @@ MV2Dot3DPosProjectionASM_DotLoop:
 	fpu_reg13 = fpu_reg13 * fYmaxDiv2;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenX = (int32_t)ceilf(fpu_reg13);
-	edx = edx + ( 4 );
+	edi->CMV2Dot3DPos__m_iScreenX = (int32_t)ceilf(fpu_reg13);
+	_ppMV2Dot3DPos++;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY = (int32_t)ceilf(fpu_reg13);
+	edi->CMV2Dot3DPos__m_iScreenY = (int32_t)ceilf(fpu_reg13);
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg13 = fpu_reg13 * fNum_2Exp20;
 	{ float tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	fpu_reg14 = fpu_reg13;
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenY = fpu_reg14;
+	edi->CMV2Dot3DPos__m_fScreenY = fpu_reg14;
 	{ float tmp = fpu_reg12; fpu_reg12 = fpu_reg14; fpu_reg14 = tmp; }
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenX = fpu_reg14;
+	edi->CMV2Dot3DPos__m_fScreenX = fpu_reg14;
 	fpu_reg13 = ceilf(fpu_reg13);
 
-	eax = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenX );
-	ebx = ( ((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iScreenY );
+	eax = ( edi->CMV2Dot3DPos__m_iScreenX );
+	ebx = ( edi->CMV2Dot3DPos__m_iScreenY );
 
 	fpu_reg13 = fpu_reg13 - fpu_reg12; // muss noch ueberprueft werden
 // (optimierung)
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_fScreenYError = fpu_reg13;
+	edi->CMV2Dot3DPos__m_fScreenYError = fpu_reg13;
 //ffree	st(0)
 
 
@@ -800,11 +776,11 @@ MV2Dot3DPosProjectionASM_NotUnderYmin:
 	ecx = ecx | ( 8 );
 
 MV2Dot3DPosProjectionASM_NotAboveYmax:
-	((CMV2Dot3DPos *)edi)->CMV2Dot3DPos__m_iClipFlag = ecx;
-	edi = ( *((uint32_t *)(edx)) );
+	edi->CMV2Dot3DPos__m_iClipFlag = ecx;
+	edi = *_ppMV2Dot3DPos;
 
-	ebp = ( (int32_t)ebp ) - 1;
-	if (( (int32_t)ebp ) != 0) goto MV2Dot3DPosProjectionASM_DotLoop;
+	_dwNumDots--;
+	if (_dwNumDots != 0) goto MV2Dot3DPosProjectionASM_DotLoop;
 
 #if !defined(NO_FPU_CONTROL)
 	{

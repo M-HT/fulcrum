@@ -21,11 +21,6 @@ extern "C" uint32_t pcSparklesLookup[256];
 //co_hi						dd ?
 
 //align 32
-static uint32_t pMV2Camera;
-static uint32_t pMV2Particles;
-static uint32_t dwNumParticles;
-static uint32_t pBackBuffer;
-
 static float fCameraX;
 static float fCameraY;
 static float fCameraZ;
@@ -109,9 +104,9 @@ static uint32_t dwTempB;
 #include "m2struct.inc.h"
 
 
-extern "C" void MV2ParticleProjectionASM(uint32_t _pMV2Camera, uint32_t _pMV2Particles, uint32_t _dwNumParticles, uint32_t _pBackBuffer, int iParticleWidth, int iParticleHeight) {
+extern "C" void MV2ParticleProjectionASM(CMV2Camera *_pMV2Camera, CMV2Particle *_pMV2Particles, uint32_t _dwNumParticles, uint8_t *_pBackBuffer, int iParticleWidth, int iParticleHeight) {
 	float fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17, fpu_reg18;
-	uint32_t eax, edx, ecx, edi, ebx, esi, ebp;
+	uint32_t eax, edx, ecx, ebx;
 	uint32_t stack_var00, stack_var01, stack_var02;
 	int iParticleX, iParticleY;
 
@@ -144,19 +139,8 @@ extern "C" void MV2ParticleProjectionASM(uint32_t _pMV2Camera, uint32_t _pMV2Par
 //;****
 #endif
 
-	eax = _pMV2Camera;
-	ebx = _pMV2Particles;
-	ecx = _dwNumParticles;
-	edx = _pBackBuffer;
-
-	pMV2Camera = eax;
-	pMV2Particles = ebx;
-	dwNumParticles = ecx;
-	pBackBuffer = edx;
-
-	esi = pMV2Camera;
-	eax = ( ((CMV2Camera *)esi)->CMV2Camera__m_iXmax );
-	ebx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iYmax );
+	eax = ( _pMV2Camera->CMV2Camera__m_iXmax );
+	ebx = ( _pMV2Camera->CMV2Camera__m_iYmax );
 
 	dwXmax = eax;
 	dwYmax = ebx;
@@ -176,10 +160,10 @@ extern "C" void MV2ParticleProjectionASM(uint32_t _pMV2Camera, uint32_t _pMV2Par
 	fpu_reg10 = ( (int32_t)lTemp );
 	fYmaxDiv2 = fpu_reg10;
 
-	eax = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipXmin );
-	ebx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipXmax );
-	ecx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipYmin );
-	edx = ( ((CMV2Camera *)esi)->CMV2Camera__m_iClipYmax );
+	eax = ( _pMV2Camera->CMV2Camera__m_iClipXmin );
+	ebx = ( _pMV2Camera->CMV2Camera__m_iClipXmax );
+	ecx = ( _pMV2Camera->CMV2Camera__m_iClipYmin );
+	edx = ( _pMV2Camera->CMV2Camera__m_iClipYmax );
 
 //	dec		eax					; wegen des clippings
 //	dec		ecx
@@ -189,34 +173,34 @@ extern "C" void MV2ParticleProjectionASM(uint32_t _pMV2Camera, uint32_t _pMV2Par
 	dwClipYmin = ecx;
 	dwClipYmax = edx;
 
-	fCameraX = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fX;
-	fCameraY = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fY;
-	fCameraZ = ((CMV2Camera *)esi)->CMV2Camera__m_Pos__m_fZ;
+	fCameraX = _pMV2Camera->CMV2Camera__m_Pos__m_fX;
+	fCameraY = _pMV2Camera->CMV2Camera__m_Pos__m_fY;
+	fCameraZ = _pMV2Camera->CMV2Camera__m_Pos__m_fZ;
 
-	fCameraFX = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fX;
-	fCameraFY = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fY;
-	fCameraFZ = ((CMV2Camera *)esi)->CMV2Camera__m_Front__m_fZ;
+	fCameraFX = _pMV2Camera->CMV2Camera__m_Front__m_fX;
+	fCameraFY = _pMV2Camera->CMV2Camera__m_Front__m_fY;
+	fCameraFZ = _pMV2Camera->CMV2Camera__m_Front__m_fZ;
 
-	fScreenFactor = ((CMV2Camera *)esi)->CMV2Camera__m_fScreenFactor;
+	fScreenFactor = _pMV2Camera->CMV2Camera__m_fScreenFactor;
 
 //	fld     ds:[esi].CMV2Camera__m_fScreenFactor
 	fpu_reg10 = 1.0f;
-	fpu_reg11 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fX );
+	fpu_reg11 = ( _pMV2Camera->CMV2Camera__m_Right__m_fX );
 	fpu_reg11 = fpu_reg11 * fpu_reg10;
 //st0 = CameraRX*ScreenFactor, st1 = ScreenFactor
 
-	fpu_reg12 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fY );
+	fpu_reg12 = ( _pMV2Camera->CMV2Camera__m_Right__m_fY );
 	fpu_reg12 = fpu_reg12 * fpu_reg10;
-	fpu_reg13 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Right__m_fZ );
+	fpu_reg13 = ( _pMV2Camera->CMV2Camera__m_Right__m_fZ );
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
 //st0 = CameraRZ*ScreenFactor, st1 = CameraRY*ScreenFactor
 //st2 = CameraRX*ScreenFactor, st3 = ScreenFactor
 
-	fpu_reg14 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fX );
+	fpu_reg14 = ( _pMV2Camera->CMV2Camera__m_Down__m_fX );
 	fpu_reg14 = fpu_reg14 * fpu_reg10;
-	fpu_reg15 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fY );
+	fpu_reg15 = ( _pMV2Camera->CMV2Camera__m_Down__m_fY );
 	fpu_reg15 = fpu_reg15 * fpu_reg10;
-	fpu_reg16 = ( ((CMV2Camera *)esi)->CMV2Camera__m_Down__m_fZ );
+	fpu_reg16 = ( _pMV2Camera->CMV2Camera__m_Down__m_fZ );
 	fpu_reg16 = fpu_reg16 * fpu_reg10;
 	{ float tmp = fpu_reg14; fpu_reg14 = fpu_reg16; fpu_reg16 = tmp; }
 //st0 = CameraDX*ScreenFactor, st1 = CameraDY*ScreenFactor
@@ -233,12 +217,8 @@ extern "C" void MV2ParticleProjectionASM(uint32_t _pMV2Camera, uint32_t _pMV2Par
 //ffree	st(0)
 
 
-	esi = pMV2Particles;
-	edi = pBackBuffer;
-	ebp = dwNumParticles;
-
 MV2ParticleProjectionASM_ParticleLoop:
-	fpu_reg10 = ( ((CMV2Particle *)esi)->CMV2Particle__m_InterpPos__m_fX );
+	fpu_reg10 = ( _pMV2Particles->CMV2Particle__m_InterpPos__m_fX );
 	fpu_reg10 = fpu_reg10 * fScaling;
 	fpu_reg10 = fpu_reg10 - fCameraX;
 //st0 = VectorX
@@ -258,7 +238,7 @@ MV2ParticleProjectionASM_ParticleLoop:
 //st0 = fCameraDX*VectorX, st1 = fCameraRX*VectorX
 //st2 = fCameraFX*VectorX
 
-	fpu_reg14 = ( ((CMV2Particle *)esi)->CMV2Particle__m_InterpPos__m_fZ );
+	fpu_reg14 = ( _pMV2Particles->CMV2Particle__m_InterpPos__m_fZ );
 	fpu_reg14 = fpu_reg14 * fScaling;
 	fpu_reg14 = fpu_reg14 - fCameraY;
 //st0 = VectorY, st1 = fCameraDX*VectorX
@@ -303,7 +283,7 @@ MV2ParticleProjectionASM_ParticleLoop:
 //st1 = fCameraDX*VectorX + fCameraDY*VectorY
 //st2 = fCameraRX*VectorX + fCameraRY*VectorY
 
-	fpu_reg15 = ( ((CMV2Particle *)esi)->CMV2Particle__m_InterpPos__m_fY );
+	fpu_reg15 = ( _pMV2Particles->CMV2Particle__m_InterpPos__m_fY );
 	fpu_reg15 = -fpu_reg15;
 	fpu_reg15 = fpu_reg15 * fScaling;
 	fpu_reg15 = fpu_reg15 - fCameraZ;
@@ -433,7 +413,7 @@ MV2ParticleProjectionASM_NotAboveYmax:
 	stack_var00 = eax;
 	stack_var01 = ebx;
 	stack_var02 = edx;
-	eax = ( ((CMV2Particle *)esi)->CMV2Particle__m_iDuration );
+	eax = ( _pMV2Particles->CMV2Particle__m_iDuration );
 
 	eax = eax & ( 0x0ff );
 	eax = ( pcSparklesLookup[eax] );
@@ -472,7 +452,7 @@ MV2ParticleProjectionASM_NotAboveYmax:
 	{
 		for (iParticleX = 0; iParticleX < iParticleWidth; iParticleX++)
 		{
-			eax = ( ((uint32_t *)(edi))[ebx + iParticleY * dwXmax + iParticleX] );
+			eax = ( ((uint32_t *)_pBackBuffer)[ebx + iParticleY * dwXmax + iParticleX] );
 			ecx = eax;
 			edx = eax;
 			eax = eax & ( 0x0ff0000 );
@@ -518,7 +498,7 @@ MV2ParticleProjectionASM_NotAboveYmax:
 			eax = eax | edx;
 			eax = eax | ecx;
 
-			((uint32_t *)(edi))[ebx + iParticleY * dwXmax + iParticleX] = eax;
+			((uint32_t *)_pBackBuffer)[ebx + iParticleY * dwXmax + iParticleX] = eax;
 		}
 	}
 
@@ -526,9 +506,9 @@ MV2ParticleProjectionASM_DontDrawParticle:
 
 
 
-	esi = esi + ( CMV2Particle__Size );
-	ebp = ( (int32_t)ebp ) - 1;
-	if (( (int32_t)ebp ) != 0) goto MV2ParticleProjectionASM_ParticleLoop;
+	_pMV2Particles++;
+	_dwNumParticles--;
+	if (_dwNumParticles != 0) goto MV2ParticleProjectionASM_ParticleLoop;
 
 
 #if !defined(NO_FPU_CONTROL)
@@ -555,44 +535,40 @@ MV2ParticleProjectionASM_DontDrawParticle:
 
 
 
-extern "C" void MV2ParticleDoBernoulliASM(uint32_t pParticles, uint32_t _dwNumParticles, uint32_t pSinTab, uint32_t dwCurTime, float fAX, float fAY1, float fAY2, float fAZ, float fFX, float fFY1, float fFY2, float fFZ, float fSDX, float fSDY1, float fSDY2, float fSDZ, float fDY1, float fDY2) {
+extern "C" void MV2ParticleDoBernoulliASM(CMV2Particle *pParticles, uint32_t _dwNumParticles, float *pSinTab, uint32_t dwCurTime, float fAX, float fAY1, float fAY2, float fAZ, float fFX, float fFY1, float fFY2, float fFZ, float fSDX, float fSDY1, float fSDY2, float fSDZ, float fDY1, float fDY2) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
 	float feax, febx, fedx;
-	uint32_t eax, /*edx,*/ ecx, edi, ebx, esi;
+	uint32_t eax, ebx;
 
 
 
-
-	esi = pParticles;
-	ecx = _dwNumParticles;
-	edi = pSinTab;
 
 MV2ParticleDoBernoulliASM_ParticleLoop:
 
-	if ( (( (int32_t)(((CMV2Particle *)esi)->CMV2Particle__m_iDuration) ) - ( 0 )) != 0) goto MV2ParticleDoBernoulliASM_DurationOk;
+	if ( (( (int32_t)(pParticles->CMV2Particle__m_iDuration) ) - ( 0 )) != 0) goto MV2ParticleDoBernoulliASM_DurationOk;
 
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX = ((CMV2Particle *)esi)->CMV2Particle__m_StartPos__m_fX;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = ((CMV2Particle *)esi)->CMV2Particle__m_StartPos__m_fY;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ = ((CMV2Particle *)esi)->CMV2Particle__m_StartPos__m_fZ;
+	pParticles->CMV2Particle__m_NextPos__m_fX = pParticles->CMV2Particle__m_StartPos__m_fX;
+	pParticles->CMV2Particle__m_NextPos__m_fY = pParticles->CMV2Particle__m_StartPos__m_fY;
+	pParticles->CMV2Particle__m_NextPos__m_fZ = pParticles->CMV2Particle__m_StartPos__m_fZ;
 
 	eax = ( 12000 );
-	((CMV2Particle *)esi)->CMV2Particle__m_iDuration = eax;
+	pParticles->CMV2Particle__m_iDuration = eax;
 
 MV2ParticleDoBernoulliASM_DurationOk:
-	feax = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
-	febx = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
-	fedx = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
+	feax = ( pParticles->CMV2Particle__m_NextPos__m_fX );
+	febx = ( pParticles->CMV2Particle__m_NextPos__m_fY );
+	fedx = ( pParticles->CMV2Particle__m_NextPos__m_fZ );
 
-	fpu_reg10 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg10 = ( pParticles->CMV2Particle__m_NextPos__m_fY );
 	fpu_reg10 = fpu_reg10 * fFX;
 
-	fpu_reg11 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
+	fpu_reg11 = ( pParticles->CMV2Particle__m_NextPos__m_fZ );
 	fpu_reg11 = fpu_reg11 * fFY1;
 
-	fpu_reg12 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg12 = ( pParticles->CMV2Particle__m_NextPos__m_fX );
 	fpu_reg12 = fpu_reg12 * fFY2;
 
-	fpu_reg13 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg13 = ( pParticles->CMV2Particle__m_NextPos__m_fX );
 	fpu_reg13 = fpu_reg13 * fFZ;
 	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg13; fpu_reg13 = tmp; }
 //st0=ParticleY*fFreqX, st1=ParticleX*fFreqY2
@@ -647,28 +623,28 @@ MV2ParticleDoBernoulliASM_DurationOk:
 	dwAngleY1 = (int32_t)round(fpu_reg11);
 	dwAngleZ = (int32_t)round(fpu_reg10);
 
-	((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fX = feax;
-	((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fY = febx;
-	((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fZ = fedx;
+	pParticles->CMV2Particle__m_LastPos__m_fX = feax;
+	pParticles->CMV2Particle__m_LastPos__m_fY = febx;
+	pParticles->CMV2Particle__m_LastPos__m_fZ = fedx;
 
 	eax = dwAngleX;
 	ebx = dwAngleY2;
 	eax = eax & ( 0x0ff );
 	ebx = ebx & ( 0x0ff );
 
-	fpu_reg10 = ( ((float *)(edi))[eax] );
+	fpu_reg10 = pSinTab[eax];
 	fpu_reg10 = fpu_reg10 * fAX;
-	fpu_reg11 = ( ((float *)(edi))[ebx] );
+	fpu_reg11 = pSinTab[ebx];
 	fpu_reg11 = fpu_reg11 + fDY2;
 	fpu_reg11 = fpu_reg11 * fAY2;
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 
-	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg11 = fpu_reg11 + ( pParticles->CMV2Particle__m_NextPos__m_fX );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
-	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg11 = fpu_reg11 + ( pParticles->CMV2Particle__m_NextPos__m_fY );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX = fpu_reg11;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg10;
+	pParticles->CMV2Particle__m_NextPos__m_fX = fpu_reg11;
+	pParticles->CMV2Particle__m_NextPos__m_fY = fpu_reg10;
 
 
 	eax = dwAngleY1;
@@ -676,26 +652,26 @@ MV2ParticleDoBernoulliASM_DurationOk:
 	eax = eax & ( 0x0ff );
 	ebx = ebx & ( 0x0ff );
 
-	fpu_reg10 = ( ((float *)(edi))[eax] );
+	fpu_reg10 = pSinTab[eax];
 	fpu_reg10 = fpu_reg10 + fDY1;
 	fpu_reg10 = fpu_reg10 * fAY1;
-	fpu_reg11 = ( ((float *)(edi))[ebx] );
+	fpu_reg11 = pSinTab[ebx];
 	fpu_reg11 = fpu_reg11 * fAZ;
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 
-	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg11 = fpu_reg11 + ( pParticles->CMV2Particle__m_NextPos__m_fY );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
-	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
+	fpu_reg11 = fpu_reg11 + ( pParticles->CMV2Particle__m_NextPos__m_fZ );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg11;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ = fpu_reg10;
+	pParticles->CMV2Particle__m_NextPos__m_fY = fpu_reg11;
+	pParticles->CMV2Particle__m_NextPos__m_fZ = fpu_reg10;
 
 
-	((CMV2Particle *)esi)->CMV2Particle__m_iDuration = ( ((CMV2Particle *)esi)->CMV2Particle__m_iDuration ) - 1;
-	esi = esi + ( CMV2Particle__Size );
+	pParticles->CMV2Particle__m_iDuration = ( pParticles->CMV2Particle__m_iDuration ) - 1;
+	pParticles++;
 
-	ecx = ( (int32_t)ecx ) - 1;
-	if (( (int32_t)ecx ) != 0) goto MV2ParticleDoBernoulliASM_ParticleLoop;
+	_dwNumParticles--;
+	if (_dwNumParticles != 0) goto MV2ParticleDoBernoulliASM_ParticleLoop;
 
 
 
@@ -708,42 +684,38 @@ MV2ParticleDoBernoulliASM_DurationOk:
 
 
 
-extern "C" void MV2ParticleDoBernoulliMorphToObjectASM(uint32_t pParticles, uint32_t _dwNumParticles, uint32_t pSinTab, uint32_t dwCurTime, float fAX, float fAY1, float fAY2, float fAZ, float fFX, float fFY1, float fFY2, float fFZ, float fSDX, float fSDY1, float fSDY2, float fSDZ, float fDY1, float fDY2, float fMFactor) {
+extern "C" void MV2ParticleDoBernoulliMorphToObjectASM(CMV2Particle *pParticles, uint32_t _dwNumParticles, float *pSinTab, uint32_t dwCurTime, float fAX, float fAY1, float fAY2, float fAZ, float fFX, float fFY1, float fFY2, float fFZ, float fSDX, float fSDY1, float fSDY2, float fSDZ, float fDY1, float fDY2, float fMFactor) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13, fpu_reg14, fpu_reg15, fpu_reg16, fpu_reg17;
-	uint32_t eax, /*edx,*/ ecx, edi, ebx, esi;
+	uint32_t eax, ebx;
 
 
 
-
-	esi = pParticles;
-	ecx = _dwNumParticles;
-	edi = pSinTab;
 
 MV2ParticleDoBernoulliMorphToObjectASM_ParticleLoop:
-	((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fX = ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX;
-	((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fY = ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY;
-	((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fZ = ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ;
+	pParticles->CMV2Particle__m_LastPos__m_fX = pParticles->CMV2Particle__m_NextPos__m_fX;
+	pParticles->CMV2Particle__m_LastPos__m_fY = pParticles->CMV2Particle__m_NextPos__m_fY;
+	pParticles->CMV2Particle__m_LastPos__m_fZ = pParticles->CMV2Particle__m_NextPos__m_fZ;
 
 
-	if ( (( (int32_t)(((CMV2Particle *)esi)->CMV2Particle__m_iDuration) ) - ( 0 )) != 0) goto MV2ParticleDoBernoulliMorphToObjectASM_DurationOk;
+	if ( (( (int32_t)(pParticles->CMV2Particle__m_iDuration) ) - ( 0 )) != 0) goto MV2ParticleDoBernoulliMorphToObjectASM_DurationOk;
 
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX = ((CMV2Particle *)esi)->CMV2Particle__m_StartPos__m_fX;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = ((CMV2Particle *)esi)->CMV2Particle__m_StartPos__m_fY;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ = ((CMV2Particle *)esi)->CMV2Particle__m_StartPos__m_fZ;
+	pParticles->CMV2Particle__m_NextPos__m_fX = pParticles->CMV2Particle__m_StartPos__m_fX;
+	pParticles->CMV2Particle__m_NextPos__m_fY = pParticles->CMV2Particle__m_StartPos__m_fY;
+	pParticles->CMV2Particle__m_NextPos__m_fZ = pParticles->CMV2Particle__m_StartPos__m_fZ;
 
 	eax = ( 12000 );
-	((CMV2Particle *)esi)->CMV2Particle__m_iDuration = eax;
+	pParticles->CMV2Particle__m_iDuration = eax;
 MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
-	fpu_reg10 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg10 = ( pParticles->CMV2Particle__m_NextPos__m_fY );
 	fpu_reg10 = fpu_reg10 * fFX;
 
-	fpu_reg11 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
+	fpu_reg11 = ( pParticles->CMV2Particle__m_NextPos__m_fZ );
 	fpu_reg11 = fpu_reg11 * fFY1;
 
-	fpu_reg12 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg12 = ( pParticles->CMV2Particle__m_NextPos__m_fX );
 	fpu_reg12 = fpu_reg12 * fFY2;
 
-	fpu_reg13 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg13 = ( pParticles->CMV2Particle__m_NextPos__m_fX );
 	fpu_reg13 = fpu_reg13 * fFZ;
 	{ realnum tmp = fpu_reg10; fpu_reg10 = fpu_reg13; fpu_reg13 = tmp; }
 //st0=ParticleY*fFreqX, st1=ParticleX*fFreqY2
@@ -803,19 +775,19 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 	eax = eax & ( 0x0ff );
 	ebx = ebx & ( 0x0ff );
 
-	fpu_reg10 = ( ((float *)(edi))[eax] );
+	fpu_reg10 = pSinTab[eax];
 	fpu_reg10 = fpu_reg10 * fAX;
-	fpu_reg11 = ( ((float *)(edi))[ebx] );
+	fpu_reg11 = pSinTab[ebx];
 	fpu_reg11 = fpu_reg11 + fDY2;
 	fpu_reg11 = fpu_reg11 * fAY2;
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 
-	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg11 = fpu_reg11 + ( pParticles->CMV2Particle__m_NextPos__m_fX );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
-	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg11 = fpu_reg11 + ( pParticles->CMV2Particle__m_NextPos__m_fY );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX = fpu_reg11;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg10;
+	pParticles->CMV2Particle__m_NextPos__m_fX = fpu_reg11;
+	pParticles->CMV2Particle__m_NextPos__m_fY = fpu_reg10;
 
 
 	eax = dwAngleY1;
@@ -823,27 +795,27 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 	eax = eax & ( 0x0ff );
 	ebx = ebx & ( 0x0ff );
 
-	fpu_reg10 = ( ((float *)(edi))[eax] );
+	fpu_reg10 = pSinTab[eax];
 	fpu_reg10 = fpu_reg10 + fDY1;
 	fpu_reg10 = fpu_reg10 * fAY1;
-	fpu_reg11 = ( ((float *)(edi))[ebx] );
+	fpu_reg11 = pSinTab[ebx];
 	fpu_reg11 = fpu_reg11 * fAZ;
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
 
-	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg11 = fpu_reg11 + ( pParticles->CMV2Particle__m_NextPos__m_fY );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
-	fpu_reg11 = fpu_reg11 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
+	fpu_reg11 = fpu_reg11 + ( pParticles->CMV2Particle__m_NextPos__m_fZ );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg10; fpu_reg10 = tmp; }
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg11;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ = fpu_reg10;
+	pParticles->CMV2Particle__m_NextPos__m_fY = fpu_reg11;
+	pParticles->CMV2Particle__m_NextPos__m_fZ = fpu_reg10;
 
 	fpu_reg10 = fMFactor;
-	fpu_reg11 = ( ((CMV2Particle *)esi)->CMV2Particle__m_EndPos__m_fX );
-	fpu_reg11 = fpu_reg11 - ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
-	fpu_reg12 = ( ((CMV2Particle *)esi)->CMV2Particle__m_EndPos__m_fY );
-	fpu_reg12 = fpu_reg12 - ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
-	fpu_reg13 = ( ((CMV2Particle *)esi)->CMV2Particle__m_EndPos__m_fZ );
-	fpu_reg13 = fpu_reg13 - ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
+	fpu_reg11 = ( pParticles->CMV2Particle__m_EndPos__m_fX );
+	fpu_reg11 = fpu_reg11 - ( pParticles->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg12 = ( pParticles->CMV2Particle__m_EndPos__m_fY );
+	fpu_reg12 = fpu_reg12 - ( pParticles->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg13 = ( pParticles->CMV2Particle__m_EndPos__m_fZ );
+	fpu_reg13 = fpu_reg13 - ( pParticles->CMV2Particle__m_NextPos__m_fZ );
 //st0 = EndZ - Z, st1 = EndY - Y, st2 = EndX - X
 //st3 = MFactor
 
@@ -857,27 +829,27 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 //st0 = (EndZ - Z)*MFactor, st1 = (EndY - Y)*MFactor
 //st2 = (EndX - X)*MFactor, st3 = MFactor
 
-	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
+	fpu_reg13 = fpu_reg13 + ( pParticles->CMV2Particle__m_NextPos__m_fZ );
 	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg13 = fpu_reg13 + ( pParticles->CMV2Particle__m_NextPos__m_fY );
 	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
-	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg13 = fpu_reg13 + ( pParticles->CMV2Particle__m_NextPos__m_fX );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ = fpu_reg13;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY = fpu_reg12;
-	((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX = fpu_reg11;
+	pParticles->CMV2Particle__m_NextPos__m_fZ = fpu_reg13;
+	pParticles->CMV2Particle__m_NextPos__m_fY = fpu_reg12;
+	pParticles->CMV2Particle__m_NextPos__m_fX = fpu_reg11;
 
 
-	((CMV2Particle *)esi)->CMV2Particle__m_iDuration = ( ((CMV2Particle *)esi)->CMV2Particle__m_iDuration ) - 1;
+	pParticles->CMV2Particle__m_iDuration = ( pParticles->CMV2Particle__m_iDuration ) - 1;
 //fcomp
 
 
-	esi = esi + ( CMV2Particle__Size );
+	pParticles++;
 
-	ecx = ( (int32_t)ecx ) - 1;
-	if (( (int32_t)ecx ) != 0) goto MV2ParticleDoBernoulliMorphToObjectASM_ParticleLoop;
+	_dwNumParticles--;
+	if (_dwNumParticles != 0) goto MV2ParticleDoBernoulliMorphToObjectASM_ParticleLoop;
 
 
 
@@ -890,25 +862,22 @@ MV2ParticleDoBernoulliMorphToObjectASM_DurationOk:
 
 
 
-extern "C" void MV2ParticleInterpolateASM(uint32_t _pParticles, uint32_t _dwNumParticles, float _fMorphFactor) {
+extern "C" void MV2ParticleInterpolateASM(CMV2Particle *_pParticles, uint32_t _dwNumParticles, float _fMorphFactor) {
 	realnum fpu_reg10, fpu_reg11, fpu_reg12, fpu_reg13;
-	uint32_t ecx, esi;
 
 
 
 
-	esi = _pParticles;
-	ecx = _dwNumParticles;
 	fpu_reg10 = _fMorphFactor;
 //st0 = MorphFactor
 
 MV2ParticleInterpolateASM_ParticleLoop:
-	fpu_reg11 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fX );
-	fpu_reg11 = fpu_reg11 - ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fX );
-	fpu_reg12 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fY );
-	fpu_reg12 = fpu_reg12 - ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fY );
-	fpu_reg13 = ( ((CMV2Particle *)esi)->CMV2Particle__m_NextPos__m_fZ );
-	fpu_reg13 = fpu_reg13 - ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fZ );
+	fpu_reg11 = ( _pParticles->CMV2Particle__m_NextPos__m_fX );
+	fpu_reg11 = fpu_reg11 - ( _pParticles->CMV2Particle__m_LastPos__m_fX );
+	fpu_reg12 = ( _pParticles->CMV2Particle__m_NextPos__m_fY );
+	fpu_reg12 = fpu_reg12 - ( _pParticles->CMV2Particle__m_LastPos__m_fY );
+	fpu_reg13 = ( _pParticles->CMV2Particle__m_NextPos__m_fZ );
+	fpu_reg13 = fpu_reg13 - ( _pParticles->CMV2Particle__m_LastPos__m_fZ );
 //st0 = NPosZ - LPosZ, st1 = NPosY - LPosY
 //st2 = NPosX - LPosX, st3 = MorphFactor
 
@@ -920,22 +889,22 @@ MV2ParticleInterpolateASM_ParticleLoop:
 	fpu_reg13 = fpu_reg13 * fpu_reg10;
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 
-	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fZ );
+	fpu_reg13 = fpu_reg13 + ( _pParticles->CMV2Particle__m_LastPos__m_fZ );
 	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
-	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fY );
+	fpu_reg13 = fpu_reg13 + ( _pParticles->CMV2Particle__m_LastPos__m_fY );
 	{ realnum tmp = fpu_reg13; fpu_reg13 = fpu_reg12; fpu_reg12 = tmp; }
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
-	fpu_reg13 = fpu_reg13 + ( ((CMV2Particle *)esi)->CMV2Particle__m_LastPos__m_fX );
+	fpu_reg13 = fpu_reg13 + ( _pParticles->CMV2Particle__m_LastPos__m_fX );
 	{ realnum tmp = fpu_reg11; fpu_reg11 = fpu_reg13; fpu_reg13 = tmp; }
 
-	((CMV2Particle *)esi)->CMV2Particle__m_InterpPos__m_fZ = fpu_reg13;
-	((CMV2Particle *)esi)->CMV2Particle__m_InterpPos__m_fY = fpu_reg12;
-	((CMV2Particle *)esi)->CMV2Particle__m_InterpPos__m_fX = fpu_reg11;
+	_pParticles->CMV2Particle__m_InterpPos__m_fZ = fpu_reg13;
+	_pParticles->CMV2Particle__m_InterpPos__m_fY = fpu_reg12;
+	_pParticles->CMV2Particle__m_InterpPos__m_fX = fpu_reg11;
 
-	esi = esi + ( CMV2Particle__Size );
+	_pParticles++;
 
-	ecx = ( (int32_t)ecx ) - 1;
-	if (( (int32_t)ecx ) != 0) goto MV2ParticleInterpolateASM_ParticleLoop;
+	_dwNumParticles--;
+	if (_dwNumParticles != 0) goto MV2ParticleInterpolateASM_ParticleLoop;
 
 //ffree	st(0)
 
