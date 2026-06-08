@@ -1,5 +1,6 @@
 /* encoding = IBM852 */
 #include <SDL2/SDL.h>
+#include <string.h>
 #include "cc.h"
 //.486                                    //pmode/w
 //.model flat,prolog
@@ -120,6 +121,10 @@ extern "C" uint32_t docredits(int8_t *mpic, uint32_t _eax);
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 //struc
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+
+#if defined(_MSC_VER)
+#define __attribute__(x)
+#endif
 
 //vector
 typedef struct {
@@ -679,7 +684,9 @@ static uint32_t mainstart;
 //creditnum dd 0
 //creditstart dd 0
 
+extern "C" {
 tscene scene;
+}
 //frame           dd 0                    ;global frame counter
 static uint32_t stamp = 0;
 

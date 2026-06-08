@@ -179,7 +179,9 @@ static uint32_t stepframe = 0;
 const static float c_tscale = 0.0078125f; //1/step
 static float t;
 
+extern "C" {
 terzdata erzdata;
+}
 
 static tviewer viewer;
 static tvec target;

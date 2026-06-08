@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 #include "vesa.h"
 
 #define ct_r16 (0*256)

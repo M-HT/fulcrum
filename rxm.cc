@@ -26,6 +26,10 @@ Uint32 fade_start, fade_time;
 int fade_on;
 #endif
 
+#if defined(_MSC_VER)
+#define __attribute__(x)
+#endif
+
 #pragma pack(1)
 
 typedef struct __attribute__ ((__packed__)) {

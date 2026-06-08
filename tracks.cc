@@ -94,8 +94,10 @@ typedef struct {
 const static float c_3		= 3.0f;
 const static float c_sinmin	= 1E-6;
 
+extern "C" {
 //extrn frame:dword
 uint32_t		frame;			//global frame counter
+}
 
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 //.code

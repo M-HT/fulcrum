@@ -96,7 +96,9 @@ typedef struct {
 
 
 
+extern "C" {
 tcreddata creddata;
+}
 
 static uint32_t pbytes;
 static uint32_t xbytes;

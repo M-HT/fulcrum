@@ -1,6 +1,6 @@
 #include <stdlib.h> //atoi
 #include <stdio.h>  //FILE
-//#include <string.h>
+#include <string.h>
 //#include <conio.h>
 //#include "file.h"
 #include "demo.h"

@@ -30,6 +30,8 @@ CMV2NormException::CMV2NormException(const char *cError,
 }
 
 
+#pragma warning( push )
+#pragma warning( disable : 4722 )
 CMV2NormException::~CMV2NormException()
 {
 	delete [] m_cError;
@@ -37,6 +39,7 @@ CMV2NormException::~CMV2NormException()
 
 	exit(1);
 }
+#pragma warning( pop )
 
 
 void CMV2NormException::PrintError()
