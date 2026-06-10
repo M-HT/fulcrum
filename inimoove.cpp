@@ -287,7 +287,7 @@ void Simulate2DEffect()
 void initcoltab(tvesa &vesa) {
 
   if (vesa.redbits == 8 && vesa.greenbits == 8 && vesa.bluebits == 8 &&
-	vesa.redpos == 16 && vesa.greenpos == 8 && vesa.bluepos == 0) {
+	vesa.redpos == 16 && vesa.greenpos == 8 && vesa.bluepos == 0 && vesa.alphamask == 0) {
 	//direct mode
 	coltab = NULL;
   } else {

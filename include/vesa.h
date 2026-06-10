@@ -1,7 +1,7 @@
 #ifndef _VESA_H
 #define _VESA_H
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 //exit procs
 void exit(void);
@@ -29,6 +29,7 @@ struct tvesa {
   char bluebits;
   char bluepos;
   char reserved1;
+  unsigned int alphamask;
   SDL_Texture *texture;
   SDL_Renderer *renderer;
 };

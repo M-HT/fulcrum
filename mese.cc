@@ -1,5 +1,6 @@
 /* encoding = IBM852 */
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
+#include <stddef.h>
 #include <string.h>
 #include "cc.h"
 //.486                                    //pmode/w
@@ -10566,7 +10567,7 @@ initrgb16_clip:
 	edx = edx << ( (uint8_t)ecx );
 	ecx = ebp;
 	ecx = set_high_byte(ecx, ( (uint8_t)ebx ));
-	edi->p16_r[ecx] = (uint16_t) (( (uint16_t)edx ));
+	edi->p16_r[ecx] = (uint16_t) (edx | esi->vesa_alphamask);
 //g
 	edx = eax;
 	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_greenbits ));
@@ -10626,7 +10627,7 @@ initrgb24_32_clip:
 	edx = edx << ( (uint8_t)ecx );
 	ecx = ebp;
 	ecx = set_high_byte(ecx, ( (uint8_t)ebx ));
-	edi->p32_r[ecx] = edx;
+	edi->p32_r[ecx] = edx | esi->vesa_alphamask;
 //g
 	edx = eax;
 	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_greenbits ));
@@ -11667,7 +11668,7 @@ startmese_ex0:
 	copybuffer();
 
 	SDL_UnlockTexture(texture);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderTexture(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 
 

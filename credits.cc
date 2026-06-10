@@ -1,5 +1,5 @@
 /* encoding = IBM852 */
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "cc.h"
 //.486                                    //pmode/w
 //.model flat,prolog
@@ -721,7 +721,7 @@ docredits_w0:
 	eax = copypic(xpos, eax, edx, edi);
 
 	SDL_UnlockTexture(texture);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderTexture(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 
 //        mov     ah,1
@@ -788,7 +788,7 @@ initpaltab_pl:
 	eax = eax >> ( 8 );
 	ecx = (ecx & 0xffffff00) | (uint8_t)(( esi->vesa_redpos ));
 	eax = eax << ( (uint8_t)ecx );
-	col = eax;
+	col = eax | esi->vesa_alphamask;
 
 	eax = (uint32_t)( ((tpal *)(edi + edx))->p_green[0] ); //green
 	ecx = ( ebx->pt_green );

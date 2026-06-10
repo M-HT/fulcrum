@@ -9,7 +9,7 @@
 #include "moove.h"
 #include "erz.h"
 #include "rxm.h"
-
+#include <SDL3/SDL_main.h>
 
 //global
 static const int modes = 4;
@@ -100,8 +100,8 @@ void setmode(int mode) {
   i8_init();
 }
 
-static int delay(unsigned int len) {
-  unsigned int mainstart;
+static int delay(Uint64 len) {
+  Uint64 mainstart;
 
   mainstart = SDL_GetTicks();
   do {
@@ -140,7 +140,7 @@ int main(int argn, char **argv) {
   tarjstream s("fulcrum.dat");
 //  tstream s;
 
-  if ( SDL_Init (SDL_INIT_VIDEO) != 0 ) exit("Error: Couldn't initialize SDL");
+  if ( !SDL_Init (SDL_INIT_VIDEO) ) exit("Error: Couldn't initialize SDL");
   atexit(SDL_Quit);
 
 

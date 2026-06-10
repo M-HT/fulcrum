@@ -11,10 +11,12 @@ extern "C"
 
 int setmode(tvesa &vesa)
 {
-    SDL_RendererInfo info;
-    Uint32 format, altformat1, altformat2, altformat3;
+    SDL_PropertiesID props;
+    SDL_PixelFormat format, altformat1, altformat2, altformat3;
     int w, h, bpp_index, fmt_index, bytes, bpp;
     Uint32 Rmask, Gmask, Bmask, Amask, mask;
+    const SDL_PixelFormat *texture_formats;
+    bool propok, fullscreen;
 
     if (texture != NULL)
     {
@@ -22,23 +24,42 @@ int setmode(tvesa &vesa)
         texture = NULL;
     }
 
-    if (window == NULL)
-    {
-        Uint32 flags;
-
-        flags = SDL_WINDOW_HIDDEN;
-
 #if defined(PANDORA) || defined(PYRA)
-        flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    fullscreen = true;
+#else
+    fullscreen = false;
 #endif
 
-        window = SDL_CreateWindow("Fulcrum", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, vesa.xres, vesa.yres, flags);
+    if (window == NULL)
+    {
+        props = SDL_CreateProperties();
+        if (props == 0)
+        {
+            return 0;
+        }
+
+        propok = SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "Fulcrum");
+        propok &= SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
+        propok &= SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
+        propok &= SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, vesa.xres);
+        propok &= SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, vesa.yres);
+        propok &= SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_HIDDEN_BOOLEAN, true);
+        propok &= SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN, fullscreen);
+
+        if (!propok)
+        {
+            SDL_DestroyProperties(props);
+            return 0;
+        }
+
+        window = SDL_CreateWindowWithProperties(props);
+        SDL_DestroyProperties(props);
         if (window == NULL)
         {
             return 0;
         }
 
-        renderer = SDL_CreateRenderer(window, -1, (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) ? SDL_RENDERER_PRESENTVSYNC : 0);
+        renderer = SDL_CreateRenderer(window, NULL);
         if (renderer == NULL)
         {
             SDL_DestroyWindow(window);
@@ -46,12 +67,17 @@ int setmode(tvesa &vesa)
             return 0;
         }
 
+        if (fullscreen)
+        {
+            SDL_SetRenderVSync(renderer, 1);
+        }
+
         SDL_ShowWindow(window);
-        SDL_ShowCursor(SDL_DISABLE);
+        SDL_HideCursor();
     }
     else
     {
-        if (!(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP))
+        if (!fullscreen)
         {
             SDL_GetWindowSize(window, &w, &h);
             if (w != vesa.xres || h != vesa.yres)
@@ -61,7 +87,7 @@ int setmode(tvesa &vesa)
         }
     }
 
-    if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP)
+    if (fullscreen)
     {
         SDL_GetWindowSize(window, &w, &h);
 
@@ -77,33 +103,44 @@ int setmode(tvesa &vesa)
             vesa.yres = h;
         }
 
-        SDL_RenderSetLogicalSize(renderer, w, h);
+        SDL_SetRenderLogicalPresentation(renderer, w, h, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     }
 
-    SDL_GetRendererInfo(renderer, &info);
-
-    if (info.max_texture_width < vesa.xres || info.max_texture_height < vesa.yres)
+    props = SDL_GetRendererProperties(renderer);
+    if (props == 0)
     {
         return 0;
     }
 
-    format = altformat1 = altformat2 = altformat3 = 0;
+    w = (int)SDL_GetNumberProperty(props, SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 0);
+    if (w && (w < vesa.xres || w < vesa.yres))
+    {
+        return 0;
+    }
+
+    format = altformat1 = altformat2 = altformat3 = SDL_PIXELFORMAT_UNKNOWN;
     for (bpp_index = 0; bpp_index < 4; bpp_index++)
     {
         if (vesa.bpplist[bpp_index] == 0) continue;
 
         bytes = (vesa.bpplist[bpp_index] + 7) >> 3;
 
-        for (fmt_index = 0; fmt_index < (int)info.num_texture_formats; fmt_index++)
+        texture_formats = (const SDL_PixelFormat *) SDL_GetPointerProperty(props, SDL_PROP_RENDERER_TEXTURE_FORMATS_POINTER, NULL);
+
+        if (texture_formats != NULL)
+        for (fmt_index = 0; texture_formats[fmt_index] != SDL_PIXELFORMAT_UNKNOWN; fmt_index++)
         {
-            if (SDL_BYTESPERPIXEL(info.texture_formats[fmt_index]) != (unsigned int)bytes) continue;
+            if (SDL_BYTESPERPIXEL(texture_formats[fmt_index]) != (unsigned int)bytes) continue;
 
             if (bytes <= 2)
             {
-                if (SDL_BITSPERPIXEL(info.texture_formats[fmt_index]) != (unsigned int)vesa.bpplist[bpp_index]) continue;
+                if (SDL_BITSPERPIXEL(texture_formats[fmt_index]) != (unsigned int)vesa.bpplist[bpp_index]) continue;
             }
 
-            if (!SDL_PixelFormatEnumToMasks(info.texture_formats[fmt_index], &bpp, &Rmask, &Gmask, &Bmask, &Amask)) continue;
+            if (!SDL_ISPIXELFORMAT_PACKED(texture_formats[fmt_index])) continue;
+            if (SDL_PIXELLAYOUT(texture_formats[fmt_index]) == SDL_PACKEDLAYOUT_2101010 || SDL_PIXELLAYOUT(texture_formats[fmt_index]) == SDL_PACKEDLAYOUT_1010102) continue;
+
+            if (!SDL_GetMasksForPixelFormat(texture_formats[fmt_index], &bpp, &Rmask, &Gmask, &Bmask, &Amask)) continue;
 
             if (!Rmask || !Gmask || !Bmask) continue;
 
@@ -115,48 +152,48 @@ int setmode(tvesa &vesa)
                 {
                     if (Amask == 0)
                     {
-                        format = info.texture_formats[fmt_index];
+                        format = texture_formats[fmt_index];
                         break;
                     }
                     else
                     {
-                        altformat1 = info.texture_formats[fmt_index];
+                        altformat1 = texture_formats[fmt_index];
                     }
                 }
                 else
                 {
                     if (Amask == 0)
                     {
-                        if (altformat2 == 0) altformat2 = info.texture_formats[fmt_index];
+                        if (altformat2 == SDL_PIXELFORMAT_UNKNOWN) altformat2 = texture_formats[fmt_index];
                     }
                     else
                     {
-                        if (altformat3 == 0) altformat3 = info.texture_formats[fmt_index];
+                        if (altformat3 == SDL_PIXELFORMAT_UNKNOWN) altformat3 = texture_formats[fmt_index];
                     }
                 }
             }
             else
             {
-                format = info.texture_formats[fmt_index];
+                format = texture_formats[fmt_index];
                 break;
             }
         }
 
-        if (format != 0) break;
+        if (format != SDL_PIXELFORMAT_UNKNOWN) break;
 
         if (vesa.bpplist[bpp_index] == 32)
         {
-            if (altformat1 != 0)
+            if (altformat1 != SDL_PIXELFORMAT_UNKNOWN)
             {
                 format = altformat1;
                 break;
             }
-            else if (altformat2 != 0)
+            else if (altformat2 != SDL_PIXELFORMAT_UNKNOWN)
             {
                 format = altformat2;
                 break;
             }
-            else if (altformat3 != 0)
+            else if (altformat3 != SDL_PIXELFORMAT_UNKNOWN)
             {
                 format = altformat3;
                 break;
@@ -164,12 +201,10 @@ int setmode(tvesa &vesa)
         }
     }
 
-    if (format == 0)
+    if (format == SDL_PIXELFORMAT_UNKNOWN)
     {
         return 0;
     }
-
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
     texture = SDL_CreateTexture(renderer, format, SDL_TEXTUREACCESS_STREAMING, vesa.xres, vesa.yres);
     if (texture == NULL)
@@ -184,7 +219,7 @@ int setmode(tvesa &vesa)
     vesa.xbytes = vesa.xres * vesa.pbytes;
     vesa.memsize = vesa.xbytes * vesa.yres;
 
-    SDL_PixelFormatEnumToMasks(format, &bpp, &Rmask, &Gmask, &Bmask, &Amask);
+    SDL_GetMasksForPixelFormat(format, &bpp, &Rmask, &Gmask, &Bmask, &Amask);
 
     vesa.redpos = 0;
     for (mask = Rmask; !(mask & 1); mask >>= 1) vesa.redpos++;
@@ -199,6 +234,8 @@ int setmode(tvesa &vesa)
     for (mask = Gmask >> vesa.greenpos; mask & 1; mask >>= 1) vesa.greenbits++;
     vesa.bluebits = 0;
     for (mask = Bmask >> vesa.bluepos; mask & 1; mask >>= 1) vesa.bluebits++;
+
+    vesa.alphamask = Amask;
 
     return 1;
 }
@@ -242,16 +279,16 @@ int keypressed(void)
     {
         switch(event.type)
         {
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
-                if (event.key.keysym.sym == SDLK_ESCAPE)
+            case SDL_EVENT_KEY_DOWN:
+            case SDL_EVENT_KEY_UP:
+                if (event.key.key == SDLK_ESCAPE)
                 {
                     was_keypress = 1;
                     return 1;
                 }
 
                 break;
-            case SDL_QUIT:
+            case SDL_EVENT_QUIT:
                 was_keypress = 1;
                 return 1;
             default:

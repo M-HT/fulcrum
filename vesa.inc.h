@@ -18,6 +18,7 @@ typedef struct {
  uint8_t vesa_bluebits;
  uint8_t vesa_bluepos;
  uint8_t vesa_reserved1;
+ uint32_t vesa_alphamask;
  void *vesa_texture;
  void *vesa_renderer;
 } tvesa;

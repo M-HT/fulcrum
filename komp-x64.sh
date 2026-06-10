@@ -1,5 +1,5 @@
 #!/bin/sh
-CXFLAGS=-c\ -pipe\ -m32\ -mfpmath=387\ -std=c++11\ -O3\ -DNO_FPU_CONTROL\ -ffast-math\ -fsingle-precision-constant\ -I./\ -I./include\ -I/usr/include\ -I/usr/local/include
+CXFLAGS=-c\ -pipe\ -std=c++11\ -O3\ -DNO_FPU_CONTROL\ -ffast-math\ -fsingle-precision-constant\ -I./\ -I./include\ -I/usr/include\ -I/usr/local/include
 
 rm *.o
 c++ $CXFLAGS fulcrum.cpp
@@ -29,7 +29,7 @@ c++ $CXFLAGS m2render.cpp
 c++ $CXFLAGS m2vector.cpp
 c++ $CXFLAGS m2world.cpp
 
-CXFLAGS=-c\ -pipe\ -m32\ -mfpmath=387\ -std=c++11\ -O3\ -DNO_FPU_CONTROL\ -ffast-math\ -Wall\ -Wextra\ -I./\ -I./include\ -I/usr/include\ -I/usr/local/include
+CXFLAGS=-c\ -pipe\ -std=c++11\ -O3\ -DNO_FPU_CONTROL\ -ffast-math\ -Wall\ -Wextra\ -I./\ -I./include\ -I/usr/include\ -I/usr/local/include
 
 c++ $CXFLAGS vesa.cc
 c++ $CXFLAGS int.cc
@@ -54,4 +54,4 @@ c++ $CXFLAGS m2ptf.cc
 c++ $CXFLAGS m2ptftr.cc
 c++ $CXFLAGS -Wno-unused-parameter -DMUSIC_BASS rxm.cc
 
-c++ -pipe -m32 -o fulcrum *.o -lSDL3 -lbass -L./bass/lib/x86
+c++ -pipe -o fulcrum *.o -lSDL3 -lbass -L./bass/lib/x64

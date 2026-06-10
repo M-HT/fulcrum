@@ -1,5 +1,5 @@
 /* encoding = IBM852 */
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "cc.h"
 //.386                                    //pmode/w
 //.model flat,prolog
@@ -331,7 +331,7 @@ static void fun2(realnum _fpu_reg8, realnum &_fpu_reg9) { //f(t) = a/2*(cos(2*pi
 //-> st(0) = a/2, st(1) = t
 //<- st(0) = f(t), st(1) = t
 
-	fpu_reg10 = M_PI;
+	fpu_reg10 = SDL_PI_D;
 	fpu_reg10 = fpu_reg10 + fpu_reg10;
 	fpu_reg10 = fpu_reg10 * fpu_reg8;
 	fpu_reg10 = cos(fpu_reg10);
@@ -350,7 +350,7 @@ static void fun3(realnum _fpu_reg8, realnum &_fpu_reg9) { //f(t) = a/2*sin(2*pi*
 //-> st(0) = a/2, st(1) = t
 //<- st(0) = f(t), st(1) = t
 
-	fpu_reg10 = M_PI;
+	fpu_reg10 = SDL_PI_D;
 	fpu_reg10 = fpu_reg10 + fpu_reg10;
 	fpu_reg10 = fpu_reg10 * fpu_reg8;
 	fpu_reg10 = sin(fpu_reg10);
@@ -965,7 +965,7 @@ updatechains_gt0:
 	fpu_reg14 = atan2(fpu_reg14, fpu_reg15);
 	angle = fpu_reg14;
 	fpu_reg13 = fpu_reg13 - fpu_reg14;
-	fpu_reg14 = M_PI;
+	fpu_reg14 = SDL_PI_D;
 
 
 
@@ -2995,7 +2995,7 @@ initpaltab_pl:
 	eax = eax << esi->vesa_redbits;
 	eax = eax >> ( 8 );
 	eax = eax << esi->vesa_redpos;
-	col = eax;
+	col = eax | esi->vesa_alphamask;
 
 	eax = (uint32_t)( ((uint8_t *)(ebx))[1] ); //green
 	eax = eax << esi->vesa_greenbits;
@@ -3173,7 +3173,7 @@ upscroll_32:
 	copybuffer32();
 upscroll_1:
 	SDL_UnlockTexture(texture);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderTexture(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 
 	ebp = stack_var00;
@@ -3282,7 +3282,7 @@ starterz_32:
 	copybuffer32();
 starterz_1:
 	SDL_UnlockTexture(texture);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderTexture(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 
 #if 0

@@ -1,5 +1,5 @@
 /* encoding = IBM852 */
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "cc.h"
 //.486					;pmode/w
 //.model flat,prolog

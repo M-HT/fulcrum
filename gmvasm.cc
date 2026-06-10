@@ -43,7 +43,7 @@ void makecoltab16(tvesa &vesa, void *_coltab)
 
     for (unsigned int i=0; i<256; i++)
     {
-        coltab[i + ct_r16] = ((i << vesa.redbits  ) >> 8) << vesa.redpos;
+        coltab[i + ct_r16] = (((i << vesa.redbits  ) >> 8) << vesa.redpos) | vesa.alphamask;
         coltab[i + ct_g16] = ((i << vesa.greenbits) >> 8) << vesa.greenpos;
         coltab[i + ct_b16] = ((i << vesa.bluebits ) >> 8) << vesa.bluepos;
     }
@@ -55,7 +55,7 @@ void makecoltab32(tvesa &vesa, void *_coltab)
 
     for (unsigned int i=0; i<256; i++)
     {
-        coltab[i + ct_r32] = ((i << vesa.redbits  ) >> 8) << vesa.redpos;
+        coltab[i + ct_r32] = (((i << vesa.redbits  ) >> 8) << vesa.redpos) | vesa.alphamask;
         coltab[i + ct_g32] = ((i << vesa.greenbits) >> 8) << vesa.greenpos;
         coltab[i + ct_b32] = ((i << vesa.bluebits ) >> 8) << vesa.bluepos;
     }
@@ -194,7 +194,7 @@ void CopyBufferASM(char *pSrcScreenBuffer, tvesa *pVesa, void *coltab)
     }
 
     SDL_UnlockTexture(pVesa->texture);
-    SDL_RenderCopy(pVesa->renderer, pVesa->texture, NULL, NULL);
+    SDL_RenderTexture(pVesa->renderer, pVesa->texture, NULL, NULL);
     SDL_RenderPresent(pVesa->renderer);
 }
 

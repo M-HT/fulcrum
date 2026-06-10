@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <malloc.h>
 #if defined(MUSIC_BASS)
     #include "bass/include/bass.h"
@@ -10,20 +10,23 @@
 #if defined(MUSIC_BASS)
 static HMUSIC current_song;
 #elif defined(MUSIC_DUMB)
-SDL_mutex *xm_mutex;
+SDL_Mutex *xm_mutex;
 void *xm;
 DUH *xm_duh;
 DUH_SIGRENDERER *xm_renderer;
 
 SDL_AudioDeviceID device_id;
+SDL_AudioStream *stream;
 int mix_frequency, mix_channels;
-Uint16 mix_format;
+SDL_AudioFormat mix_format;
 
-int render_bits, render_unsign;
+int render_bits, render_unsign, render_float;
 float render_volume, render_delta;
 
-Uint32 fade_start, fade_time;
+Uint64 fade_start, fade_time;
 int fade_on;
+
+sample_t audio_buffer[1024 * 2];
 #endif
 
 #if defined(_MSC_VER)
@@ -115,76 +118,100 @@ typedef struct __attribute__ ((__packed__)) {
 #pragma pack()
 
 #if (!defined(MUSIC_BASS) && defined(MUSIC_DUMB))
-static void xmplayer(void *udata, Uint8 *stream, int len)
+static void SDLCALL xmplayer(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
-    if (0 == SDL_LockMutex(xm_mutex))
+    if (additional_amount == 0) return;
+
+    SDL_LockMutex(xm_mutex);
+
+    if (xm_duh != NULL)
     {
-        if (xm_duh != NULL)
+        int sample_size = 1;
+        int render_len = additional_amount;
+
+        if (render_bits == 32)
         {
-            int sample_size = 1;
-            int render_len = len;
+            sample_size *= 4;
+            render_len /= 4;
+        }
+        else if (render_bits == 16)
+        {
+            sample_size *= 2;
+            render_len /= 2;
+        }
+        if (mix_channels == 2)
+        {
+            sample_size *= 2;
+            render_len /= 2;
+        }
 
-            if (render_bits == 16)
+        float volume;
+
+        if (fade_on)
+        {
+            Uint64 ticks = SDL_GetTicks();
+            if ((ticks - fade_start) < fade_time)
             {
-                sample_size *= 2;
-                render_len /= 2;
+                ticks = (fade_time - (ticks - fade_start));
+                volume = (float)ticks / (float)fade_time;
             }
-            if (mix_channels == 2)
+            else
             {
-                sample_size *= 2;
-                render_len /= 2;
+                volume = 0.0f;
             }
+        }
+        else
+        {
+            volume = render_volume;
+        }
 
-            float volume;
+        while (render_len != 0)
+        {
+            long readlen;
+            int buf_len;
 
-            if (fade_on)
+            buf_len = (render_len < 1024) ? render_len : 1024;
+            if (render_bits > 16)
             {
-                Uint32 ticks = SDL_GetTicks();
-                if ((ticks - fade_start) < fade_time)
+                long index;
+                sample_t *sampletr;
+
+                dumb_silence(audio_buffer, mix_channels * buf_len);
+                sampletr = audio_buffer;
+                readlen = duh_sigrenderer_generate_samples(xm_renderer, volume, render_delta, buf_len, &sampletr);
+                if (readlen == 0) break;
+
+                if (render_float)
                 {
-                    ticks = (fade_time - (ticks - fade_start));
-                    volume = (float)ticks / (float)fade_time;
+                    for (index = 0; index < mix_channels * readlen; index++)
+                    {
+                        if (audio_buffer[index] > 0x7fffff) ((float *)audio_buffer)[index] = 1.0f;
+                        else if (audio_buffer[index] <= -0x800000) ((float *)audio_buffer)[index] = -1.0f;
+                        else ((float *)audio_buffer)[index] = (float)audio_buffer[index] * 0.00000011920929f;
+                    }
                 }
                 else
                 {
-                    volume = 0.0f;
+                    for (index = 0; index < mix_channels * readlen; index++)
+                    {
+                        if (audio_buffer[index] > 0x7fffff) audio_buffer[index] = 0x7fffffff;
+                        else if (audio_buffer[index] <= -0x800000) audio_buffer[index] = -0x80000000;
+                        else audio_buffer[index] <<= 8;
+                    }
                 }
             }
             else
             {
-                volume = render_volume;
+                readlen = duh_render(xm_renderer, render_bits, render_unsign, volume, render_delta, buf_len, audio_buffer);
+                if (readlen == 0) break;
             }
 
-            long readlen = duh_render(xm_renderer, render_bits, render_unsign, volume, render_delta, render_len, stream);
-
-            len -= readlen * sample_size;
-            stream += readlen * sample_size;
-        }
-
-        SDL_UnlockMutex(xm_mutex);
-
-        if (len == 0) return;
-    }
-
-    if (render_unsign == 0)
-    {
-        memset(stream, 0, len);
-    }
-    else
-    {
-        if (render_bits == 8)
-        {
-            memset(stream, 0x80, len);
-        }
-        else
-        {
-            for (int counter = len / 2; counter != 0; counter --)
-            {
-                *((Uint16 *)stream) = 0x8000;
-                stream += 2;
-            }
+            render_len -= readlen;
+            SDL_PutAudioStreamData(stream, audio_buffer, readlen * sample_size);
         }
     }
+
+    SDL_UnlockMutex(xm_mutex);
 }
 #endif
 
@@ -828,7 +855,7 @@ extern "C" int rxmdevinit(tdinfo *dinfo, void *)
 
     SDL_AudioSpec wanted, obtained;
 
-    if ( SDL_InitSubSystem(SDL_INIT_AUDIO) != 0 )
+    if ( !SDL_InitSubSystem(SDL_INIT_AUDIO) )
     {
         SDL_DestroyMutex(xm_mutex);
         xm_mutex = NULL;
@@ -836,13 +863,10 @@ extern "C" int rxmdevinit(tdinfo *dinfo, void *)
     }
 
     wanted.freq = (dinfo->rate)?dinfo->rate:44100;
-    wanted.format = (dinfo->flags & df16bit)?AUDIO_S16SYS:AUDIO_S8;
+    wanted.format = (dinfo->flags & df16bit)?SDL_AUDIO_S16:SDL_AUDIO_S8;
     wanted.channels = (dinfo->flags & dfStereo)?2:1;
-    wanted.samples = 1024;
-    wanted.callback = &xmplayer;
-    wanted.userdata = NULL;
 
-    device_id = SDL_OpenAudioDevice(NULL, 0, &wanted, &obtained, SDL_AUDIO_ALLOW_ANY_CHANGE);
+    device_id = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &wanted);
     if ( device_id <= 0 )
     {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
@@ -851,29 +875,50 @@ extern "C" int rxmdevinit(tdinfo *dinfo, void *)
         return 6;
     }
 
-    if ( (obtained.channels != 1 && obtained.channels != 2) ||
-         (obtained.format != AUDIO_S8 && obtained.format != AUDIO_U8 && obtained.format != AUDIO_S16SYS && obtained.format != AUDIO_U16SYS) )
+    SDL_PauseAudioDevice(device_id);
+
+    if (!SDL_GetAudioDeviceFormat(device_id, &obtained, NULL))
     {
         SDL_CloseAudioDevice(device_id);
-        device_id = SDL_OpenAudioDevice(NULL, 0, &wanted, &obtained, SDL_AUDIO_ALLOW_ANY_CHANGE & ~(SDL_AUDIO_ALLOW_FORMAT_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE));
-        if ( device_id <= 0 )
-        {
-            SDL_QuitSubSystem(SDL_INIT_AUDIO);
-            SDL_DestroyMutex(xm_mutex);
-            xm_mutex = NULL;
-            return 6;
-        }
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        SDL_DestroyMutex(xm_mutex);
+        xm_mutex = NULL;
+        return 6;
     }
 
-    mix_frequency = obtained.freq;
-    mix_format = obtained.format;
-    mix_channels = obtained.channels;
+    wanted = obtained;
+    if (wanted.channels > 2) wanted.channels = 2;
+    if (SDL_AUDIO_BITSIZE(wanted.format) > 16 && wanted.format != SDL_AUDIO_S32) wanted.format = SDL_AUDIO_F32;
 
-    render_bits = ((mix_format == AUDIO_S8) || (mix_format == AUDIO_U8))?8:16;
-    render_unsign = ((mix_format == AUDIO_S8) || (mix_format == AUDIO_S16LSB) || (mix_format == AUDIO_S16MSB))?0:1;
+    stream = SDL_CreateAudioStream(&wanted, &obtained);
+    if (stream == NULL)
+    {
+        SDL_CloseAudioDevice(device_id);
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        SDL_DestroyMutex(xm_mutex);
+        xm_mutex = NULL;
+        return 6;
+    }
+
+    if (!SDL_SetAudioStreamGetCallback(stream, &xmplayer, NULL) || !SDL_BindAudioStream(device_id, stream))
+    {
+        SDL_DestroyAudioStream(stream);
+        SDL_CloseAudioDevice(device_id);
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        SDL_DestroyMutex(xm_mutex);
+        xm_mutex = NULL;
+        return 6;
+    }
+
+    mix_frequency = wanted.freq;
+    mix_format = wanted.format;
+    mix_channels = wanted.channels;
+
+    render_bits = SDL_AUDIO_BITSIZE(mix_format);
+    render_unsign = SDL_AUDIO_ISUNSIGNED(mix_format);
+    render_float = SDL_AUDIO_ISFLOAT(mix_format);
     render_volume = 1.0f;
     render_delta = 65536.0f / mix_frequency;
-
 #endif
 
     return 0;
@@ -886,7 +931,9 @@ extern "C" void rxmdevdone(void)
     BASS_Free();
 #elif defined(MUSIC_DUMB)
     if (xm_renderer != NULL) rxmstop(xmStop);
-    SDL_PauseAudioDevice(device_id, 1);
+    SDL_PauseAudioDevice(device_id);
+    SDL_UnbindAudioStream(stream);
+    SDL_DestroyAudioStream(stream);
     SDL_CloseAudioDevice(device_id);
     dumb_exit();
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
@@ -934,50 +981,49 @@ extern "C" void rxmplay(void *rxmmem, int len, int pos)
 #elif defined(MUSIC_DUMB)
     if (xm_renderer != NULL) rxmstop(xmStop);
 
-    if (0 == SDL_LockMutex(xm_mutex))
+    SDL_LockMutex(xm_mutex);
+
+    uint32_t xmsize;
+    xm = rxm2xm(rxmmem, len, &xmsize);
+    if (xm == NULL)
     {
-        uint32_t xmsize;
-        xm = rxm2xm(rxmmem, len, &xmsize);
-        if (xm == NULL)
-        {
-            SDL_UnlockMutex(xm_mutex);
-            return;
-        }
-
-        DUMBFILE *xm_file = dumbfile_open_memory((const char *)xm, xmsize);
-        if (xm_file == NULL)
-        {
-            free(xm);
-            xm = NULL;
-            SDL_UnlockMutex(xm_mutex);
-            return;
-        }
-
-        xm_duh = dumb_read_xm_quick(xm_file);
-        dumbfile_close(xm_file);
-        if (xm_duh == NULL)
-        {
-            free(xm);
-            xm = NULL;
-            SDL_UnlockMutex(xm_mutex);
-            return;
-        }
-
-        xm_renderer = dumb_it_start_at_order(xm_duh, mix_channels, pos);
-        if (xm_renderer == NULL)
-        {
-            unload_duh(xm_duh);
-            xm_duh = NULL;
-            free(xm);
-            xm = NULL;
-            SDL_UnlockMutex(xm_mutex);
-            return;
-        }
-
         SDL_UnlockMutex(xm_mutex);
-
-        SDL_PauseAudioDevice(device_id, 0);
+        return;
     }
+
+    DUMBFILE *xm_file = dumbfile_open_memory((const char *)xm, xmsize);
+    if (xm_file == NULL)
+    {
+        free(xm);
+        xm = NULL;
+        SDL_UnlockMutex(xm_mutex);
+        return;
+    }
+
+    xm_duh = dumb_read_xm_quick(xm_file);
+    dumbfile_close(xm_file);
+    if (xm_duh == NULL)
+    {
+        free(xm);
+        xm = NULL;
+        SDL_UnlockMutex(xm_mutex);
+        return;
+    }
+
+    xm_renderer = dumb_it_start_at_order(xm_duh, mix_channels, pos);
+    if (xm_renderer == NULL)
+    {
+        unload_duh(xm_duh);
+        xm_duh = NULL;
+        free(xm);
+        xm = NULL;
+        SDL_UnlockMutex(xm_mutex);
+        return;
+    }
+
+    SDL_UnlockMutex(xm_mutex);
+
+    SDL_ResumeAudioDevice(device_id);
 #endif
 }
 
@@ -1007,20 +1053,19 @@ extern "C" void rxmstop(int method)
             SDL_Delay(1100);
         }
 
-        SDL_PauseAudioDevice(device_id, 1);
+        SDL_PauseAudioDevice(device_id);
         fade_on = 0;
 
-        if (0 == SDL_LockMutex(xm_mutex))
-        {
-            duh_end_sigrenderer(xm_renderer);
-            xm_renderer = NULL;
-            unload_duh(xm_duh);
-            xm_duh = NULL;
-            free(xm);
-            xm = NULL;
+        SDL_LockMutex(xm_mutex);
 
-            SDL_UnlockMutex(xm_mutex);
-        }
+        duh_end_sigrenderer(xm_renderer);
+        xm_renderer = NULL;
+        unload_duh(xm_duh);
+        xm_duh = NULL;
+        free(xm);
+        xm = NULL;
+
+        SDL_UnlockMutex(xm_mutex);
     }
 #endif
 }
